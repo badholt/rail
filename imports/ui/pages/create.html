@@ -1,0 +1,29 @@
+<template name="createExperiment">
+    <div class="ui padded grid">
+        <div class="ui centered ten wide column">
+            {{> experimentForm}}
+        </div>
+    </div>
+</template>
+
+<template name="experimentForm">
+    <form id="experiment-form" class="ui form">
+        <div class="field">
+            <label>Title</label>
+            <input type="text" name="title" placeholder="Experiment Title">
+        </div>
+
+        <div class="inline fields">
+            <label>Investigator</label>
+            <div class="ten wide field">
+                <input type="text" name="investigator-first" placeholder="First Name">
+            </div>
+            <div class="ten wide field">
+                <input type="text" name="investigator-last" placeholder="Last Name">
+            </div>
+        </div>
+
+        <div class="ui divider"></div>
+        <button class="ui black fluid button" type="submit">Create Experiment</button>
+    </form>
+</template>

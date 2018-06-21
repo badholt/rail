@@ -1,0 +1,36 @@
+<template name="accordion">
+    <div class="ui fluid accordion">
+        <div class="active title">
+            <i class="dropdown icon"></i>
+            Stimuli
+        </div>
+        <div class="active content">
+            {{> stimuliForm}}
+        </div>
+        <div class="active title">
+            <i class="dropdown icon"></i>
+            Trials
+        </div>
+        <div class="active content">
+            {{> trialsForm}}
+        </div>
+    </div>
+</template>
+
+<template name="stimuliForm">
+    <form id="stimuli-form" class="ui form">
+        <div class="field">
+            <label>No. of Stimuli</label>
+            <input type="number" name="number" placeholder="#1+" value="{{$.Session.get 'stimuli'}}">
+        </div>
+    </form>
+</template>
+
+<template name="trialsForm">
+    <form id="trials-form" class="ui form">
+        <div class="field">
+            <label>No. of Trials</label>
+            <input type="number" name="number" placeholder="#1+" value="{{$.Session.get 'total'}}">
+        </div>
+    </form>
+</template>

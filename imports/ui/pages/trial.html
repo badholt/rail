@@ -1,0 +1,16 @@
+<template name="trial">
+    {{#with trial}}
+        <svg width="100%" height="100%">
+            {{#if $eq stage 1}}
+                {{#each stimuli stage}}
+                    {{> bars}}
+                {{/each}}
+            {{else}}
+                {{#with crossSettings stage}}
+                    {{> cross cross=cross region=region
+                            span=span weight=weight}}
+                {{/with}}
+            {{/if}}
+        </svg>
+    {{/with}}
+</template>

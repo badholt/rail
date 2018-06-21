@@ -1,0 +1,37 @@
+/** Tags: */
+body, html {
+    height: 100%;
+    margin: 0;
+}
+
+h1, h2, li {
+    color: #fff;
+    display: inline;
+    font-family: monospace, sans-serif;
+    text-align: center;
+    /*text-decoration: overline;*/
+}
+
+ol {
+    display: inline-block;
+}
+
+/** IDs: */
+#main-menu {
+    background: #000;
+    -webkit-border-radius: 1em;
+    -moz-border-radius: 1em;
+    border-radius: 1em;
+    margin: 1em;
+    padding: 1em;
+}
+
+#main-panel {
+    height: 100%;
+    overflow: hidden;
+}
+
+/** Classes: */
+.invisible {
+    display: none;
+}

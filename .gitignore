@@ -1,0 +1,4 @@
+.idea/
+.meteor/
+node_modules/
+private/

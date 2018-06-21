@@ -1,0 +1,57 @@
+<template name="home">
+    <div class="ui container">
+        <!--{{> atForm}}-->
+    </div>
+</template>
+
+<template name="experiment">
+    {{#with info}}
+        <div class="ui divided padded stackable grid">
+            <div class="ui three wide column">
+                {{> experimentMenu}}
+                {{> infoCard}}
+            </div>
+
+            <div class="ui nine wide column">
+                {{#if isActivePath regex='/run'}}
+                    {{> accordion}}
+
+                    <div class="ui divider"></div>
+                    <button class="ui black fluid button" type="submit">Run</button>
+                {{/if}}
+                {{#if isActivePath regex='/data'}}
+                    {{> data}}
+                {{/if}}
+                {{#if isActivePath regex='/settings'}}
+                    Settings related to the Experiment, rather than the Trial
+                {{/if}}
+            </div>
+        </div>
+    {{/with}}
+</template>
+
+<template name="experimentMenu">
+    <div class="ui vertical fluid tabular menu">
+        <a class="{{isActivePath regex='/run'}} item" href="{{link}}/run">
+            Run Trial
+        </a>
+        <a class="{{isActivePath regex='/data'}} item" href="{{link}}/data">
+            View Data
+        </a>
+        <a class="{{isActivePath regex='/settings'}} item" href="{{link}}/settings">
+            Settings
+        </a>
+    </div>
+</template>
+
+<template name="infoCard">
+    <div class="ui card">
+        <div class="image">
+            <img src="https://placeimg.com/400/600/animals/grayscale">
+        </div>
+        <div class="content">
+            <div class="meta">Investigator</div>
+            <div class="header">{{investigator.name.first}}, {{investigator.name.last}}</div>
+        </div>
+    </div>
+</template>

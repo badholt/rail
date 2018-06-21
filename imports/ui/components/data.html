@@ -1,0 +1,40 @@
+<template name="data">
+    <table class="ui very basic sortable black celled table">
+        <thead>
+        <tr>
+            <th class="sorted">Subject</th>
+            <th class="sorted">Date</th>
+            <th class="sorted">Number</th>
+            <th class="sorted">Clicks</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        {{#each trials}}
+            <tr>
+                <td>{{subject}}</td>
+                <td class="collapsible">{{date}}</td>
+                <td>{{number}}</td>
+                <td>
+                    {{>clickList}}
+                </td>
+            </tr>
+        {{/each}}
+        </tbody>
+    </table>
+</template>
+
+<template name="clickList">
+    <div class="ui list">
+        {{#each stage}}
+            <div class="item">
+                <a class="header">{{title}}</a>
+                <div class="ui list">
+                    {{#each helper}}
+                        <div class="item"><i class="hand pointer icon"></i> {{screenX}}, {{screenY}}</div>
+                    {{/each}}
+                </div>
+            </div>
+        {{/each}}
+    </div>
+</template>
