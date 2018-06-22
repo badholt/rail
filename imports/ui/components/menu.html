@@ -13,11 +13,26 @@
         {{/each}}
 
         <div class="right menu">
-            <a class="ui item">{{currentUser._id}}</a>
             <a class="{{isActiveRoute 'home'}} ui item" href="/" tabindex="2">
                 <i class="home icon"></i>
             </a>
-            <!--{{> atNavButton}}-->
+
+            {{#if currentUser}}
+                <a class="active item">
+                    {{#if currentUser.profile.picture}}
+                        <div class="ui avatar image">
+                            <img src="{{currentUser.profile.picture}}">
+                        </div>
+                    {{else}}
+                        <div class="content">
+                            <div class="header">
+                                {{currentUser.profile.name}}
+                            </div>
+                        </div>
+                    {{/if}}
+                </a>
+                {{> atNavButton}}
+            {{/if}}
         </div>
     </div>
 </template>

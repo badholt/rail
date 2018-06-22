@@ -1,6 +1,3 @@
-import {FlowRouter} from 'meteor/kadira:flow-router';
-import {BlazeLayout} from 'meteor/kadira:blaze-layout';
-
 import '../../ui/layouts/bare';
 import '../../ui/layouts/frame';
 import '../../ui/pages/create';
@@ -8,6 +5,9 @@ import '../../ui/pages/home';
 import '../../ui/pages/notFound';
 import '../../ui/pages/data';
 import '../../ui/pages/trial';
+
+import {FlowRouter} from 'meteor/kadira:flow-router';
+import {BlazeLayout} from 'meteor/kadira:blaze-layout';
 
 BlazeLayout.setRoot('body');
 
