@@ -1,38 +1,39 @@
 <template name="menu">
-    <div class="ui secondary stackable pointing menu">
-        <a class="ui animated inverted button item" href="/create" tabindex="1">
-            <div class="visible content">
-                <i class="black plus icon"></i>
-            </div>
-            <div class="hidden content">Create</div>
-        </a>
-        {{#each experiment}}
-            <a class="{{isActivePath regex=url}} item" href="{{url}}/run" tabindex="0">
-                {{title}}
-            </a>
-        {{/each}}
+    <div class="ui {{#if currentUser.profile.box}}pink{{else}}inverted{{/if}} secondary stackable pointing menu">
+        {{#if currentUser}}
+            {{#unless currentUser.profile.box}}
+                <a class="ui animated button item" href="/create" tabindex="1">
+                    <div class="visible content">
+                        <i class="plus icon"></i>
+                    </div>
+                    <div class="hidden content">Create</div>
+                </a>
 
-        <div class="right menu">
-            <a class="{{isActiveRoute 'home'}} ui item" href="/" tabindex="2">
-                <i class="home icon"></i>
-            </a>
+                {{#each experiment}}
+                    <a class="{{isActivePath regex=url}} item" href="{{url}}/run" tabindex="0">
+                        {{title}}
+                    </a>
+                {{/each}}
+            {{/unless}}
 
-            {{#if currentUser}}
-                <a class="active item">
+            <div class="right menu">
+                <a class="{{isActiveRoute 'home'}} ui item" href="/" tabindex="2">
                     {{#if currentUser.profile.picture}}
                         <div class="ui avatar image">
                             <img src="{{currentUser.profile.picture}}">
                         </div>
                     {{else}}
-                        <div class="content">
-                            <div class="header">
+                        <div class="ui inverted tiny header">
+
+                            <i class="{{#if currentUser.profile.box}}cube{{else}}user{{/if}} icon"></i>
+                            <div class="content">
                                 {{currentUser.profile.name}}
                             </div>
                         </div>
                     {{/if}}
                 </a>
                 {{> atNavButton}}
-            {{/if}}
-        </div>
+            </div>
+        {{/if}}
     </div>
 </template>

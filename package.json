@@ -5,14 +5,15 @@
     "start": "meteor run"
   },
   "dependencies": {
-    "@babel/runtime": "^7.0.0-beta.42",
+    "@babel/runtime": "^7.0.0-beta.51",
     "bcrypt": "^2.0.1",
-    "chance": "^1.0.16",
+    "bufferutil": "^3.0.5",
     "meteor-node-stubs": "^0.3.2",
     "mqtt": "^2.18.1",
-    "postcss": "^6.0.22",
+    "postcss": "^6.0.23",
     "postcss-easy-import": "^1.0.1",
-    "postcss-load-config": "^1.2.0"
+    "postcss-load-config": "^1.2.0",
+    "utf-8-validate": "^4.0.2"
   },
   "devDependencies": {
     "autoprefixer": "^6.3.1"

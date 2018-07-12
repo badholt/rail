@@ -1,5 +1,5 @@
 <template name="accordion">
-    <div class="ui fluid accordion">
+    <div class="ui fluid inverted accordion">
         <div class="active title">
             <i class="dropdown icon"></i>
             Stimuli
@@ -18,7 +18,7 @@
 </template>
 
 <template name="stimuliForm">
-    <form id="stimuli-form" class="ui form">
+    <form id="stimuli-form" class="ui inverted form">
         <div class="field">
             <label>No. of Stimuli</label>
             <input type="number" name="number" placeholder="#1+" value="{{$.Session.get 'stimuli'}}">
@@ -27,7 +27,7 @@
 </template>
 
 <template name="trialsForm">
-    <form id="trials-form" class="ui form">
+    <form id="trials-form" class="ui inverted form">
         <div class="field">
             <label>No. of Trials</label>
             <input type="number" name="number" placeholder="#1+" value="{{$.Session.get 'total'}}">

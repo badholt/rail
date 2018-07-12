@@ -62,12 +62,15 @@ Template.trial.events({
 
         /** Handle events during stimuli presentation: */
         if (stage === 1) {
+            //TODO: Audio cue
             if (correctEvent(e, trial.stages[stage])) {
-                //Meteor.call('mqttSend', 'mqtt://10.194.38.182', 'led1', {command: 'toggle'});
+                //TODO: Reward port event
+                Meteor.call('mqttSend', 'mqtt://10.194.24.154', 'test', 'a trial event occurred');
+                Meteor.call('mqttSend', 'mqtt://10.194.30.243', 'test', 'a trial event occurred');
 
                 /** Proceed to next trial or exit: */
                 if (number < total) {
-                    /** TO-DO: Rethink Add Trial?  Move to fixation cross? */
+                    //TODO: Rethink Add Trial?  Move to fixation cross?
                     Meteor.call('addTrial', trial.experiment, ++number, session, Session.get('stages')[1]);
                     FlowRouter.go('/' + session + '/trial/' + number + '/stage/' + 1);
                 } else {
@@ -75,6 +78,10 @@ Template.trial.events({
                         link = (experiment) ? experiment.link + '/data' : '/';
                     FlowRouter.go(link);
                 }
+            } else {
+                Meteor.call('mqttSend', 'mqtt://10.194.24.154', 'led1', {command: 'toggle'});
+                Meteor.call('mqttSend', 'mqtt://10.194.30.243', 'led1', {command: 'toggle'});
+                Meteor.call('mqttSend', 'mqtt://10.194.30.243', 'led2', {command: 'toggle'});
             }
         }
     }

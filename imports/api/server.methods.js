@@ -1,15 +1,22 @@
 import './client.methods';
 
-import {Experiments, Sessions, Trials} from "./collections";
-import {Meteor} from "meteor/meteor";
+import {Experiments, Sessions, Trials} from './collections';
+import {Meteor} from 'meteor/meteor';
+//import mqtt from 'mqtt';
+
+const mqtt = require('mqtt');
 
 if (Meteor.isServer) {
     Meteor.methods({
         'addExperiment': function (experiment) {
             return Experiments.insert({
-                investigator: {name: {first: experiment['investigator-first'], last: experiment['investigator-last']}},
+                investigator: {
+                    id: this.userId,
+                    name: {first: experiment['investigator-first'], last: experiment['investigator-last']}
+                },
                 link: '/experiments/' + experiment.title.replace(/( )|(\W)/g, '-'),
-                title: experiment.title
+                title: experiment.title,
+                users: [this.userId]
             });
         },
         'addSession': function (experiment) {
@@ -27,26 +34,25 @@ if (Meteor.isServer) {
             Meteor.call('generateStimuli', stage.visuals, function (error, result) {
                 if (!error) {
                     const trial = Trials.insert({
-                            date: new Date(),
-                            experiment: experiment,
-                            number: number,
-                            session: session,
-                            stages: [{
-                                data: [], visuals: [{
-                                    bars: {span: 300, weight: 10},
-                                    cross: {span: 75, weight: 5}
-                                }]
-                            }, {data: [], visuals: result}],
-                            subject: 'MouseID'
-                        });
+                        date: new Date(),
+                        experiment: experiment,
+                        number: number,
+                        session: session,
+                        stages: [{
+                            data: [], visuals: [{
+                                bars: {span: 300, weight: 10},
+                                cross: {span: 75, weight: 5}
+                            }]
+                        }, {data: [], visuals: result}],
+                        subject: 'MouseID'
+                    });
                     if (trial) Meteor.call('updateSession', session, trial);
                 }
             });
         },
         'mqttSend': function (address, topic, message) {
-            // let client = MqttClient.connect(address);
-            //
-            // client.publish(topic, JSON.stringify(message));
+            let client = mqtt.connect(address);console.log(address);
+            client.publish(topic, JSON.stringify(message));
         },
         'updateSession': function (session, trial) {
             Sessions.update(session, {

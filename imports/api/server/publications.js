@@ -7,8 +7,9 @@ Meteor.publish('experiments', function () {
 Meteor.publish('experiments.single', function (id) {
     return Experiments.find(id);
 });
-Meteor.publish('experiments.user', function () {
-    return Experiments.find();
+Meteor.publish('experiments.user', function (id) {
+    return Experiments.find({users: {$elemMatch: {$eq: id}}});
+
 });
 
 Meteor.publish('sessions', function (id) {

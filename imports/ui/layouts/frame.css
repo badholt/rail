@@ -1,0 +1,9 @@
+/** TAGS: */
+body, html {
+    background: #222;
+}
+
+/** > Fix for Semantic UI bug: */
+.ui.vertical.tabular.menu .active.item {
+    color: rgba(0, 0, 0, 0.95) !important;
+}

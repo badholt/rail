@@ -7,6 +7,9 @@ import {Meteor} from 'meteor/meteor';
 import {Session} from 'meteor/session';
 import {Template} from 'meteor/templating';
 
+// import {AccountsTemplates} from 'meteor/useraccounts:core';
+// import '/imports/startup/client/accounts';
+
 Template.accordion.onRendered(function () {
     $('.ui.accordion').accordion({
         exclusive: false

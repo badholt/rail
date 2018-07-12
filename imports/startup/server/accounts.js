@@ -1,4 +1,3 @@
-import {AccountsTemplates} from 'meteor/useraccounts:core';
 import {Meteor} from 'meteor/meteor';
 
 const services = Meteor.settings.private.oAuth,
@@ -14,49 +13,27 @@ const services = Meteor.settings.private.oAuth,
         }
     };
 
-AccountsTemplates.configure({
-    // Behavior
-    confirmPassword: true,
-    enablePasswordChange: true,
-    overrideLoginErrors: true,
-    lowercaseUsername: true,
-    focusFirstInput: true,
-    sendVerificationEmail: true,
-
-    // Appearance
-    showAddRemoveServices: true,
-    showForgotPasswordLink: false,
-    showLabels: true,
-    showPlaceholders: true,
-    showResendVerificationEmailLink: true,
-
-    // Client-side Validation
-    continuousValidation: true,
-    negativeFeedback: true,
-    negativeValidation: true,
-    positiveValidation: true,
-    positiveFeedback: true,
-    showValidating: true,
-
-    // Redirects
-    homeRoutePath: '/',
-    redirectTimeout: 4000,
-
-    // Texts
-    texts: {
-        button: {
-            signUp: "Register Now!"
-        },
-        socialSignUp: "Register",
-        title: {
-            forgotPwd: "Recover Your Password"
-        },
-    },
-});
-
 Accounts.onCreateUser(function (profile, user) {
-    profile.profile.picture = user.services.google.picture;
-    return profile;
+    const type = user.services;
+    if (type.password) {
+        user.profile = {
+            box: (profile.profile.box === 'box'),
+            // TODO: Remove email field for box users
+            email: profile.email,
+            name: profile.profile.name,
+            // TODO: Default profile picture
+            username: profile.username
+        }
+    } else if (type.google) {
+        user.profile = {
+            box: false,
+            email: type.google.email,
+            name: profile.profile.name,
+            picture: type.google.picture,
+            username: type.google.email
+        };
+    }
+    return user;
 });
 
 configureServices();

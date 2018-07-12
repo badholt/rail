@@ -1,4 +1,6 @@
-import '/imports/api/collections.js';
+import '/imports/api/collections';
 import '/imports/api/server.methods';
 import '/imports/api/server/publications';
-import '/imports/startup/server/accounts.js'
+
+import '/imports/startup/accounts.templates';
+import '/imports/startup/server/accounts'

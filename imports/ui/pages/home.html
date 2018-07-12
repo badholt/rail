@@ -1,12 +1,14 @@
 <template name="home">
-    <div class="ui container">
-        {{> atForm}}
-    </div>
+    {{#unless currentUser}}
+        <div class="ui message container">
+            {{> atForm}}
+        </div>
+    {{/unless}}
 </template>
 
 <template name="experiment">
     {{#with info}}
-        <div class="ui divided padded stackable grid">
+        <div class="ui divided inverted padded stackable grid">
             <div class="ui three wide column">
                 {{> experimentMenu}}
                 {{> infoCard}}
@@ -23,7 +25,9 @@
                     {{> data}}
                 {{/if}}
                 {{#if isActivePath regex='/settings'}}
-                    Settings related to the Experiment, rather than the Trial
+                    <div class="ui inverted message">
+                        Settings related to the Experiment, rather than the Trial
+                    </div>
                 {{/if}}
             </div>
         </div>
@@ -31,7 +35,7 @@
 </template>
 
 <template name="experimentMenu">
-    <div class="ui vertical fluid tabular menu">
+    <div class="ui inverted vertical fluid tabular menu">
         <a class="{{isActivePath regex='/run'}} item" href="{{link}}/run">
             Run Trial
         </a>
@@ -45,7 +49,7 @@
 </template>
 
 <template name="infoCard">
-    <div class="ui card">
+    <div class="ui centered card">
         <div class="image">
             <img src="https://placeimg.com/400/600/animals/grayscale">
         </div>

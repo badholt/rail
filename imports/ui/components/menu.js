@@ -17,7 +17,6 @@ Template.menu.onCreated(function () {
         this.experiments = function () {
             return Experiments.find({});
         };
-
-        this.subscribe('experiments.user');
+        this.subscribe('experiments.user', Meteor.userId());
     });
 });
