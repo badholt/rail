@@ -6,14 +6,14 @@ const pwd = AccountsTemplates.removeField('password');
 AccountsTemplates.removeField('email');
 AccountsTemplates.addFields([
     {
-        _id: 'box',
+        _id: 'device',
         type: 'radio',
         displayName: 'Account Type',
         required: true,
         select: [
             {
                 text: 'This account will be assigned to a training box.',
-                value: 'box',
+                value: 'device',
             }, {
                 text: 'This account will be assigned to an experimenter.',
                 value: 'user',

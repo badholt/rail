@@ -21,7 +21,7 @@ export const renderCross = function (settings) {
     });
 
     /** After Positioning Return Cross Visibility: */
-    cross.attr('fill', '#000');
+    cross.attr('fill', '#FFF');
 
     /** Clickable Cross Region: */
     region.attr('x', function () {

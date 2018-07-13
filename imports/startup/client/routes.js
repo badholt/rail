@@ -3,7 +3,7 @@ import '../../ui/layouts/frame';
 import '../../ui/pages/create';
 import '../../ui/pages/home';
 import '../../ui/pages/notFound';
-import '../../ui/pages/data';
+import '../../ui/components/data';
 import '../../ui/pages/trial';
 
 import {FlowRouter} from 'meteor/kadira:flow-router';

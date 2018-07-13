@@ -51,37 +51,33 @@ Template.trial.events({
     'click'(e) {
         /** Record trial events: */
         const event = collectEvent(e),
-            session = Template.instance().getSession(),
+            session = Template.instance().session(),
             stage = parseInt(Template.instance().getStage()) - 1,
             trial = Template.instance().trial(),
             total = Session.get('total');
         let number = Template.instance().getTrial();
 
         /** Update Trial record with data of response to stimuli: */
-        Meteor.call('updateTrial', number, event, session, stage);
+        Meteor.call('updateTrial', number, event, session._id, stage);
 
         /** Handle events during stimuli presentation: */
         if (stage === 1) {
-            //TODO: Audio cue
             if (correctEvent(e, trial.stages[stage])) {
                 //TODO: Reward port event
-                Meteor.call('mqttSend', 'mqtt://10.194.24.154', 'test', 'a trial event occurred');
-                Meteor.call('mqttSend', 'mqtt://10.194.30.243', 'test', 'a trial event occurred');
+                Meteor.call('mqttSend', session.device, 'test', 'a trial event occurred');
 
                 /** Proceed to next trial or exit: */
                 if (number < total) {
                     //TODO: Rethink Add Trial?  Move to fixation cross?
-                    Meteor.call('addTrial', trial.experiment, ++number, session, Session.get('stages')[1]);
-                    FlowRouter.go('/' + session + '/trial/' + number + '/stage/' + 1);
+                    Meteor.call('addTrial', trial.experiment, ++number, session._id, Session.get('stages')[1]);
+                    FlowRouter.go('/' + session._id + '/trial/' + number + '/stage/' + 1);
                 } else {
                     const experiment = Template.instance().experiment(trial),
                         link = (experiment) ? experiment.link + '/data' : '/';
                     FlowRouter.go(link);
                 }
             } else {
-                Meteor.call('mqttSend', 'mqtt://10.194.24.154', 'led1', {command: 'toggle'});
-                Meteor.call('mqttSend', 'mqtt://10.194.30.243', 'led1', {command: 'toggle'});
-                Meteor.call('mqttSend', 'mqtt://10.194.30.243', 'led2', {command: 'toggle'});
+                Meteor.call('mqttSend', session.device, 'led1', {command: 'toggle'});
             }
         }
     }

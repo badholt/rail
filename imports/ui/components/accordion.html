@@ -2,19 +2,41 @@
     <div class="ui fluid inverted accordion">
         <div class="active title">
             <i class="dropdown icon"></i>
-            Stimuli
+            Scheduling
         </div>
         <div class="active content">
+            {{> deviceForm}}
+        </div>
+
+        <div class="title">
+            <i class="dropdown icon"></i>
+            Stimuli
+        </div>
+        <div class="content">
             {{> stimuliForm}}
         </div>
-        <div class="active title">
+
+        <div class="title">
             <i class="dropdown icon"></i>
             Trials
         </div>
-        <div class="active content">
+        <div class="content">
             {{> trialsForm}}
         </div>
     </div>
+</template>
+
+<template name="deviceForm">
+    <form id="device-form" class="ui inverted form">
+        <div class="field">
+            <label>Device(s)</label>
+            <select multiple="" class="ui dropdown">
+                {{#each device}}
+                    <option value="{{status.lastLogin.ipAddr}}">{{profile.name}}</option>
+                {{/each}}
+            </select>
+        </div>
+    </form>
 </template>
 
 <template name="stimuliForm">

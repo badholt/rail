@@ -19,6 +19,10 @@ Meteor.publish('sessions.single', function (id) {
     return Sessions.find(id);
 });
 
+Meteor.publish('status.online', function () {
+    return Meteor.users.find({'status.online': true}, {fields: {profile: 1, status: 1}});
+});
+
 Meteor.publish('trials', function (id) {
     return Trials.find({experiment: id});
 });

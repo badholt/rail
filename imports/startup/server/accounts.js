@@ -17,7 +17,7 @@ Accounts.onCreateUser(function (profile, user) {
     const type = user.services;
     if (type.password) {
         user.profile = {
-            box: (profile.profile.box === 'box'),
+            device: (profile.profile.device === 'device'),
             // TODO: Remove email field for box users
             email: profile.email,
             name: profile.profile.name,
@@ -26,7 +26,7 @@ Accounts.onCreateUser(function (profile, user) {
         }
     } else if (type.google) {
         user.profile = {
-            box: false,
+            device: false,
             email: type.google.email,
             name: profile.profile.name,
             picture: type.google.picture,

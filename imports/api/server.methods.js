@@ -2,8 +2,7 @@ import './client.methods';
 
 import {Experiments, Sessions, Trials} from './collections';
 import {Meteor} from 'meteor/meteor';
-//import mqtt from 'mqtt';
-
+//TODO: Use mqtt imports instead of require?
 const mqtt = require('mqtt');
 
 if (Meteor.isServer) {
@@ -19,14 +18,16 @@ if (Meteor.isServer) {
                 users: [this.userId]
             });
         },
-        'addSession': function (experiment) {
+        'addSession': function (devices, experiment) {
+            const device = devices[0];
             return Sessions.insert({
                 date: new Date(),
+                device: 'mqtt://' + device,
                 experiment: experiment,
                 stimuli: 2,
                 subject: 'MouseID',
                 trials: [],
-                user: Meteor.user(),
+                user: Meteor.userId(),
             });
         },
         'addTrial': function (experiment, number, session, stage) {
@@ -51,7 +52,7 @@ if (Meteor.isServer) {
             });
         },
         'mqttSend': function (address, topic, message) {
-            let client = mqtt.connect(address);console.log(address);
+            const client = mqtt.connect(address);
             client.publish(topic, JSON.stringify(message));
         },
         'updateSession': function (session, trial) {

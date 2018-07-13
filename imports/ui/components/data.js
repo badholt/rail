@@ -1,9 +1,8 @@
-import './run.html';
-import '/imports/ui/components/data.html';
-import '/imports/ui/components/tablesort';
+import './data.html';
+import './tablesort';
 
 import {Template} from 'meteor/templating';
-import {Sessions, Trials} from '/imports/api/collections';
+import {Trials} from '/imports/api/collections';
 
 Template.clickList.helpers({
     stage() {

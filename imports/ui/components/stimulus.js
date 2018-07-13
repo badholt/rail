@@ -16,7 +16,7 @@ Template.bars.onRendered(function () {
         spacing = this.data.spacing,
         x = Session.get('center x') * 2 * ((this.data.location.x - 0.5) / this.data.grid.x),
         y = Session.get('center y') * 2 * ((this.data.location.y - 0.5) / this.data.grid.y);
-    console.log(this.data.location, this.data.height, this.data.width);
+    //console.log(this.data.location, this.data.height, this.data.width);
     /** Distribute Bars: */
     if (this.data.orientation.value === 0) {
         bars.attr('x', function (d, i) {
@@ -37,7 +37,7 @@ Template.bars.onRendered(function () {
     }
 
     /** After Positioning Bars Return Visibility: */
-    bars.attr('fill', 'rgba(0,0,0,' + opacity + ')');
+    bars.attr('fill', 'rgba(255,255,255,' + opacity + ')');
 
     /** Clickable Bars Region: */
     region.attr('height', function () {

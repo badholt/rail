@@ -12,7 +12,6 @@ function randomLocation(width, height, locations) {
 
 Meteor.methods({
     'generateStimuli': function (visuals) {
-        console.log('visuals: ', visuals);
         const n = visuals.length,
             locations = new Map(visuals[0]['grid.blacklist']),
             stimuli = [];
@@ -23,7 +22,6 @@ Meteor.methods({
                 stimulus = visuals[i],
                 span = stimulus.span,
                 weight = stimulus.weight;
-            console.log(orientation, weight, span);
 
             stimuli.push({
                 grid: stimulus.grid,
@@ -38,7 +36,6 @@ Meteor.methods({
             locations.set(JSON.stringify(location), true);
         }
 
-        console.log('stimuli: ', stimuli);
         return stimuli;
     }
 });
