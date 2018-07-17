@@ -1,5 +1,5 @@
 <template name="bare">
-    <div id="main-panel" class="bare frame">
+    <div id="main-panel" class="bare {{#if currentUser.profile.device}}nocturnal{{/if}} frame">
         {{> Template.dynamic template=main data=data}}
     </div>
 </template>

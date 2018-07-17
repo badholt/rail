@@ -6,7 +6,7 @@
 
 (function ($) {
     $.tablesort = function ($table, settings) {
-        var self = this;
+        let self = this;
         this.$table = $table;
         this.$thead = this.$table.find('thead');
         this.settings = $.extend({}, $.tablesort.defaults, settings);
@@ -22,7 +22,7 @@
     $.tablesort.prototype = {
 
         sort: function (th, direction) {
-            var start = new Date(),
+            let start = new Date(),
                 self = this,
                 table = this.$table,
                 rowsContainer = table.find('tbody').length > 0 ? table.find('tbody') : table,
@@ -31,7 +31,7 @@
                 sortBy = th.data().sortBy,
                 sortedMap = [];
 
-            var unsortedValues = cells.map(function (idx, cell) {
+            let unsortedValues = cells.map(function (idx, cell) {
                 if (sortBy)
                     return (typeof sortBy === 'function') ? sortBy($(th), $(cell), self) : sortBy;
                 return ($(this).data().sortValue != null ? $(this).data().sortValue : $(this).text());
@@ -48,7 +48,7 @@
             else
                 this.direction = direction;
 
-            direction = this.direction == 'asc' ? 1 : -1;
+            direction = this.direction === 'asc' ? 1 : -1;
 
             self.$table.trigger('tablesort:start', [self]);
             self.log("Sorting by " + this.index + ' ' + this.direction);
@@ -59,7 +59,7 @@
             // `tablesort:start` callback. Also avoids locking up the browser too much.
             setTimeout(function () {
                 self.$sortCells.removeClass(self.settings.asc + ' ' + self.settings.desc);
-                for (var i = 0, length = unsortedValues.length; i < length; i++) {
+                for (let i = 0, length = unsortedValues.length; i < length; i++) {
                     sortedMap.push({
                         index: i,
                         cell: cells[i],
@@ -117,7 +117,7 @@
     };
 
     $.fn.tablesort = function (settings) {
-        var table, sortable, previous;
+        let table, sortable, previous;
         return this.each(function () {
             table = $(this);
             previous = table.data('tablesort');

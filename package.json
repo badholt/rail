@@ -5,12 +5,13 @@
     "start": "meteor run"
   },
   "dependencies": {
-    "@babel/runtime": "^7.0.0-beta.51",
+    "@babel/runtime": "^7.0.0-beta.54",
     "bcrypt": "^2.0.1",
     "bufferutil": "^3.0.5",
     "howler": "^2.0.14",
+    "later": "^1.2.0",
     "meteor-node-stubs": "^0.3.2",
-    "mqtt": "^2.18.1",
+    "mqtt": "^2.18.2",
     "postcss": "^6.0.23",
     "postcss-easy-import": "^1.0.1",
     "postcss-load-config": "^1.2.0",

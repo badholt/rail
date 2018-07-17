@@ -4,7 +4,6 @@ import '../components/data';
 
 import {Experiments} from "../../api/collections";
 import {FlowRouter} from 'meteor/kadira:flow-router';
-import {Howl} from 'howler';
 import {Meteor} from 'meteor/meteor';
 import {Session} from 'meteor/session';
 import {Template} from 'meteor/templating';
@@ -12,23 +11,12 @@ import {Template} from 'meteor/templating';
 Template.experiment.events({
     'click button'() {
         const devices = $('#device-form .ui.dropdown').dropdown('get value'),
-            experiment = this._id,
-            stage = Session.get('stage'),
             stages = Session.get('stages'),
             trial = Session.get('trial');
 
-        Meteor.call('addSession', devices, experiment, function (error, session) {
-            if (!error) {
-                const tone = new Howl({
-                    preload: true,
-                    src: ['/audio/bell.wav']
-                });
-
-                Meteor.call('addTrial', experiment, trial, session, stages[1]);
-                FlowRouter.go('/' + session + '/trial/' + trial + '/stage/' + stage);
-
-                tone.play();
-            }
+        // TODO: Form validation
+        if (devices) Meteor.call('addSession', devices, this._id, function (error, session) {
+            if (!error) Meteor.call('addTrial', this._id, trial, session, stages[1]);
         });
     }
 });
@@ -50,8 +38,8 @@ Template.experiment.onCreated(function () {
             return Experiments.findOne({link: '/experiments/' + this.getLink()});
         };
 
-        this.subscribe('sessions', this.getExperiment(this.experiment()));
-        this.subscribe('status.online');
-        this.subscribe('trials', this.getExperiment(this.experiment()));
+        this.subscribe('sessions.experiment', this.getExperiment(this.experiment()));
+        this.subscribe('users.online');
+        this.subscribe('trials.experiment', this.getExperiment(this.experiment()));
     });
 });

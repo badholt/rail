@@ -68,7 +68,7 @@ Template.trial.events({
 
                 /** Proceed to next trial or exit: */
                 if (number < total) {
-                    //TODO: Rethink Add Trial?  Move to fixation cross?
+                    // TODO: Rethink Add Trial?  Move to fixation cross?
                     Meteor.call('addTrial', trial.experiment, ++number, session._id, Session.get('stages')[1]);
                     FlowRouter.go('/' + session._id + '/trial/' + number + '/stage/' + 1);
                 } else {

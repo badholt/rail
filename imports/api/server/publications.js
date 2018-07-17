@@ -12,20 +12,23 @@ Meteor.publish('experiments.user', function (id) {
 
 });
 
-Meteor.publish('sessions', function (id) {
+Meteor.publish('sessions.device', function (address) {
+    return Sessions.find({device: address});
+});
+Meteor.publish('sessions.experiment', function (id) {
     return Sessions.find({experiment: id});
 });
 Meteor.publish('sessions.single', function (id) {
     return Sessions.find(id);
 });
 
-Meteor.publish('status.online', function () {
-    return Meteor.users.find({'status.online': true}, {fields: {profile: 1, status: 1}});
-});
-
-Meteor.publish('trials', function (id) {
+Meteor.publish('trials.experiment', function (id) {
     return Trials.find({experiment: id});
 });
 Meteor.publish('trials.single', function (id) {
     return Trials.find({session: id});
+});
+
+Meteor.publish('users.online', function () {
+    return Meteor.users.find({'status.online': true}, {fields: {profile: 1, status: 1}});
 });

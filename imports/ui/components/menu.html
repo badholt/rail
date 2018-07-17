@@ -1,5 +1,5 @@
-<template name="menu">
-    <div class="ui {{#if currentUser.profile.device}}pink{{else}}inverted{{/if}} secondary stackable pointing menu">
+<template name="menu">{{status}}
+    <div class="ui {{#if currentUser.profile.device}}fade pink{{else}}inverted{{/if}} secondary stackable pointing menu">
         {{#if currentUser}}
             {{#unless currentUser.profile.device}}
                 <a class="ui animated button item" href="/create" tabindex="1">
@@ -13,6 +13,10 @@
                     <a class="{{isActivePath regex=url}} item" href="{{url}}/run" tabindex="0">
                         {{title}}
                     </a>
+                {{/each}}
+            {{else}}
+                {{#each session}}
+                    {{> sessionWindow}}
                 {{/each}}
             {{/unless}}
 
@@ -36,4 +40,11 @@
             </div>
         {{/if}}
     </div>
+</template>
+
+<template name="sessionWindow">
+    <a class="active item" href="{{url}}" tabindex="0">
+        <i class="inverted pink tag icon"></i>
+        {{subject}}
+    </a>
 </template>

@@ -1,6 +1,6 @@
 <template name="frame">
-    {{> menu}}
-    <div id="main-panel" class="frame">
+    <div id="main-panel" class="{{#if currentUser.profile.device}}nocturnal{{/if}} frame">
+        {{> menu}}
         {{> Template.dynamic template=main}}
     </div>
 </template>

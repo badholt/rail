@@ -1,7 +1,5 @@
 import {Meteor} from 'meteor/meteor';
 
-//import {MqttClient} from 'mqtt';
-
 function randomLocation(width, height, locations) {
     let x = _.random(1, width),
         y = _.random(1, height),
