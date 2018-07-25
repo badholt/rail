@@ -2,41 +2,30 @@ import './trial.html';
 import '/imports/ui/components/cross';
 import '/imports/ui/components/stimulus';
 
-import {Experiments, Sessions, Trials} from "../../api/collections";
+import {calculateCenter} from '../../api/client.methods';
+import {Experiments, Sessions, Trials} from '../../api/collections';
 import {FlowRouter} from 'meteor/kadira:flow-router';
 import {Meteor} from 'meteor/meteor';
-import {Session} from 'meteor/session';
 import {Template} from 'meteor/templating';
 
-const calculateCenter = function (height, width) {
-        this.x = Math.floor(width / 2);
-        this.y = Math.floor(height / 2);
-        return this;
-    },
-    collectEvent = function (e) {
+const collectEvent = (e) => {
         JSON.stringify(_.pick(e, 'clientX', 'clientY', 'timeStamp', 'screenX', 'screenY', 'target', 'type', 'which'),
             function (key, value) {
-                if (value instanceof Node) {
-                    return {
-                        classes: value.classList,
-                        id: value.id,
-                        parent: {
-                            classes: value.parentNode.classList,
-                            id: value.parentNode.id
-                        }
-                    };
-                } else if (value instanceof Window) {
-                    return 'Window';
-                } else {
-                    return value;
-                }
+                return (value instanceof Node) ? {
+                    classes: value.classList,
+                    id: value.id,
+                    parent: {
+                        classes: value.parentNode.classList,
+                        id: value.parentNode.id
+                    }
+                } : (value instanceof Window) ? 'Window' : value;
             }, ' ');
     },
-    correctEvent = function (e, stage) {
-        if (stage) {
-            const answer = (Session.get('center x') < e.clientX) ? 90 : 0,
-                visuals = stage.visuals[0];
-            if (visuals) return (visuals.orientation.value === answer);
+    correctEvent = (center, e, visuals) => {
+        console.log(center, e, visuals);
+        if (visuals) {
+            const answer = (center.x < e.clientX) ? 90 : 0;
+            return (visuals.orientation.value === answer);
         }
     };
 
@@ -45,36 +34,30 @@ Template.trial.events({
         const session = Template.instance().getSession(),
             trial = Template.instance().getTrial();
 
-        //Session.set('stage', 2);
         FlowRouter.go('/' + session + '/trial/' + trial + '/stage/' + 2);
     },
     'click'(e) {
         /** Record trial events: */
-        const event = collectEvent(e),
+        const center = Template.instance().center,
+            event = collectEvent(e),
             session = Template.instance().session(),
             stage = parseInt(Template.instance().getStage()) - 1,
-            trial = Template.instance().trial(),
-            total = Session.get('total');
-        let number = Template.instance().getTrial();
+            trial = Template.instance().trial();
+        let number = trial.number;
 
         /** Update Trial record with data of response to stimuli: */
         Meteor.call('updateTrial', number, event, session._id, stage);
 
         /** Handle events during stimuli presentation: */
         if (stage === 1) {
-            if (correctEvent(e, trial.stages[stage])) {
-                //TODO: Reward port event
-                Meteor.call('mqttSend', session.device, 'test', 'a trial event occurred');
-
+            if (correctEvent(center, e, trial.stages[stage].visuals[0])) {
                 /** Proceed to next trial or exit: */
-                if (number < total) {
-                    // TODO: Rethink Add Trial?  Move to fixation cross?
-                    Meteor.call('addTrial', trial.experiment, ++number, session._id, Session.get('stages')[1]);
+                if (number < session.settings.length) {
+                    // TODO: Rethink Add Trial?  Move to fixation cross?  Trial is duplicating previous
+                    Meteor.call('addTrial', ++number, session._id);
                     FlowRouter.go('/' + session._id + '/trial/' + number + '/stage/' + 1);
                 } else {
-                    const experiment = Template.instance().experiment(trial),
-                        link = (experiment) ? experiment.link + '/data' : '/';
-                    FlowRouter.go(link);
+                    FlowRouter.go('/');
                 }
             } else {
                 Meteor.call('mqttSend', session.device, 'led1', {command: 'toggle'});
@@ -85,13 +68,11 @@ Template.trial.events({
 
 Template.trial.helpers({
     crossSettings(stage) {
-        if (this.stages) {
-            const settings = this.stages[stage].visuals[0].cross,
-                cross = (stage === 0) ? 'responsive visible' : 'invisible',
-                region = (stage === 0) ? 'responsive' : 'unresponsive';
+        const settings = (this.stages) ? this.stages[stage].visuals[0].cross : '',
+            cross = (stage === 0) ? 'responsive visible' : 'invisible',
+            region = (stage === 0) ? 'responsive' : 'unresponsive';
 
-            return _.extend(settings, {cross: cross, region: region});
-        }
+        return _.extend(settings, {cross: cross, region: region});
     },
     stimuli(stage) {
         if (stage === 1) {
@@ -113,19 +94,20 @@ Template.trial.onCreated(function () {
     this.getTrial = () => parseInt(FlowRouter.getParam('trial'));
 
     this.autorun(() => {
-        this.getExperiment = function (session) {
+        this.center = calculateCenter($(document).height(), $(document).width());
+        this.getExperiment = (session) => {
             if (session && session.experiment) return session.experiment;
         };
-        this.experiment = function (trial) {
+        this.experiment = (trial) => {
             if (trial && trial.experiment) return Experiments.findOne(trial.experiment);
         };
-        this.session = function () {
+        this.session = () => {
             return Sessions.findOne(this.getSession())
         };
-        this.stage = function () {
+        this.stage = () => {
             return this.getStage();
         };
-        this.trial = function () {
+        this.trial = () => {
             return Trials.findOne({number: this.getTrial(), session: this.getSession()});
         };
 
@@ -133,8 +115,4 @@ Template.trial.onCreated(function () {
         this.subscribe('trials.single', this.getSession());
         this.subscribe('experiments.single', this.getExperiment(this.session()));
     });
-
-    let center = calculateCenter($(document).height(), $(document).width());
-    Session.set('center x', center.x);
-    Session.set('center y', center.y);
 });

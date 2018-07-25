@@ -17,9 +17,6 @@
             <div class="ui nine wide column">
                 {{#if isActivePath regex='/run'}}
                     {{> accordion}}
-
-                    <div class="ui divider"></div>
-                    <button class="ui black fluid button" type="submit">Run</button>
                 {{/if}}
                 {{#if isActivePath regex='/data'}}
                     {{> data}}

@@ -1,10 +1,18 @@
 import './stimulus.html';
 
-import {Session} from 'meteor/session';
+import {calculateCenter} from '../../api/client.methods';
 import {Template} from 'meteor/templating';
 
+Template.bars.onCreated(function () {
+    this.autorun(() => {
+        this.center = calculateCenter($(document).height(), $(document).width());
+    });
+});
+
 Template.bars.onRendered(function () {
-    let group = d3.select('#stimulus-at-' + this.data.location.x + '-' + this.data.location.y),
+    console.log(this, Template.instance());
+    let center = Template.instance().center,
+        group = d3.select('#stimulus-at-' + this.data.location.x + '-' + this.data.location.y),
         bars = group.selectAll('.bar'),
         region = group.selectAll('.region');
 
@@ -14,42 +22,24 @@ Template.bars.onRendered(function () {
         n = bars.size(),
         opacity = this.data.opacity,
         spacing = this.data.spacing,
-        x = Session.get('center x') * 2 * ((this.data.location.x - 0.5) / this.data.grid.x),
-        y = Session.get('center y') * 2 * ((this.data.location.y - 0.5) / this.data.grid.y);
-    //console.log(this.data.location, this.data.height, this.data.width);
+        x = center.x * 2 * ((this.data.location.x - 0.5) / this.data.grid.x),
+        y = center.y * 2 * ((this.data.location.y - 0.5) / this.data.grid.y);
+
     /** Distribute Bars: */
     if (this.data.orientation.value === 0) {
-        bars.attr('x', function (d, i) {
-            return x - (width / 2);
-        });
-
-        bars.attr('y', function (d, i) {
-            return i < n / 2 ? y - (i + 0.5) * height * spacing : y + (i - 1.5) * height * spacing;
-        });
+        bars.attr('x', (d, i) => x - (width / 2));
+        bars.attr('y', (d, i) => i < n / 2 ? y - (i + 0.5) * height * spacing : y + (i - 1.5) * height * spacing);
     } else {
-        bars.attr('x', function (d, i) {
-            return i < n / 2 ? x - (i + 0.5) * width * spacing : x + (i - 1.5) * width * spacing;
-        });
-
-        bars.attr('y', function (d, i) {
-            return y - (height / 2);
-        });
+        bars.attr('x', (d, i) => i < n / 2 ? x - (i + 0.5) * width * spacing : x + (i - 1.5) * width * spacing);
+        bars.attr('y', (d, i) => y - (height / 2));
     }
 
     /** After Positioning Bars Return Visibility: */
     bars.attr('fill', 'rgba(255,255,255,' + opacity + ')');
 
     /** Clickable Bars Region: */
-    region.attr('height', function () {
-        return max;
-    });
-    region.attr('width', function () {
-        return max;
-    });
-    region.attr('x', function () {
-        return x - (max / 2);
-    });
-    region.attr('y', function () {
-        return y - (max / 2);
-    });
+    region.attr('height', () => max);
+    region.attr('width', () => max);
+    region.attr('x', () => x - (max / 2));
+    region.attr('y', () => y - (max / 2));
 });

@@ -13,7 +13,9 @@
             Stimuli
         </div>
         <div class="content">
-            {{> stimuliForm}}
+            {{#with stimuli}}
+                {{> stimuliForm}}
+            {{/with}}
         </div>
 
         <div class="title">
@@ -21,8 +23,12 @@
             Trials
         </div>
         <div class="content">
-            {{> trialsForm}}
+            {{#with trials}}
+                {{> trialsForm}}
+            {{/with}}
         </div>
+        <div class="ui divider"></div>
+        <button class="ui black fluid button" type="submit">Run</button>
     </div>
 </template>
 
@@ -43,7 +49,7 @@
     <form id="stimuli-form" class="ui inverted form">
         <div class="field">
             <label>No. of Stimuli</label>
-            <input type="number" name="number" placeholder="#1+" value="{{$.Session.get 'stimuli'}}">
+            <input type="number" name="number" placeholder="#1+" value="{{number}}">
         </div>
     </form>
 </template>
@@ -52,7 +58,7 @@
     <form id="trials-form" class="ui inverted form">
         <div class="field">
             <label>No. of Trials</label>
-            <input type="number" name="number" placeholder="#1+" value="{{$.Session.get 'total'}}">
+            <input type="number" name="total" placeholder="#1+" value="{{total}}">
         </div>
     </form>
 </template>

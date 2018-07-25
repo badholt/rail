@@ -4,53 +4,66 @@ import {FlowRouter} from 'meteor/kadira:flow-router';
 import {Meteor} from 'meteor/meteor';
 import {Template} from 'meteor/templating';
 
+const submitForm = (form) => {
+    const devices = $('#device-form .ui.dropdown').dropdown('get value');
+    if (devices) Meteor.call('generateSettings', form.trials.total, form.stimuli.number, (error, result) => {
+        if (!error) Meteor.call('addSession', devices, form.data._id, form.trials.total, result, (error, session) => {
+            if (!error) Meteor.call('addTrial', 1, session);
+        });
+    });
+};
+
 Template.accordion.events({
-    'input #stimuli-form input'(event) {
-        // const target = event.target || event.srcElement,
-        //     value = parseInt($('#stimuli-form').form('get value', target.name));
-        //
-        // switch (target.name) {
-        //     case 'number':
-        //         let stages = [{data: [], visuals: []}, {data: [], visuals: []}];
-        //
-        //         for (let i = 0; i < value; i++) {
-        //             stages[1].visuals.push({
-        //                 grid: {
-        //                     blacklist: [
-        //                         [JSON.stringify({x: 1, y: 1}), true],
-        //                         [JSON.stringify({x: 1, y: 2}), true],
-        //                         [JSON.stringify({x: 1, y: 3}), true],
-        //                         [JSON.stringify({x: 2, y: 3}), true],
-        //                         [JSON.stringify({x: 3, y: 1}), true],
-        //                         [JSON.stringify({x: 3, y: 2}), true],
-        //                         [JSON.stringify({x: 3, y: 3}), true],
-        //                     ],
-        //                     x: 3, y: 3
-        //                 }, opacity: 1, spacing: 3, span: 300, weight: 10
-        //             });
-        //         }
-        //
-        //         Session.set('stages', stages);
-        //         Session.set('stimuli', value);
-        //         break;
-        // }
+    'click button'() {
+        submitForm(Template.instance());
     },
-    'input #trials-form input'(event) {
-        // const target = event.target || event.srcElement,
-        //     value = $('#trials-form').form('get value', target.name);
-        //
-        // switch (target.name) {
-        //     case 'number':
-        //         Session.set('total', parseInt(value));
-        //         break;
-        // }
+    'input input'(event) {
+        const form = Template.instance(),
+            target = event.target || event.srcElement,
+            value = parseInt($('#' + target.form.id).form('get value', target.name));
+
+        switch (target.name) {
+            case 'number':
+                Meteor.call('generateStages', value, (err, result) => {
+                    if (!err) form.stages = result;
+                    form.stimuli[target.name] = value;
+                });
+                break;
+            case 'total':
+                form.trials[target.name] = parseInt(value);
+                break;
+        }
+    },
+    'submit .form'(event) {
+        event.preventDefault();
+        submitForm(Template.instance());
     }
 });
 
-Template.accordion.onRendered(function () {
-    $('.ui.accordion').accordion({
-        exclusive: false
+Template.accordion.helpers({
+    stimuli() {
+        return Template.instance().stimuli;
+    },
+    trials() {
+        return Template.instance().trials;
+    }
+});
+
+Template.accordion.onCreated(function () {
+    let form = this;
+    form.stimuli = {
+        number: 2
+    };
+    form.trials = {
+        total: 5
+    };
+    Meteor.call('generateStages', form.stimuli.number, (err, result) => {
+        if (!err) return form.stages = result;
     });
+});
+
+Template.accordion.onRendered(function () {
+    $('.ui.accordion').accordion({exclusive: false});
 });
 
 Template.deviceForm.helpers({
