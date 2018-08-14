@@ -9,16 +9,16 @@ if (Meteor.isServer) Meteor.methods({
     'addExperiment': (experiment) => {
         return Experiments.insert({
             investigator: {
-                id: this.userId,
+                id: Meteor.userId(),
                 name: {first: experiment['investigator-first'], last: experiment['investigator-last']}
             },
             link: '/experiments/' + experiment.title.replace(/( )|(\W)/g, '-'),
             title: experiment.title,
-            users: [this.userId]
+            users: [Meteor.userId()]
         });
     },
-    'addSession': (devices, experiment, length, settings) => {
-        const device = devices[0];
+    'addSession': (device, experiment, length, settings) => {
+        // const device = devices[0];
         return Sessions.insert({
             date: new Date(),
             device: 'mqtt://' + device,
@@ -31,10 +31,11 @@ if (Meteor.isServer) Meteor.methods({
     },
     'addTrial': (number, id) => {
         const session = Sessions.findOne(id),
-            settings = session.settings[number - 1];
+            settings = session.settings[number - 1],
+            stage = 1;
 
         /** Randomly generate stimuli within specified session parameters: */
-        if (settings) Meteor.call('generateStimuli', settings[1], function (error, result) {
+        if (settings) Meteor.call('generateStimuli', settings[stage], (error, result) => {
             if (!error) {
                 const trial = Trials.insert({
                     date: new Date(),
@@ -57,6 +58,16 @@ if (Meteor.isServer) Meteor.methods({
         const client = mqtt.connect(address);
         client.publish(topic, JSON.stringify(message));
     },
+    'updateExperiment': (experiment, values) => {
+        const users = Meteor.users.find({'profile.username': {$in: values.users}}).fetch(),
+            ids = _.pluck(users, '_id');
+
+        Experiments.update(experiment, {
+            $set: {
+                users: ids
+            }
+        });
+    },
     'updateSession': (session, trial) => {
         Sessions.update(session, {
             $currentDate: {
@@ -77,5 +88,10 @@ if (Meteor.isServer) Meteor.methods({
                     ['stages.' + stage + '.data']: JSON.parse(response)
                 }
             }, {multi: true});
+    },
+    'updateUser': (username, id) => {
+        Meteor.users.update({'profile.username': username}, {
+            $push: {'profile.experiments': id}
+        });
     }
 });

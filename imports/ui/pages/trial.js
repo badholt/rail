@@ -8,7 +8,7 @@ import {FlowRouter} from 'meteor/kadira:flow-router';
 import {Meteor} from 'meteor/meteor';
 import {Template} from 'meteor/templating';
 
-const collectEvent = (e) => {
+const collectEvent = (e) =>
         JSON.stringify(_.pick(e, 'clientX', 'clientY', 'timeStamp', 'screenX', 'screenY', 'target', 'type', 'which'),
             function (key, value) {
                 return (value instanceof Node) ? {
@@ -19,10 +19,8 @@ const collectEvent = (e) => {
                         id: value.parentNode.id
                     }
                 } : (value instanceof Window) ? 'Window' : value;
-            }, ' ');
-    },
+            }, ' '),
     correctEvent = (center, e, visuals) => {
-        console.log(center, e, visuals);
         if (visuals) {
             const answer = (center.x < e.clientX) ? 90 : 0;
             return (visuals.orientation.value === answer);
@@ -31,10 +29,24 @@ const collectEvent = (e) => {
 
 Template.trial.events({
     'click #fixation-cross.responsive'() {
-        const session = Template.instance().getSession(),
-            trial = Template.instance().getTrial();
+        const session = Template.instance().session(),
+            number = Template.instance().trial().number,
+            stage = 1,
+            delay = session.settings[number - 1][stage][0].delay,
+            duration = session.settings[number - 1][stage][0].duration;
 
-        FlowRouter.go('/' + session + '/trial/' + trial + '/stage/' + 2);
+        setTimeout(() => {
+            FlowRouter.go('/' + session._id + '/trial/' + number + '/stage/' + 2);
+            setTimeout(() => {
+                if (number < session.settings.length) {
+                    // TODO: Rethink Add Trial?  Move to fixation cross?  Trial is duplicating previous
+                    Meteor.call('addTrial', (number + 1), session._id);
+                    FlowRouter.go('/' + session._id + '/trial/' + (number + 1) + '/stage/' + 1);
+                } else {
+                    FlowRouter.go('/');
+                }
+            }, duration);
+        }, delay);
     },
     'click'(e) {
         /** Record trial events: */
@@ -52,13 +64,13 @@ Template.trial.events({
         if (stage === 1) {
             if (correctEvent(center, e, trial.stages[stage].visuals[0])) {
                 /** Proceed to next trial or exit: */
-                if (number < session.settings.length) {
-                    // TODO: Rethink Add Trial?  Move to fixation cross?  Trial is duplicating previous
-                    Meteor.call('addTrial', ++number, session._id);
-                    FlowRouter.go('/' + session._id + '/trial/' + number + '/stage/' + 1);
-                } else {
-                    FlowRouter.go('/');
-                }
+                // if (number < session.settings.length) {
+                //     // TODO: Rethink Add Trial?  Move to fixation cross?  Trial is duplicating previous
+                //     Meteor.call('addTrial', ++number, session._id);
+                //     FlowRouter.go('/' + session._id + '/trial/' + number + '/stage/' + 1);
+                // } else {
+                //     FlowRouter.go('/');
+                // }
             } else {
                 Meteor.call('mqttSend', session.device, 'led1', {command: 'toggle'});
             }
@@ -111,8 +123,25 @@ Template.trial.onCreated(function () {
             return Trials.findOne({number: this.getTrial(), session: this.getSession()});
         };
 
+        this.subscribe('experiments.single', this.getExperiment(this.session()));
         this.subscribe('sessions.single', this.getSession());
         this.subscribe('trials.single', this.getSession());
-        this.subscribe('experiments.single', this.getExperiment(this.session()));
     });
+});
+
+Template.trial.onRendered(function () {
+    const session = Template.instance().session(),
+        number = Template.instance().trial().number,
+        stage = 1,
+        iti = session.settings[number - 1][stage][0].iti;
+
+    setTimeout(() => {
+        if (number < session.settings.length) {
+            // TODO: Rethink Add Trial?  Move to fixation cross?  Trial is duplicating previous
+            Meteor.call('addTrial', (number + 1), session._id);
+            FlowRouter.go('/' + session._id + '/trial/' + (number + 1) + '/stage/' + 1);
+        } else {
+            FlowRouter.go('/');
+        }
+    }, iti);
 });

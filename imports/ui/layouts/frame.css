@@ -4,8 +4,22 @@ body, html {
 }
 
 /**------ IDs: ------*/
+#blacklist {
+    margin: 1em 0 !important;
+}
+
+#blacklist > .row > .blue.column {
+    -webkit-border-radius: 0.1em;
+    -moz-border-radius: 0.1em;
+    border-radius: 0.1em;
+    margin-top: 0em;
+    margin-bottom: 0em;
+}
+
 #main-panel {
     background: #222;
+    height: 100%;
+    overflow: auto;
 }
 
 #main-panel.nocturnal {
@@ -20,6 +34,11 @@ body, html {
 
 .fade:hover {
     opacity: 1;
+}
+
+.ui.inverted.transparent input[type="number"] {
+    color: white !important;
+    text-align: center;
 }
 
 .ui.vertical.tabular.menu .active.item {

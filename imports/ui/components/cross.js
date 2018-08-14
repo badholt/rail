@@ -38,6 +38,5 @@ Template.cross.onCreated(function () {
 });
 
 Template.cross.onRendered(function () {
-    console.log(this, Template.instance());
     renderCross(this.data);
 });

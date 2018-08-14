@@ -1,8 +1,11 @@
 import './data.html';
+import './profile.html';
+import './profile';
 import './tablesort';
 
+import {Meteor} from 'meteor/meteor';
 import {Template} from 'meteor/templating';
-import {Trials} from '/imports/api/collections';
+import {Sessions, Trials} from '/imports/api/collections';
 
 Template.clickList.helpers({
     stage() {
@@ -19,9 +22,21 @@ Template.data.helpers({
 });
 
 Template.data.onCreated(function () {
-    console.log(this);
+    this.autorun(() => {
+        /** Subscribe to devices and authorized users: */
+        this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': true}]});
+    });
 });
 
 Template.data.onRendered(function () {
     $('table').tablesort();
+});
+
+Template.sessionList.helpers({
+    box(address) {
+        return Meteor.users.findOne({'profile.address': address.replace('mqtt://', ''), 'profile.device': true});
+    },
+    session() {
+        return Sessions.find({experiment: this._id});
+    }
 });

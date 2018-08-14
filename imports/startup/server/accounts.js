@@ -21,7 +21,7 @@ Accounts.onCreateUser(function (profile, user) {
             device: false,
             email: profile.email || type.google.email,
             name: profile.profile.name,
-            picture: type.google.picture || '',
+            picture: (type.google) ? type.google.picture : '',
             username: profile.username || type.google.email
         };
     } else {

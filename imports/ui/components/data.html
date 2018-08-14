@@ -1,27 +1,5 @@
 <template name="data">
-    <table class="ui very basic inverted sortable celled table">
-        <thead>
-        <tr>
-            <th class="sorted">Subject</th>
-            <th class="sorted">Date</th>
-            <th class="sorted">Number</th>
-            <th class="sorted">Clicks</th>
-        </tr>
-        </thead>
-
-        <tbody>
-        {{#each trials}}
-            <tr>
-                <td>{{subject}}</td>
-                <td class="collapsible">{{date}}</td>
-                <td>{{number}}</td>
-                <td>
-                    {{>clickList}}
-                </td>
-            </tr>
-        {{/each}}
-        </tbody>
-    </table>
+    {{> sessionList}}
 </template>
 
 <template name="clickList">
@@ -37,4 +15,52 @@
             </div>
         {{/each}}
     </div>
+</template>
+
+<template name="sessionList">
+    <h2 class="ui inverted breadcrumb header">
+        <i class="inverted grey calendar icon divider"></i>
+        <div class="section">Sessions</div>
+        <i class="inverted grey right chevron icon divider"></i>
+    </h2>
+
+    <table class="ui very basic inverted sortable celled table">
+        <thead>
+        <tr>
+            <th class="sorted">Subject</th>
+            <th class="sorted">Date & Time</th>
+            <th class="sorted">Device</th>
+            <th class="sorted">User</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        {{#each session}}
+            <tr>
+                <td class="selectable">
+                    <a>{{subject}}</a>
+                </td>
+                <td class="collapsible selectable">
+                    <a>
+                        <i class="calendar icon"></i>{{formatDate date 'MMMM Do'}}
+                        <i class="stopwatch icon"></i>{{formatDate date 'HH:mm'}} - {{formatDate lastModified 'HH:mm'}}
+                    </a>
+                </td>
+                <td class="selectable">
+                    <a>
+                        {{#with box device}}
+                            <i class='{{#if status.online}}green{{else}}red{{/if}} cube icon'></i>
+                            {{profile.name}}
+                        {{/with}}
+                    </a>
+                </td>
+                <td class="selectable">
+                    <a>
+                        {{> profileAvatar user}}
+                    </a>
+                </td>
+            </tr>
+        {{/each}}
+        </tbody>
+    </table>
 </template>

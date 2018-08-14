@@ -1,6 +1,7 @@
 import '../../ui/layouts/bare';
 import '../../ui/layouts/frame';
 import '../../ui/pages/create';
+import '../../ui/pages/experiment';
 import '../../ui/pages/home';
 import '../../ui/pages/notFound';
 import '../../ui/components/data';

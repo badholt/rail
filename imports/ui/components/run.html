@@ -1,0 +1,200 @@
+<template name="accordion">
+    <div class="ui fluid inverted accordion">
+        <div class="active title">
+            <i class="dropdown icon"></i>
+            Scheduling
+        </div>
+        <div class="active content">
+            {{> deviceForm}}
+        </div>
+
+        <div class="active title">
+            <i class="dropdown icon"></i>
+            Stimuli
+        </div>
+        <div class="active content">
+            {{#with stimuli}}
+                {{> stimuliForm}}
+            {{/with}}
+        </div>
+
+        <div class="title">
+            <i class="dropdown icon"></i>
+            Trials
+        </div>
+        <div class="content">
+            {{#with trials}}
+                {{> trialsForm}}
+            {{/with}}
+        </div>
+
+        <div class="ui divider"></div>
+        <button class="ui black fluid button" type="submit">Run</button>
+    </div>
+</template>
+
+<template name="deviceForm">
+    <form id="device-form" class="ui inverted form">
+        <div class="field">
+            <label>Device(s)</label>
+            <select class="ui black labels multiple search selection dropdown"
+                    multiple>
+                {{#each device}}
+                    <option value="{{status.lastLogin.ipAddr}}">{{profile.name}}</option>
+                {{/each}}
+            </select>
+        </div>
+    </form>
+</template>
+
+<template name="stimuliForm">
+    <form id="stimuli-form" class="ui inverted form">
+        <div class="field">
+            <label>No. of Stimuli</label>
+            <input type="number" name="number" placeholder="#1+" value="{{number}}">
+        </div>
+
+        {{#each range 0 number 1}}
+            {{> stimulusForm index=index order=order visuals=(visuals index)}}
+        {{/each}}
+    </form>
+</template>
+
+<template name="stimulusForm">
+    <form id="stimulus-form-{{order}}" class="ui inverted form">
+        <label class="ui big blue ribbon label">Stimulus {{order}}</label>
+
+        <h5 class="blue header inverted sub ui">
+            <i class="right chevron icon"></i>
+            Grid
+        </h5>
+        {{> blacklist columns=visuals.grid.x rows=visuals.grid.y stimulus=index}}
+        <div class="three fields">
+            <div class="field">
+                <div class="ui inverted transparent input">
+                    <div class="ui blue right pointing label">
+                        columns
+                    </div>
+                    <input type="number" name="grid-x" placeholder="#"
+                           value="{{visuals.grid.x}}">
+                </div>
+            </div>
+            <div class="field">
+                <div class="ui inverted transparent input">
+                    <div class="ui blue right pointing label">
+                        rows
+                    </div>
+                    <input type="number" name="grid-y" placeholder="#"
+                           value="{{visuals.grid.y}}">
+                </div>
+            </div>
+            <div class="inline field">
+                <div id="grid-dynamic" class="ui checked toggle checkbox">
+                    <input id="grid-dynamic-{{order}}" checked type="checkbox" tabindex="0" class="hidden">
+                    <label for="grid-dynamic-{{order}}">
+                        {{#if checked 'grid'}}
+                            <span class="ui blue inverted sub header">Variable</span>
+                        {{else}}
+                            <span class="ui blue inverted sub header">Fixed</span>
+                        {{/if}}
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <h5 class="blue header inverted sub ui">
+            <i class="right chevron icon"></i>
+            Color
+        </h5>
+        <div class="inline fields">
+            {{#if checked 'contrast'}}
+                <div class="field">
+                    <label>Contrast Min</label>
+                    <input type="number" name="min"
+                           placeholder="#" step="0.01" value="0">
+                </div>
+                <div class="field">
+                    <label>Contrast Max</label>
+                    <input type="number" name="contrast"
+                           placeholder="#" step="0.01" value="{{visuals.contrast}}">
+                </div>
+                <div class="field">
+                    <label>Step Size</label>
+                    <input type="number" name="step"
+                           placeholder="#" step="0.01" value="0.1">
+                </div>
+            {{else}}
+                <div class="field">
+                    <label>Contrast</label>
+                    <input type="number" name="contrast"
+                           placeholder="#" step="0.01" value="{{visuals.contrast}}">
+                </div>
+            {{/if}}
+            <div class="field">
+                <div id="contrast-dynamic" class="ui toggle checkbox">
+                    <input id="contrast-dynamic-{{order}}" type="checkbox" tabindex="0" class="hidden">
+                    <label for="contrast-dynamic-{{order}}">
+                        {{#if checked 'contrast'}}
+                            <span class="ui blue inverted sub header">Variable</span>
+                        {{else}}
+                            <span class="ui blue inverted sub header">Fixed</span>
+                        {{/if}}
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <h5 class="blue header inverted sub ui">
+            <i class="right chevron icon"></i>
+            Size
+        </h5>
+        <div class="fields">
+            <div class="field">
+                <label>Spacing</label>
+                <input type="number" name="spacing"
+                       placeholder="#" value="{{visuals.spacing}}">
+            </div>
+            <div class="field">
+                <label>Span</label>
+                <input type="number" name="span"
+                       placeholder="#" value="{{visuals.span}}">
+            </div>
+            <div class="field">
+                <label>Weight</label>
+                <input type="number" name="weight"
+                       placeholder="#" value="{{visuals.weight}}">
+            </div>
+        </div>
+
+        <h5 class="blue header inverted sub ui">
+            <i class="right chevron icon"></i>
+            Timing
+        </h5>
+        <div class="fields">
+            <div class="field">
+                <label>Delay</label>
+                <input type="number" name="delay"
+                       placeholder="#" value="{{visuals.delay}}">
+            </div>
+            <div class="field">
+                <label>Stimulus Duration</label>
+                <input type="number" name="duration"
+                       placeholder="#" value="{{visuals.duration}}">
+            </div>
+            <div class="field">
+                <label>Intertrial Interval (ITI)</label>
+                <input type="number" name="iti"
+                       placeholder="#" value="{{visuals.iti}}">
+            </div>
+        </div>
+    </form>
+</template>
+
+<template name="trialsForm">
+    <form id="trials-form" class="ui inverted form">
+        <div class="field">
+            <label>No. of Trials</label>
+            <input type="number" name="total" placeholder="#1+" value="{{total}}">
+        </div>
+    </form>
+</template>

@@ -1,0 +1,48 @@
+<template name="experiment">
+    {{#with info}}
+        <div class="ui divided inverted padded stackable grid">
+            <div class="ui three wide column">
+                {{> experimentMenu}}
+                {{> infoCard}}
+            </div>
+
+            <div class="ui nine wide column">
+                {{#if isActivePath regex='/run'}}
+                    {{> accordion}}
+                {{/if}}
+                {{#if isActivePath regex='/data'}}
+                    {{> data}}
+                {{/if}}
+                {{#if isActivePath regex='/settings'}}
+                    {{> settingsForm}}
+                {{/if}}
+            </div>
+        </div>
+    {{/with}}
+</template>
+
+<template name="experimentMenu">
+    <div class="ui inverted vertical fluid tabular menu">
+        <a id="run" class="{{isActivePath regex='/run'}} item" href="{{link}}/run">
+            Run Trial
+        </a>
+        <a id="data" class="{{isActivePath regex='/data'}} item" href="{{link}}/data">
+            View Data
+        </a>
+        <a id="settings" class="{{isActivePath regex='/settings'}} item" href="{{link}}/settings">
+            Settings
+        </a>
+    </div>
+</template>
+
+<template name="infoCard">
+    <div class="ui centered card">
+        <div class="image">
+            <img src="https://placeimg.com/400/600/animals/grayscale">
+        </div>
+        <div class="content">
+            <div class="meta">Investigator</div>
+            <div class="header">{{investigator.name.first}}, {{investigator.name.last}}</div>
+        </div>
+    </div>
+</template>

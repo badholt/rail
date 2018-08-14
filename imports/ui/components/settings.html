@@ -1,0 +1,16 @@
+<template name="settingsForm">
+    <form id="settings-form" class="ui inverted form">
+        <div class="field">
+            <label>Authorized Users</label>
+            <select class="ui black labels multiple search selection dropdown"
+                    multiple
+                    name="users">
+                {{#each user}}
+                    <option {{selected}} value="{{profile.username}}">{{profile.name}}</option>
+                {{/each}}
+            </select>
+        </div>
+        <div class="ui divider"></div>
+        <button class="ui black fluid button" type="submit">Save</button>
+    </form>
+</template>

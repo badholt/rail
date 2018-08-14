@@ -1,8 +1,9 @@
-<template name="menu">{{status}}
-    <div class="ui {{#if currentUser.profile.device}}fade pink{{else}}inverted{{/if}} secondary stackable pointing menu">
+<template name="menu">
+    <div class="ui {{#if
+            currentUser.profile.device}}fade pink{{else}}inverted{{/if}} secondary stackable pointing menu">
         {{#if currentUser}}
             {{#unless currentUser.profile.device}}
-                <a class="ui animated button item" href="/create" tabindex="1">
+                <a id="create" class="ui animated button item" href="/create" tabindex="1">
                     <div class="visible content">
                         <i class="plus icon"></i>
                     </div>
@@ -10,7 +11,7 @@
                 </a>
 
                 {{#each experiment}}
-                    <a class="{{isActivePath regex=url}} item" href="{{url}}/run" tabindex="0">
+                    <a class="{{isActivePath regex=link}} item" href="{{link}}{{tabs _id}}" tabindex="0">
                         {{title}}
                     </a>
                 {{/each}}
@@ -21,20 +22,8 @@
             {{/unless}}
 
             <div class="right menu">
-                <a class="{{isActiveRoute 'home'}} ui item" href="/" tabindex="2">
-                    {{#if currentUser.profile.picture}}
-                        <div class="ui avatar image">
-                            <img src="{{currentUser.profile.picture}}">
-                        </div>
-                    {{else}}
-                        <div class="ui inverted tiny header">
-
-                            <i class="{{#if currentUser.profile.device}}cube{{else}}user{{/if}} icon"></i>
-                            <div class="content">
-                                {{currentUser.profile.name}}
-                            </div>
-                        </div>
-                    {{/if}}
+                <a id="home" class="{{isActiveRoute 'home'}} ui item" href="/" tabindex="2">
+                    {{> profileAvatar currentUser._id}}
                 </a>
                 {{> atNavButton}}
             </div>
@@ -43,7 +32,7 @@
 </template>
 
 <template name="sessionWindow">
-    <a class="active item" href="{{url}}" tabindex="0">
+    <a class="active item" href="{{link}}" tabindex="0">
         <i class="inverted pink tag icon"></i>
         {{subject}}
     </a>

@@ -10,9 +10,12 @@ Template.bars.onCreated(function () {
 });
 
 Template.bars.onRendered(function () {
-    console.log(this, Template.instance());
     let center = Template.instance().center,
-        group = d3.select('#stimulus-at-' + this.data.location.x + '-' + this.data.location.y),
+        location = {
+            x: this.data.location.x - 1,
+            y: this.data.location.y - 1
+        },
+        group = d3.select('#stimulus-at-' + location.x + '-' + location.y),
         bars = group.selectAll('.bar'),
         region = group.selectAll('.region');
 
@@ -22,8 +25,8 @@ Template.bars.onRendered(function () {
         n = bars.size(),
         opacity = this.data.opacity,
         spacing = this.data.spacing,
-        x = center.x * 2 * ((this.data.location.x - 0.5) / this.data.grid.x),
-        y = center.y * 2 * ((this.data.location.y - 0.5) / this.data.grid.y);
+        x = center.x * 2 * ((location.x - 0.5) / this.data.grid.x),
+        y = center.y * 2 * ((location.y - 0.5) / this.data.grid.y);
 
     /** Distribute Bars: */
     if (this.data.orientation.value === 0) {

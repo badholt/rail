@@ -1,15 +1,21 @@
+import _ from 'underscore';
+
 import {Meteor} from 'meteor/meteor';
 
 export const calculateCenter = (height, width) => ({
-    x: Math.floor(width / 2),
-    y: Math.floor(height / 2)
-}), randomLocation = (width, height, locations) => {
-    let x = _.random(1, width),
-        y = _.random(1, height),
-        location = {x: x, y: y};
-
-    return (locations.get(JSON.stringify(location))) ? randomLocation(width, height, locations) : location;
-};
+        x: Math.floor(width / 2),
+        y: Math.floor(height / 2)
+    }),
+    randomLocation = (width, height, locations) => {
+        const x = _.random(1, width),
+            y = _.random(1, height),
+            location = {x: x, y: y},
+            key = JSON.stringify(location);
+        return !(locations.get(key)) ? location : randomLocation(width, height, locations);
+    },
+    randomIndex = (values) => {
+        return values[_.random(0, values.length - 1)];
+    };
 
 Meteor.methods({
     'calculateCenter': (height, width) => ({
@@ -27,35 +33,38 @@ Meteor.methods({
             settings = [];
 
         /** Add settings for each stimulus within a stage: */
-        for (let i = 0; i < stimuli; i++) {
+        stimuli.visuals.forEach((value) => {
+            const blacklist = _.map(value.grid.blacklist, (coordinate) => (
+                [JSON.stringify({x: coordinate.x, y: coordinate.y}), coordinate.blacklist])
+            );
+            console.log(blacklist);
             stages[1].push({
+                delay: value.delay,
+                duration: value.duration,
                 grid: {
-                    blacklist: [
-                        [JSON.stringify({x: 1, y: 1}), true],
-                        [JSON.stringify({x: 1, y: 2}), true],
-                        [JSON.stringify({x: 1, y: 3}), true],
-                        [JSON.stringify({x: 2, y: 3}), true],
-                        [JSON.stringify({x: 3, y: 1}), true],
-                        [JSON.stringify({x: 3, y: 2}), true],
-                        [JSON.stringify({x: 3, y: 3}), true],
-                    ],
-                    x: 3, y: 3
-                }, opacity: 1, spacing: 3, span: 300, weight: 10
+                    blacklist: blacklist,
+                    x: value.grid.x, y: value.grid.y
+                },
+                map: new Map(blacklist),
+                opacity: value.contrast,
+                spacing: value.spacing,
+                span: value.span,
+                weight: value.weight
             });
-        }
+        });
 
         for (let i = 0; i < length; i++) settings.push(stages);
         return settings;
     },
-    'generateStimuli': visuals => {
-        const n = visuals.length,
-            locations = new Map(visuals[0]['grid.blacklist']),
+    'generateStimuli': (visuals) => {
+        let locations = new Map(),
             stimuli = [];
 
-        for (let i = 0; i < n; i++) {
-            let location = randomLocation(3, 3, locations),
-                orientation = Math.random() > 0.5 ? 0 : 90,
+        // TODO: Multiple "whitelists" - one per dynamic variable => Merge maps
+        for (let i = 0; i < visuals.length; i++) {
+            let orientation = Math.random() > 0.5 ? 0 : 90,
                 stimulus = visuals[i],
+                location = randomLocation(stimulus.grid.x, stimulus.grid.y, new Map([locations, stimulus.grid.blacklist])),
                 span = stimulus.span,
                 weight = stimulus.weight;
 
@@ -69,9 +78,10 @@ Meteor.methods({
                 width: (orientation === 0) ? span : weight
             });
 
+            /** Prevent multiple stimuli from appearing at the same location:  */
             locations.set(JSON.stringify(location), true);
+            stimulus.map.set(JSON.stringify(location), true);
         }
-
         return stimuli;
     }
 });
