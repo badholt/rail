@@ -35,7 +35,7 @@ if (Meteor.isServer) Meteor.methods({
             stage = 1;
 
         /** Randomly generate stimuli within specified session parameters: */
-        if (settings) Meteor.call('generateStimuli', settings[stage], (error, result) => {
+        if (settings) Meteor.call('generateStimuli', id, number, settings, stage, (error, result) => {
             if (!error) {
                 const trial = Trials.insert({
                     date: new Date(),
@@ -50,7 +50,9 @@ if (Meteor.isServer) Meteor.methods({
                     }, {data: [], visuals: result}],
                     subject: 'MouseID'
                 });
-                if (trial) Meteor.call('updateSession', id, trial);
+                if (trial) Meteor.call('updateSession', id, 'trials', trial, '');
+            } else {
+                console.log(error);
             }
         });
     },
@@ -68,13 +70,24 @@ if (Meteor.isServer) Meteor.methods({
             }
         });
     },
-    'updateSession': (session, trial) => {
+    'updateSession': (session, key, value) => {
         Sessions.update(session, {
             $currentDate: {
                 lastModified: true
             },
             $push: {
-                trials: trial
+                [key]: value
+            }
+        });
+    },
+    'updateBlacklist':(session, key, value) => {
+        console.log(key, value);
+        Sessions.update(session, {
+            $currentDate: {
+                lastModified: true
+            },
+            $set: {
+                [key]: value
             }
         });
     },

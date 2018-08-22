@@ -1,60 +1,28 @@
 import './blacklist';
 import './run.html';
+import './stimulus';
 
 import _ from 'underscore';
 
+import {calculateWeights, generateBlacklist, generateVisuals} from '../../api/client.methods';
 import {FlowRouter} from 'meteor/kadira:flow-router';
 import {Meteor} from 'meteor/meteor';
 import {ReactiveVar} from 'meteor/reactive-var';
 import {Template} from 'meteor/templating';
 
-const generateBlacklist = (blacklist, columns, rows) => {
-        for (let x = columns.first; x < columns.last; x++) for (let y = rows.first; y < rows.last; y++) {
-            blacklist.push({
-                x: x,
-                y: y,
-                blacklist: false
-            });
-        }
-        return blacklist;
-    },
-    generateVisuals = (visuals, first, last) => {
-        const columns = 3, rows = 3;
+const submitForm = (form) => {
+    const devices = $('#device-form .ui.dropdown').dropdown('get value'),
+        stimuli = form.stimuli.get(),
+        trials = form.trials.get();
 
-        for (let i = first; i < last; i++) {
-            let previous = (visuals[first - 1]) ? visuals[first - 1] : {
-                contrast: 1,
-                delay: 500,
-                duration: 5000,
-                grid: {
-                    blacklist: generateBlacklist([],
-                        {first: 1, last: columns + 1},
-                        {first: 1, last: rows + 1}),
-                    x: 3,
-                    y: 3
-                },
-                iti: 10000,
-                spacing: 5,
-                span: 300,
-                variables: ['grid'],
-                weight: 5
-            };
-            visuals.push(previous);
-        }
-        return visuals;
-    }, submitForm = (form) => {
-        const devices = $('#device-form .ui.dropdown').dropdown('get value'),
-            stimuli = form.stimuli.get(),
-            trials = form.trials.get();
-
-        if (devices) devices.forEach((device) => {
-            Meteor.call('generateSettings', trials.total, stimuli, (error, result) => {
-                if (!error) Meteor.call('addSession', device, form.data._id, trials.total, result, (error, session) => {
-                    if (!error) Meteor.call('addTrial', 1, session);
-                });
+    if (devices) _.each(devices, (device) => {
+        Meteor.call('generateSettings', stimuli, trials, (error, result) => {
+            if (!error) Meteor.call('addSession', device, form.data._id, trials.total, result, (error, session) => {
+                if (!error) Meteor.call('addTrial', 1, session);
             });
         });
-    };
+    });
+};
 
 
 Template.accordion.events({
@@ -64,15 +32,15 @@ Template.accordion.events({
     'input input'(event) {
         const target = event.target || event.srcElement,
             value = parseFloat($('#' + target.form.id).form('get value', target.name));
-        let form = Template.instance(),
-            stimuli = form.stimuli.get();
-        let trials = form.trials.get(), grid;
+        let form = Template.instance(), grid,
+            stimuli = form.stimuli.get(),
+            trials = form.trials.get();
 
         switch (target.name) {
             case 'contrast':
             case 'delay':
             case 'duration':
-            case 'iti':
+            case 'frequency':
             case 'min':
             case 'spacing':
             case 'span':
@@ -108,6 +76,8 @@ Template.accordion.events({
                     : generateVisuals(stimuli.visuals, stimuli.visuals.length, value);
                 form.stimuli.set(stimuli);
                 break;
+            case 'iti':
+            case 'light':
             case 'total':
                 trials[target.name] = value;
                 form.trials.set(trials);
@@ -139,6 +109,8 @@ Template.accordion.onCreated(function () {
         visuals: visuals
     });
     form.trials = new ReactiveVar({
+        iti: 10000,
+        light: 3000,
         total: 5
     });
 
@@ -172,17 +144,48 @@ Template.stimulusForm.onRendered(function () {
     let template = Template.instance().parent(2);
 
     $('.ui.checkbox').checkbox({
-        onChange: function () {
-            const id = this.getAttribute('id').split('-dynamic-'),
-                field = id[0],
-                index = id[1] - 1;
-            let stimuli = template.stimuli.get(),
-                variables = stimuli.visuals[index].variables;
+        onChecked: function () {
+            const id = this.getAttribute('id').split('-'),
+                type = id[0],
+                field = id[1],
+                stimulus = id[2] - 1,
+                stimuli = template.stimuli.get();
 
-            variables = (_.contains(variables, field))
-                ? _.without(variables, field)
-                : _.union(variables, [field]);
-            stimuli.visuals[index].variables = variables;
+            if (type === 'dynamic') {
+                const variables = stimuli.visuals[stimulus].variables;
+                stimuli.visuals[stimulus].variables = _.union(variables, [field]);
+            } else if (type === 'weighted') {
+                const blacklist = stimuli.visuals[stimulus].grid.blacklist;
+                stimuli.visuals[stimulus].grid.weighted = true;
+                calculateWeights(blacklist, 1);
+                $('#dynamic-grid-' + id[2]).parent().checkbox('check');
+            }
+
+            template.stimuli.set(stimuli);
+        },
+        onUnchecked: function () {
+            const id = this.getAttribute('id').split('-'),
+                type = id[0],
+                field = id[1],
+                stimulus = id[2] - 1,
+                stimuli = template.stimuli.get();
+
+
+            if (type === 'dynamic') {
+                const variables = stimuli.visuals[stimulus].variables;
+                stimuli.visuals[stimulus].variables = _.without(variables, field);
+
+                if (field === 'grid') {
+                    const blacklist = stimuli.visuals[stimulus].grid.blacklist;
+                    _.each(blacklist, (element) => element.blacklist = true);
+                    $('#weighted-grid-' + id[2]).parent().checkbox('uncheck');
+                }
+            } else if (type === 'weighted') {
+                const blacklist = stimuli.visuals[stimulus].grid.blacklist;
+                _.each(blacklist, (element) => element.weight = 1);
+                stimuli.visuals[stimulus].grid.weighted = false;
+            }
+
             template.stimuli.set(stimuli);
         }
     });
@@ -191,5 +194,30 @@ Template.stimulusForm.onRendered(function () {
 Template.stimulusForm.helpers({
     checked(field) {
         return _.contains(this.visuals.variables, field);
+    },
+    stimulus() {
+        return {
+            "frequency": this.visuals.frequency,
+            "grid": {
+                "x": this.visuals.grid.x,
+                "y": this.visuals.grid.y
+            },
+            "height": this.visuals.span,
+            "location": {
+                "x": 1,
+                "y": this.order
+            },
+            "opacity": this.visuals.contrast,
+            "orientation": {
+                "value": 90,
+                "units": "deg"
+            },
+            "preview": true,
+            "spacing": this.visuals.spacing,
+            "width": this.visuals.weight
+        };
+    },
+    weighted() {
+        return this.visuals.grid.weighted;
     }
 });

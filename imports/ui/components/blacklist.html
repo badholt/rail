@@ -1,7 +1,8 @@
 <template name="blacklist">
     <div id="blacklist" class="ui centered equal width internally celled padded grid">
         {{#each range 0 rows 1}}
-            {{> blacklistRow blacklist=(blacklist order) columns=columns row=order}}
+            {{> blacklistRow blacklist=(blacklist order) columns=columns
+                    row=order weighted=weighted}}
         {{/each}}
     </div>
 </template>
@@ -9,7 +10,8 @@
 <template name="blacklistRow">
     <div id="row-{{row}}" class="row">
         {{#each range 0 columns 1}}
-            {{> blacklistCell cell=(cell order) column=order row=row}}
+            {{> blacklistCell cell=(cell order) column=order
+                    row=row weighted=weighted}}
         {{/each}}
     </div>
 </template>
@@ -17,6 +19,14 @@
 <template name="blacklistCell">
     <div id="column-{{column}}-row-{{row}}"
          class="{{#unless cell.blacklist}}blue{{/unless}} middle aligned column">
-        <i class="inverted cancel icon"></i>
+        {{#unless weighted}}
+            <i class="inverted cancel icon"></i>
+        {{else}}
+            <div class="ui inverted transparent right icon input">
+                <input type="number" name="weight-{{column}}-{{row}}" placeholder="%"
+                       step="0.01" value="{{cell.weight}}">
+                <i class="percent icon"></i>
+            </div>
+        {{/unless}}
     </div>
 </template>

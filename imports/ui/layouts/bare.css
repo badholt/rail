@@ -6,3 +6,7 @@ body, html, #main-panel {
     margin: 0;
     overflow: hidden;
 }
+
+#main-panel.nocturnal {
+    cursor: none;
+}

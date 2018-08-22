@@ -1,17 +1,20 @@
 <template name="bars">
     <g id="stimulus-at-{{location.x}}-{{location.y}}" class="stimulus">
-        {{> bar}}
-        {{> bar}}
-        {{> bar}}
-        {{> bar}}
-        <rect class="horizontal-{{location.x}}-of-{{grid.x}} vertical-{{location.y}}-of-{{grid.y}} region"
-              fill="transparent"
-              height="{{height}}"
-              width="{{width}}"></rect>
+        {{#if frequency}}
+            {{#each range 0 frequency 1}}
+                {{> bar dimensions=dimensions}}
+            {{/each}}
+        {{/if}}
+        {{#unless preview}}
+            <rect class="horizontal-{{location.x}}-of-{{grid.x}} vertical-{{location.y}}-of-{{grid.y}} region"
+                  fill="transparent"
+                  height="{{height}}"
+                  width="{{width}}"></rect>
+        {{/unless}}
     </g>
 </template>
 
 <template name="bar">
-    <rect class="{{orientation.value}}-{{orientation.units}} bar"
-          fill="transparent" height="{{height}}" width="{{width}}"></rect>
+    <rect class="{{dimensions.orientation.value}}-{{dimensions.orientation.units}} bar"
+          fill="transparent" height="{{dimensions.height}}" width="{{dimensions.width}}"></rect>
 </template>

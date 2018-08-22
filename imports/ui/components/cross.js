@@ -1,6 +1,7 @@
 import './cross.html';
 
 import {calculateCenter} from '../../api/client.methods';
+import * as d3 from 'd3';
 import {Template} from 'meteor/templating';
 
 export const renderCross = (settings) => {

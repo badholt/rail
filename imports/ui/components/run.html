@@ -68,11 +68,12 @@
             <i class="right chevron icon"></i>
             Grid
         </h5>
-        {{> blacklist columns=visuals.grid.x rows=visuals.grid.y stimulus=index}}
+        {{> blacklist columns=visuals.grid.x rows=visuals.grid.y
+                stimulus=index weighted=weighted}}
         <div class="three fields">
             <div class="field">
                 <div class="ui inverted transparent input">
-                    <div class="ui blue right pointing label">
+                    <div class="ui mini blue right pointing label">
                         columns
                     </div>
                     <input type="number" name="grid-x" placeholder="#"
@@ -81,7 +82,7 @@
             </div>
             <div class="field">
                 <div class="ui inverted transparent input">
-                    <div class="ui blue right pointing label">
+                    <div class="ui mini blue right pointing label">
                         rows
                     </div>
                     <input type="number" name="grid-y" placeholder="#"
@@ -89,13 +90,31 @@
                 </div>
             </div>
             <div class="inline field">
-                <div id="grid-dynamic" class="ui checked toggle checkbox">
-                    <input id="grid-dynamic-{{order}}" checked type="checkbox" tabindex="0" class="hidden">
-                    <label for="grid-dynamic-{{order}}">
+                <div class="ui checked toggle checkbox">
+                    <input id="dynamic-grid-{{order}}" checked type="checkbox" tabindex="0" class="hidden">
+                    <label for="dynamic-grid-{{order}}">
                         {{#if checked 'grid'}}
                             <span class="ui blue inverted sub header">Variable</span>
                         {{else}}
-                            <span class="ui blue inverted sub header">Fixed</span>
+                            <span class="ui inverted sub header">Fixed</span>
+                        {{/if}}
+                    </label>
+                </div>
+            </div>
+            <div class="inline field">
+                <div class="ui toggle checkbox">
+                    <input id="weighted-grid-{{order}}" type="checkbox" tabindex="0" class="hidden">
+                    <label for="weighted-grid-{{order}}">
+                        {{#if weighted}}
+                            <span class="ui blue inverted sub header">
+                                Weighted
+                            </span>
+                            <i class="small blue percent icon"></i>
+                        {{else}}
+                            <span class="ui inverted sub header">
+                                Equal
+                            </span>
+                            <i class="small percent icon"></i>
                         {{/if}}
                     </label>
                 </div>
@@ -125,19 +144,22 @@
                 </div>
             {{else}}
                 <div class="field">
-                    <label>Contrast</label>
+                    <label>
+                        Contrast
+                        <span class="ui mini horizontal label">x/1</span>
+                    </label>
                     <input type="number" name="contrast"
                            placeholder="#" step="0.01" value="{{visuals.contrast}}">
                 </div>
             {{/if}}
             <div class="field">
-                <div id="contrast-dynamic" class="ui toggle checkbox">
-                    <input id="contrast-dynamic-{{order}}" type="checkbox" tabindex="0" class="hidden">
-                    <label for="contrast-dynamic-{{order}}">
+                <div class="ui toggle checkbox">
+                    <input id="dynamic-contrast-{{order}}" type="checkbox" tabindex="0" class="hidden">
+                    <label for="dynamic-contrast-{{order}}">
                         {{#if checked 'contrast'}}
                             <span class="ui blue inverted sub header">Variable</span>
                         {{else}}
-                            <span class="ui blue inverted sub header">Fixed</span>
+                            <span class="ui inverted sub header">Fixed</span>
                         {{/if}}
                     </label>
                 </div>
@@ -149,18 +171,39 @@
             Size
         </h5>
         <div class="fields">
+            {{#with stimulus}}
+                <svg>{{> bars}}</svg>
+            {{/with}}
+
             <div class="field">
-                <label>Spacing</label>
+                <label>
+                    Frequency
+                    <span class="ui mini horizontal label">bars</span>
+                </label>
+                <input type="number" name="frequency"
+                       placeholder="#" value="{{visuals.frequency}}">
+            </div>
+            <div class="field">
+                <label>
+                    Spacing
+                    <span class="ui mini horizontal label">x Weight</span>
+                </label>
                 <input type="number" name="spacing"
                        placeholder="#" value="{{visuals.spacing}}">
             </div>
             <div class="field">
-                <label>Span</label>
+                <label>
+                    Span
+                    <span class="ui mini horizontal label">px</span>
+                </label>
                 <input type="number" name="span"
                        placeholder="#" value="{{visuals.span}}">
             </div>
             <div class="field">
-                <label>Weight</label>
+                <label>
+                    Weight
+                    <span class="ui mini horizontal label">px</span>
+                </label>
                 <input type="number" name="weight"
                        placeholder="#" value="{{visuals.weight}}">
             </div>
@@ -172,19 +215,20 @@
         </h5>
         <div class="fields">
             <div class="field">
-                <label>Delay</label>
+                <label>
+                    Delay
+                    <span class="ui mini horizontal label">ms</span>
+                </label>
                 <input type="number" name="delay"
                        placeholder="#" value="{{visuals.delay}}">
             </div>
             <div class="field">
-                <label>Stimulus Duration</label>
+                <label>
+                    Stimulus Duration
+                    <span class="ui mini horizontal label">ms</span>
+                </label>
                 <input type="number" name="duration"
                        placeholder="#" value="{{visuals.duration}}">
-            </div>
-            <div class="field">
-                <label>Intertrial Interval (ITI)</label>
-                <input type="number" name="iti"
-                       placeholder="#" value="{{visuals.iti}}">
             </div>
         </div>
     </form>
@@ -192,6 +236,22 @@
 
 <template name="trialsForm">
     <form id="trials-form" class="ui inverted form">
+        <div class="field">
+            <label>
+                Intertrial Interval (ITI)
+                <span class="ui mini horizontal label">ms</span>
+            </label>
+            <input type="number" name="iti"
+                   placeholder="#" value="{{iti}}">
+        </div>
+        <div class="field">
+            <label>
+                Light Duration
+                <span class="ui mini horizontal label">ms</span>
+            </label>
+            <input type="number" name="light"
+                   placeholder="#" value="{{light}}">
+        </div>
         <div class="field">
             <label>No. of Trials</label>
             <input type="number" name="total" placeholder="#1+" value="{{total}}">

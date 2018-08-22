@@ -3,6 +3,15 @@ body, html {
     background: none;
 }
 
+.ui.accordion .form input {
+    text-align: center;
+}
+
+.ui.inverted.transparent input[type="number"] {
+    color: white !important;
+    text-align: center;
+}
+
 /**------ IDs: ------*/
 #blacklist {
     margin: 1em 0 !important;
@@ -34,11 +43,6 @@ body, html {
 
 .fade:hover {
     opacity: 1;
-}
-
-.ui.inverted.transparent input[type="number"] {
-    color: white !important;
-    text-align: center;
 }
 
 .ui.vertical.tabular.menu .active.item {

@@ -4,7 +4,6 @@ import './profile';
 import '/imports/api/collections';
 
 import {Experiments, Sessions} from '../../api/collections';
-import {Howl} from 'howler';
 import {Meteor} from 'meteor/meteor';
 import {ReactiveVar} from 'meteor/reactive-var';
 import {Template} from 'meteor/templating';
@@ -58,12 +57,7 @@ Template.menu.onCreated(function () {
 
 Template.sessionWindow.onCreated(function () {
     const stage = 1,
-        trial = 1,
-        tone = new Howl({
-            preload: true,
-            src: ['/audio/bell.wav']
-        });
+        trial = 1;
 
     FlowRouter.go('/' + this.data._id + '/trial/' + trial + '/stage/' + stage);
-    tone.play();
 });
