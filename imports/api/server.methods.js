@@ -80,7 +80,7 @@ if (Meteor.isServer) Meteor.methods({
             }
         });
     },
-    'updateBlacklist':(session, key, value) => {
+    'updateBlacklist': (session, key, value) => {
         console.log(key, value);
         Sessions.update(session, {
             $currentDate: {
@@ -98,7 +98,7 @@ if (Meteor.isServer) Meteor.methods({
                     lastModified: true
                 },
                 $push: {
-                    ['stages.' + stage + '.data']: JSON.parse(response)
+                    ['stages.' + stage + '.data']: response
                 }
             }, {multi: true});
     },

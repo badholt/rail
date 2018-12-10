@@ -49,20 +49,30 @@
 
 <template name="stimuliForm">
     <form id="stimuli-form" class="ui inverted form">
-        <div class="field">
+        <div class="inline field">
             <label>No. of Stimuli</label>
             <input type="number" name="number" placeholder="#1+" value="{{number}}">
         </div>
 
-        {{#each range 0 number 1}}
-            {{> stimulusForm index=index order=order visuals=(visuals index)}}
-        {{/each}}
+        <div class="ui divided inverted {{#if $gt number 1}}two{{else}}one{{/if}} column grid">
+            <div class="row">
+                {{#each range 0 number 1}}
+                    <div class="column">
+                        {{> stimulusForm index=index order=order visuals=(visuals index)}}
+                    </div>
+                {{/each}}
+            </div>
+        </div>
     </form>
 </template>
 
 <template name="stimulusForm">
     <form id="stimulus-form-{{order}}" class="ui inverted form">
-        <label class="ui big blue ribbon label">Stimulus {{order}}</label>
+        <label class="ui big blue ribbon label">
+            <i class="{{#unless attend index}}disabled{{else}}yellow{{/unless}} link trophy icon"
+            title="{{#unless attend index}}un{{/unless}}attended stimulus"></i>
+            Stimulus {{order}}
+        </label>
 
         <h5 class="blue header inverted sub ui">
             <i class="right chevron icon"></i>
@@ -125,7 +135,7 @@
             <i class="right chevron icon"></i>
             Color
         </h5>
-        <div class="inline fields">
+        <div class="two inline fields">
             {{#if checked 'contrast'}}
                 <div class="field">
                     <label>Contrast Min</label>
@@ -170,27 +180,43 @@
             <i class="right chevron icon"></i>
             Size
         </h5>
-        <div class="fields">
-            {{#with stimulus}}
-                <svg>{{> bars}}</svg>
-            {{/with}}
 
-            <div class="field">
-                <label>
-                    Frequency
-                    <span class="ui mini horizontal label">bars</span>
-                </label>
-                <input type="number" name="frequency"
-                       placeholder="#" value="{{visuals.frequency}}">
+        {{#with stimulus}}
+            <svg width="100%">{{> bars}}</svg>
+        {{/with}}
+
+        {{#unless visuals.frequency}}
+            <div class="fields">
+                <div class="field">
+                    <label>
+                        Bars
+                        <span class="ui mini horizontal label">bars</span>
+                    </label>
+                    <input type="number" name="bars"
+                           placeholder="#" value="{{visuals.bars}}">
+                </div>
+                <div class="field">
+                    <label>
+                        Spacing
+                        <span class="ui mini horizontal label">x Weight</span>
+                    </label>
+                    <input type="number" name="spacing"
+                           placeholder="#" value="{{visuals.spacing}}">
+                </div>
             </div>
-            <div class="field">
-                <label>
-                    Spacing
-                    <span class="ui mini horizontal label">x Weight</span>
-                </label>
-                <input type="number" name="spacing"
-                       placeholder="#" value="{{visuals.spacing}}">
-            </div>
+        {{/unless}}
+
+        <div class="fields">
+            {{#if visuals.frequency}}
+                <div class="field">
+                    <label>
+                        Frequency
+                        <span class="ui mini horizontal label">bars/unit</span>
+                    </label>
+                    <input type="number" name="frequency"
+                           placeholder="#" value="{{visuals.frequency}}">
+                </div>
+            {{/if}}
             <div class="field">
                 <label>
                     Span

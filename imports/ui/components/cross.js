@@ -3,6 +3,7 @@ import './cross.html';
 import {calculateCenter} from '../../api/client.methods';
 import * as d3 from 'd3';
 import {Template} from 'meteor/templating';
+import {Meteor} from "meteor/meteor";
 
 export const renderCross = (settings) => {
     let center = Template.instance().center,
@@ -12,8 +13,9 @@ export const renderCross = (settings) => {
 
     const span = settings.span,
         weight = settings.weight,
+        max = (span > weight) ? span : weight,
         x = center.x,
-        y = center.y * 1.5;
+        y = center.y * 2 - (max / 2);
 
 
     /** Fixation Cross: */
@@ -39,5 +41,13 @@ Template.cross.onCreated(function () {
 });
 
 Template.cross.onRendered(function () {
+    const number = this.parent().getTrial(),
+        session = this.parent().session();
+
+    if (number && session) {
+        const stage = 0;
+        Meteor.call('updateTrial', number, {type: 'cross', timeStamp: Date.now()}, session._id, stage);
+    }
+
     renderCross(this.data);
 });

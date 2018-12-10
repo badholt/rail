@@ -8,5 +8,6 @@ body, html, #main-panel {
 }
 
 #main-panel.nocturnal {
-    cursor: none;
+    cursor: crosshair;
+    /*cursor: none;*/
 }

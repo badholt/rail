@@ -1,10 +1,11 @@
 <template name="bars">
     <g id="stimulus-at-{{location.x}}-{{location.y}}" class="stimulus">
-        {{#if frequency}}
-            {{#each range 0 frequency 1}}
+        {{#if stimuli}}
+            {{#each range 0 stimuli 1}}
                 {{> bar dimensions=dimensions}}
             {{/each}}
         {{/if}}
+
         {{#unless preview}}
             <rect class="horizontal-{{location.x}}-of-{{grid.x}} vertical-{{location.y}}-of-{{grid.y}} region"
                   fill="transparent"

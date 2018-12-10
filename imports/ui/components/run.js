@@ -29,59 +29,66 @@ Template.accordion.events({
     'click button'() {
         submitForm(Template.instance());
     },
-    'input input'(event) {
+    'input input'(event, template) {
         const target = event.target || event.srcElement,
             value = parseFloat($('#' + target.form.id).form('get value', target.name));
-        let form = Template.instance(), grid,
-            stimuli = form.stimuli.get(),
-            trials = form.trials.get();
 
-        switch (target.name) {
-            case 'contrast':
-            case 'delay':
-            case 'duration':
-            case 'frequency':
-            case 'min':
-            case 'spacing':
-            case 'span':
-            case 'step':
-            case 'weight':
-                stimuli.visuals[this.index][target.name] = value;
-                form.stimuli.set(stimuli);
-                break;
-            case 'grid-x':
-                grid = stimuli.visuals[this.index].grid;
-                grid.blacklist = (value > grid.x)
-                    ? generateBlacklist(grid.blacklist,
-                        {first: grid.x + 1, last: value + 1},
-                        {first: 1, last: grid.y + 1})
-                    : _.reject(grid.blacklist, _.matches({x: grid.x}));
-                grid.x = value;
-                form.stimuli.set(stimuli);
-                break;
-            case 'grid-y':
-                grid = stimuli.visuals[this.index].grid;
-                grid.blacklist = (value > grid.y)
-                    ? generateBlacklist(grid.blacklist,
-                        {first: 1, last: grid.x + 1},
-                        {first: grid.y + 1, last: value + 1})
-                    : _.reject(grid.blacklist, _.matches({y: grid.y}));
-                grid.y = value;
-                form.stimuli.set(stimuli);
-                break;
-            case 'number':
-                stimuli[target.name] = value;
-                stimuli.visuals = (value < stimuli.visuals.length)
-                    ? _.first(stimuli.visuals, value)
-                    : generateVisuals(stimuli.visuals, stimuli.visuals.length, value);
-                form.stimuli.set(stimuli);
-                break;
-            case 'iti':
-            case 'light':
-            case 'total':
-                trials[target.name] = value;
-                form.trials.set(trials);
-                break;
+        if (!_.isNaN(value)) {
+            let grid,
+                stimuli = template.stimuli.get(),
+                trials = template.trials.get();
+
+            switch (target.name) {
+                case 'bars':
+                case 'contrast':
+                case 'delay':
+                case 'duration':
+                case 'frequency':
+                case 'min':
+                case 'spacing':
+                case 'span':
+                case 'step':
+                case 'weight':
+                    stimuli.visuals[this.index][target.name] = value;
+                    template.stimuli.set(stimuli);
+                    break;
+                case 'grid-x':
+                    grid = stimuli.visuals[this.index].grid;
+                    grid.blacklist = (value > grid.x)
+                        ? generateBlacklist(grid.blacklist,
+                            {first: grid.x + 1, last: value + 1},
+                            {first: 1, last: grid.y + 1})
+                        : _.reject(grid.blacklist, _.matches({x: grid.x}));
+                    grid.x = value;
+                    template.stimuli.set(stimuli);
+                    break;
+                case 'grid-y':
+                    grid = stimuli.visuals[this.index].grid;
+                    grid.blacklist = (value > grid.y)
+                        ? generateBlacklist(grid.blacklist,
+                            {first: 1, last: grid.x + 1},
+                            {first: grid.y + 1, last: value + 1})
+                        : _.reject(grid.blacklist, _.matches({y: grid.y}));
+                    grid.y = value;
+                    template.stimuli.set(stimuli);
+                    break;
+                case 'number':
+                    stimuli[target.name] = value;
+                    console.log(stimuli, target.name);
+                    const visuals = (value < stimuli.visuals.length)
+                        ? _.first(stimuli.visuals, value)
+                        : generateVisuals(stimuli.visuals, stimuli.visuals.length, value);
+                    stimuli.visuals = visuals;
+                    console.log(stimuli.visuals);
+                    template.stimuli.set(stimuli);
+                    break;
+                case 'iti':
+                case 'light':
+                case 'total':
+                    trials[target.name] = value;
+                    template.trials.set(trials);
+                    break;
+            }
         }
     },
     'submit .form'(event) {
@@ -109,6 +116,8 @@ Template.accordion.onCreated(function () {
         visuals: visuals
     });
     form.trials = new ReactiveVar({
+        correct: [{event: 'left', orientation: {value: 90, units: 'deg'}, stimulus: 0},
+            {event: 'right', orientation: {value: 0, units: 'deg'}, stimulus: 0}],
         iti: 10000,
         light: 3000,
         total: 5
@@ -137,6 +146,50 @@ Template.deviceForm.onRendered(function () {
 Template.stimuliForm.helpers({
     visuals(index) {
         return Template.instance().data.visuals[index];
+    }
+});
+
+Template.stimulusForm.events({
+    'click i.trophy.icon'(event, template) {
+        const trials = template.parent(2).trials.get();
+        _.each(trials.correct, (condition) => condition.stimulus = this.index);
+        template.parent(2).trials.set(trials);
+    },
+});
+
+Template.stimulusForm.helpers({
+    attend(i) {
+        const trials = Template.instance().parent(2).trials.get();
+        return _.some(trials.correct, (condition) => condition.stimulus === i);
+    },
+    checked(field) {
+        return _.contains(this.visuals.variables, field);
+    },
+    stimulus() {
+        return {
+            "bars": this.visuals.bars,
+            "frequency": this.visuals.frequency,
+            "grid": {
+                "x": this.visuals.grid.x,
+                "y": this.visuals.grid.y
+            },
+            "height": this.visuals.span,
+            "location": {
+                "x": 1,
+                "y": this.order
+            },
+            "opacity": this.visuals.contrast,
+            "orientation": {
+                "value": 90,
+                "units": "deg"
+            },
+            "preview": true,
+            "spacing": this.visuals.spacing,
+            "width": this.visuals.weight
+        };
+    },
+    weighted() {
+        return this.visuals.grid.weighted;
     }
 });
 
@@ -189,35 +242,4 @@ Template.stimulusForm.onRendered(function () {
             template.stimuli.set(stimuli);
         }
     });
-});
-
-Template.stimulusForm.helpers({
-    checked(field) {
-        return _.contains(this.visuals.variables, field);
-    },
-    stimulus() {
-        return {
-            "frequency": this.visuals.frequency,
-            "grid": {
-                "x": this.visuals.grid.x,
-                "y": this.visuals.grid.y
-            },
-            "height": this.visuals.span,
-            "location": {
-                "x": 1,
-                "y": this.order
-            },
-            "opacity": this.visuals.contrast,
-            "orientation": {
-                "value": 90,
-                "units": "deg"
-            },
-            "preview": true,
-            "spacing": this.visuals.spacing,
-            "width": this.visuals.weight
-        };
-    },
-    weighted() {
-        return this.visuals.grid.weighted;
-    }
 });

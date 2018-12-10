@@ -28,8 +28,9 @@ export const calculateCenter = (height, width) => ({
 
         for (let i = first; i < last; i++) {
             let previous = (visuals[first - 1]) ? visuals[first - 1] : {
+                bars: 3,
                 contrast: 1,
-                delay: 500,
+                delay: 0,
                 duration: 5000,
                 frequency: 4,
                 grid: {
@@ -41,7 +42,7 @@ export const calculateCenter = (height, width) => ({
                     y: 3
                 },
                 spacing: 2,
-                span: 200,
+                span: 100,
                 variables: ['grid'],
                 weight: 5
             };
@@ -85,8 +86,10 @@ Meteor.methods({
             settings = [];
 
         /** Add settings for each stimulus within a stage: */
-        stimuli.visuals.forEach((value) => {
+        stimuli.visuals.forEach((value, index) => {
             stages[stage].push({
+                bars: value.bars,
+                correct: _.filter(trials.correct, (condition) => condition.stimulus === index),
                 delay: value.delay,
                 duration: value.duration,
                 frequency: value.frequency,
@@ -144,6 +147,7 @@ Meteor.methods({
             }
 
             stimuli.push({
+                bars: stimulus.bars,
                 delay: stimulus.delay,
                 duration: stimulus.duration,
                 frequency: stimulus.frequency,

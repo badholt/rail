@@ -1,12 +1,11 @@
 <template name="experiment">
     {{#with info}}
         <div class="ui divided inverted padded stackable grid">
-            <div class="ui three wide column">
+            <div class="ui two wide column">
                 {{> experimentMenu}}
-                {{> infoCard}}
             </div>
 
-            <div class="ui nine wide column">
+            <div class="ui twelve wide column">
                 {{#if isActivePath regex='/run'}}
                     {{> accordion}}
                 {{/if}}
@@ -32,17 +31,5 @@
         <a id="settings" class="{{isActivePath regex='/settings'}} item" href="{{link}}/settings">
             Settings
         </a>
-    </div>
-</template>
-
-<template name="infoCard">
-    <div class="ui centered card">
-        <div class="image">
-            <img src="https://placeimg.com/400/600/animals/grayscale">
-        </div>
-        <div class="content">
-            <div class="meta">Investigator</div>
-            <div class="header">{{investigator.name.first}}, {{investigator.name.last}}</div>
-        </div>
     </div>
 </template>

@@ -19,7 +19,7 @@ Accounts.onCreateUser(function (profile, user) {
     if ('device' !== profile.profile.device) {
         user.profile = {
             device: false,
-            email: profile.email || type.google.email,
+            email: profile.email || type.google.email || '',
             name: profile.profile.name,
             picture: (type.google) ? type.google.picture : '',
             username: profile.username || type.google.email

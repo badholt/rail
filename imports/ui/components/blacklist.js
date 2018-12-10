@@ -58,7 +58,6 @@ Template.blacklistCell.events({
         //     1 - cell.weight);
         console.log(stimuli);
         accordion.stimuli.set(stimuli);
-
     }
 });
 

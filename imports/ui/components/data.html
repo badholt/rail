@@ -1,30 +1,27 @@
 <template name="data">
-    {{> sessionList}}
-</template>
-
-<template name="clickList">
-    <div class="ui list">
-        {{#each stage}}
-            <div class="item">
-                <a class="header">{{title}}</a>
-                <div class="ui list">
-                    {{#each helper}}
-                        <div class="item"><i class="hand pointer icon"></i> {{screenX}}, {{screenY}}</div>
-                    {{/each}}
-                </div>
-            </div>
-        {{/each}}
-    </div>
+    {{#with selected}}
+        <h2 class="ui inverted breadcrumb header">
+            <i class="inverted grey calendar icon divider"></i>
+            <a id="session" class="section">
+                Session on {{formatDate date 'dddd, MMMM Do'}} at {{formatDate date 'HH:mm'}}
+            </a>
+            <i class="inverted grey right chevron icon divider"></i>
+            <div class="section">Trials</div>
+            <i class="inverted grey right chevron icon divider"></i>
+        </h2>
+        {{> trialList}}
+    {{else}}
+        <h2 class="ui inverted breadcrumb header">
+            <i class="inverted grey calendar icon divider"></i>
+            <div class="section">Sessions</div>
+            <i class="inverted grey right chevron icon divider"></i>
+        </h2>
+        {{> sessionList}}
+    {{/with}}
 </template>
 
 <template name="sessionList">
-    <h2 class="ui inverted breadcrumb header">
-        <i class="inverted grey calendar icon divider"></i>
-        <div class="section">Sessions</div>
-        <i class="inverted grey right chevron icon divider"></i>
-    </h2>
-
-    <table class="ui very basic inverted sortable celled table">
+    <table id="session-list" class="ui very basic center aligned inverted sortable celled table">
         <thead>
         <tr>
             <th class="sorted">Subject</th>
@@ -59,6 +56,70 @@
                         {{> profileAvatar user}}
                     </a>
                 </td>
+            </tr>
+        {{/each}}
+        </tbody>
+    </table>
+</template>
+
+<template name="trialList">
+    <table class="ui very basic celled center aligned definition inverted sortable table">
+        <thead class="full-width">
+        <tr>
+            <th></th>
+            {{#each analyses 1}}
+                {{#if order}}
+                    <th class="sorted">Stage {{order}}</th>
+                {{else}}
+                    <th class="sorted">Reaction Time(s)</th>
+                {{/if}}
+            {{/each}}
+        </tr>
+        </thead>
+
+        <tbody>
+        {{#each trial}}
+            <tr>
+                <td class="selectable">
+                    {{number}}
+                </td>
+                {{#each analyses number}}
+                    <td class="selectable">
+                        <div class="ui celled horizontal inverted list">
+                            <div class="item">
+                                <div class="ui celled inverted list">
+                                    {{#each data}}
+                                        {{#if $eq type 'click'}}
+                                            <div class="item">
+                                                <i class="{{#if correct}}green{{else}}red{{/if}}
+                                                    {{#if $eq type 'click'}}hand pointer{{/if}} icon"></i>
+                                                {{formatDate timeStamp 'HH:mm:ss.SSS'}}
+                                            </div>
+                                        {{else}}
+                                            <div class="item">
+                                                {{#if $eq type 'cross'}}
+                                                    <i class="plus icon"></i>
+                                                {{/if}}
+                                                {{#if $eq type 'iti'}}
+                                                    <i class="stopwatch icon"></i>
+                                                {{/if}}
+                                                {{formatDate timeStamp 'HH:mm:ss.SSS'}}
+                                            </div>
+                                        {{/if}}
+                                    {{/each}}
+
+                                    {{#each analysis}}
+                                        <div class="item">
+                                            Stage {{stage}} | Event {{event}}
+                                            <i class="stopwatch icon"></i>
+                                            | {{timeStamp}} ms
+                                        </div>
+                                    {{/each}}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                {{/each}}
             </tr>
         {{/each}}
         </tbody>
