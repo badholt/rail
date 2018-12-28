@@ -24,7 +24,6 @@ const submitForm = (form) => {
     });
 };
 
-
 Template.accordion.events({
     'click button'() {
         submitForm(Template.instance());
@@ -123,9 +122,10 @@ Template.accordion.onCreated(function () {
         total: 5
     });
 
+    console.log(this.users);
     this.autorun(() => {
         /** Subscribe to devices and authorized users: */
-        this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': true}]});
+        this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': {$ne: false}}]});
     });
 });
 
@@ -135,7 +135,7 @@ Template.accordion.onRendered(function () {
 
 Template.deviceForm.helpers({
     device() {
-        return Meteor.users.find({'profile.device': true});
+        return Meteor.users.find({'profile.device': {$ne: false}});
     }
 });
 

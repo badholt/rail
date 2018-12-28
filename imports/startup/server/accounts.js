@@ -41,11 +41,12 @@ configureServices();
 UserStatus.events.on('connectionLogin', function (fields) {
     const user = Meteor.users.findOne(fields.userId);
     if (user.profile.device) {
-        if (user.profile.address !== fields.ipAddr) {
+        if (user.profile.address !== fields.ipAddr || user.profile.device !== fields.userAgent) {
             //TODO: Create popup & make IP address update optional
-            console.log("You're logging in from " + fields.ipAddr + ", a different location than your previous login, "
+            console.log("You're logging in from " + fields.userAgent + " at " + fields.ipAddr + ", a different location than your previous login, "
                 + user.profile.address + ".  Would you like to update your device settings?");
             Meteor.users.update(fields.userId, {$set: {'profile.address': fields.ipAddr}});
+            Meteor.users.update(fields.userId, {$set: {'profile.device': fields.userAgent}});
         }
     }
 });

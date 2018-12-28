@@ -2,8 +2,10 @@ import './client.methods';
 
 import {Experiments, Sessions, Trials} from './collections';
 import {Meteor} from 'meteor/meteor';
+import NanoTimer from 'NanoTimer';
 // TODO: Use mqtt imports instead of require?
-const mqtt = require('mqtt');
+const mqtt = require('mqtt'),
+    timers = new Map();
 
 if (Meteor.isServer) Meteor.methods({
     'addExperiment': (experiment) => {
@@ -71,25 +73,44 @@ if (Meteor.isServer) Meteor.methods({
         });
     },
     'updateSession': (session, key, value) => {
-        Sessions.update(session, {
-            $currentDate: {
-                lastModified: true
-            },
-            $push: {
-                [key]: value
-            }
-        });
+        if (key === 'trials') {
+            Sessions.update(session, {
+                $currentDate: {
+                    lastModified: true
+                },
+                $push: {
+                    [key]: value
+                }
+            });
+        } else {
+            Sessions.update(session, {
+                $currentDate: {
+                    lastModified: true
+                },
+                $set: {
+                    [key]: value
+                }
+            });
+        }
     },
-    'updateBlacklist': (session, key, value) => {
-        console.log(key, value);
-        Sessions.update(session, {
-            $currentDate: {
-                lastModified: true
-            },
-            $set: {
-                [key]: value
-            }
-        });
+    'updateTimer': (session, key, args, interval) => {
+        let timer = (timers.has(key)) ? timers.get(key) : new NanoTimer();
+        const active = timer.hasTimeout();
+
+        if (!active) {
+            console.log('Started timer for ' + key + " at " + Date.now());
+            Meteor.call('updateSession', session._id, 'timers.' + key, true);
+
+            return timer.setTimeout(Meteor.bindEnvironment((err, res) => {
+                console.log('Completed timer for ' + key + " at " + Date.now());
+                return Meteor.call('updateSession', session._id, 'timers.' + key, false);
+            }), args, interval);
+        } else {
+            console.log('Stopped timer for ' + key + " at " + Date.now());
+            timer.clearTimeout();
+        }
+
+        timers.set(key, timer);
     },
     'updateTrial': (number, response, session, stage) => {
         Trials.update({number: number, session: session, stages: {$elemMatch: {data: {$exists: true}}}},

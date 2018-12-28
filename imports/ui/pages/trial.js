@@ -199,21 +199,13 @@ Template.trial.onRendered(function () {
         stage = template.getStage(),
         iti = session.settings[number - 1][stage][0].iti;
 
-    console.log(number, stage, iti);
-
     template.timer = {
         delay: '',
         duration: '',
         iti: Meteor.setTimeout(() => {
             console.log('ITI!');
             Meteor.call('updateTrial', number, {type: 'iti', timeStamp: Date.now()}, session._id, stage);
-            if (number < session.settings.length) {
-                // TODO: Rethink Add Trial?  Move to fixation cross?  Trial is duplicating previous
-                Meteor.call('addTrial', (number + 1), session._id);
-                FlowRouter.go('/' + session._id + '/trial/' + (number + 1) + '/stage/' + stage);
-            } else {
-                FlowRouter.go('/');
-            }
+            nextTrial(number, session, template);
         }, iti)
     };
 });

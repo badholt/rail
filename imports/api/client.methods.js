@@ -142,7 +142,7 @@ Meteor.methods({
                     // console.log('reset', curve);
                 }
 
-                Meteor.call('updateBlacklist', session,
+                Meteor.call('updateSession', session,
                     'settings.$[].' + stage + '.' + i + '.map', map);
             }
 
