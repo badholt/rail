@@ -1,52 +1,3 @@
-<template name="accordion">
-    <div class="ui fluid inverted accordion">
-        <div class="active title">
-            <i class="dropdown icon"></i>
-            Scheduling
-        </div>
-        <div class="active content">
-            {{> deviceForm}}
-        </div>
-
-        <div class="active title">
-            <i class="dropdown icon"></i>
-            Stimuli
-        </div>
-        <div class="active content">
-            {{#with stimuli}}
-                {{> stimuliForm}}
-            {{/with}}
-        </div>
-
-        <div class="title">
-            <i class="dropdown icon"></i>
-            Trials
-        </div>
-        <div class="content">
-            {{#with trials}}
-                {{> trialsForm}}
-            {{/with}}
-        </div>
-
-        <div class="ui divider"></div>
-        <button class="ui black fluid button" type="submit">Run</button>
-    </div>
-</template>
-
-<template name="deviceForm">
-    <form id="device-form" class="ui inverted form">
-        <div class="field">
-            <label>Device(s)</label>
-            <select class="ui black labels multiple search selection dropdown"
-                    multiple>
-                {{#each device}}
-                    <option value="{{status.lastLogin.ipAddr}}">{{profile.name}}</option>
-                {{/each}}
-            </select>
-        </div>
-    </form>
-</template>
-
 <template name="stimuliForm">
     <form id="stimuli-form" class="ui inverted form">
         <div class="inline field">
@@ -56,11 +7,9 @@
 
         <div class="ui divided inverted {{#if $gt number 1}}two{{else}}one{{/if}} column grid">
             <div class="row">
-                {{#each range 0 number 1}}
-                    <div class="column">
-                        {{> stimulusForm index=index order=order visuals=(visuals index)}}
-                    </div>
-                {{/each}}
+                <div class="column">
+                    {{> stimulusForm (stimuli index)}}
+                </div>
             </div>
         </div>
     </form>
@@ -70,7 +19,7 @@
     <form id="stimulus-form-{{order}}" class="ui inverted form">
         <label class="ui big blue ribbon label">
             <i class="{{#unless attend index}}disabled{{else}}yellow{{/unless}} link trophy icon"
-            title="{{#unless attend index}}un{{/unless}}attended stimulus"></i>
+               title="{{#unless attend index}}un{{/unless}}attended stimulus"></i>
             Stimulus {{order}}
         </label>
 
@@ -78,8 +27,7 @@
             <i class="right chevron icon"></i>
             Grid
         </h5>
-        {{> blacklist columns=visuals.grid.x rows=visuals.grid.y
-                stimulus=index weighted=weighted}}
+        {{> blacklist}}
         <div class="three fields">
             <div class="field">
                 <div class="ui inverted transparent input">
@@ -87,7 +35,7 @@
                         columns
                     </div>
                     <input type="number" name="grid-x" placeholder="#"
-                           value="{{visuals.grid.x}}">
+                           value="{{grid.x}}">
                 </div>
             </div>
             <div class="field">
@@ -96,7 +44,7 @@
                         rows
                     </div>
                     <input type="number" name="grid-y" placeholder="#"
-                           value="{{visuals.grid.y}}">
+                           value="{{grid.y}}">
                 </div>
             </div>
             <div class="inline field">
@@ -145,7 +93,7 @@
                 <div class="field">
                     <label>Contrast Max</label>
                     <input type="number" name="contrast"
-                           placeholder="#" step="0.01" value="{{visuals.contrast}}">
+                           placeholder="#" step="0.01" value="{{contrast}}">
                 </div>
                 <div class="field">
                     <label>Step Size</label>
@@ -159,7 +107,7 @@
                         <span class="ui mini horizontal label">x/1</span>
                     </label>
                     <input type="number" name="contrast"
-                           placeholder="#" step="0.01" value="{{visuals.contrast}}">
+                           placeholder="#" step="0.01" value="{{contrast}}">
                 </div>
             {{/if}}
             <div class="field">
@@ -185,7 +133,7 @@
             <svg width="100%">{{> bars}}</svg>
         {{/with}}
 
-        {{#unless visuals.frequency}}
+        {{#unless frequency}}
             <div class="fields">
                 <div class="field">
                     <label>
@@ -193,7 +141,7 @@
                         <span class="ui mini horizontal label">bars</span>
                     </label>
                     <input type="number" name="bars"
-                           placeholder="#" value="{{visuals.bars}}">
+                           placeholder="#" value="{{bars}}">
                 </div>
                 <div class="field">
                     <label>
@@ -201,20 +149,20 @@
                         <span class="ui mini horizontal label">x Weight</span>
                     </label>
                     <input type="number" name="spacing"
-                           placeholder="#" value="{{visuals.spacing}}">
+                           placeholder="#" value="{{spacing}}">
                 </div>
             </div>
         {{/unless}}
 
         <div class="fields">
-            {{#if visuals.frequency}}
+            {{#if frequency}}
                 <div class="field">
                     <label>
                         Frequency
                         <span class="ui mini horizontal label">bars/unit</span>
                     </label>
                     <input type="number" name="frequency"
-                           placeholder="#" value="{{visuals.frequency}}">
+                           placeholder="#" value="{{frequency}}">
                 </div>
             {{/if}}
             <div class="field">
@@ -223,7 +171,7 @@
                     <span class="ui mini horizontal label">px</span>
                 </label>
                 <input type="number" name="span"
-                       placeholder="#" value="{{visuals.span}}">
+                       placeholder="#" value="{{span}}">
             </div>
             <div class="field">
                 <label>
@@ -231,7 +179,7 @@
                     <span class="ui mini horizontal label">px</span>
                 </label>
                 <input type="number" name="weight"
-                       placeholder="#" value="{{visuals.weight}}">
+                       placeholder="#" value="{{weight}}">
             </div>
         </div>
 
@@ -246,7 +194,7 @@
                     <span class="ui mini horizontal label">ms</span>
                 </label>
                 <input type="number" name="delay"
-                       placeholder="#" value="{{visuals.delay}}">
+                       placeholder="#" value="{{delay}}">
             </div>
             <div class="field">
                 <label>
@@ -254,33 +202,8 @@
                     <span class="ui mini horizontal label">ms</span>
                 </label>
                 <input type="number" name="duration"
-                       placeholder="#" value="{{visuals.duration}}">
+                       placeholder="#" value="{{duration}}">
             </div>
-        </div>
-    </form>
-</template>
-
-<template name="trialsForm">
-    <form id="trials-form" class="ui inverted form">
-        <div class="field">
-            <label>
-                Intertrial Interval (ITI)
-                <span class="ui mini horizontal label">ms</span>
-            </label>
-            <input type="number" name="iti"
-                   placeholder="#" value="{{iti}}">
-        </div>
-        <div class="field">
-            <label>
-                Light Duration
-                <span class="ui mini horizontal label">ms</span>
-            </label>
-            <input type="number" name="light"
-                   placeholder="#" value="{{light}}">
-        </div>
-        <div class="field">
-            <label>No. of Trials</label>
-            <input type="number" name="total" placeholder="#1+" value="{{total}}">
         </div>
     </form>
 </template>

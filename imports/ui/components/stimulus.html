@@ -1,21 +1,18 @@
 <template name="bars">
-    <g id="stimulus-at-{{location.x}}-{{location.y}}" class="stimulus">
-        {{#if stimuli}}
-            {{#each range 0 stimuli 1}}
-                {{> bar dimensions=dimensions}}
-            {{/each}}
-        {{/if}}
+    <g id="stimulus-at-{{location.x}}-{{location.y}}" class="stimulus"
+       style="transform: rotate({{orientation.value}}{{orientation.units}});
+               transform-origin: center">
+        {{#each range 0 (gratings max) 1}}
+            {{> bar (dimensions)}}
+        {{/each}}
 
-        {{#unless preview}}
-            <rect class="horizontal-{{location.x}}-of-{{grid.x}} vertical-{{location.y}}-of-{{grid.y}} region"
-                  fill="transparent"
-                  height="{{height}}"
-                  width="{{width}}"></rect>
-        {{/unless}}
+        <rect class="horizontal-{{location.x}}-of-{{grid.x}}
+            vertical-{{location.y}}-of-{{grid.y}} region" fill="transparent"
+              height="{{max}}" width="{{max}}"></rect>
     </g>
 </template>
 
 <template name="bar">
-    <rect class="{{dimensions.orientation.value}}-{{dimensions.orientation.units}} bar"
-          fill="transparent" height="{{dimensions.height}}" width="{{dimensions.width}}"></rect>
+    <rect class="{{orientation.value}}-{{orientation.units}} bar"
+          fill="transparent" height="{{span}}" width="{{weight}}"></rect>
 </template>

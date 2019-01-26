@@ -1,3 +1,3 @@
-import '../components/menu';
-import './frame.css';
-import './frame.html';
+import '/imports/ui/layouts/frame.css';
+import '/imports/ui/layouts/frame.html';
+import '/imports/ui/components/menu';

@@ -1,72 +1,95 @@
 import './client.methods';
 
-import {Experiments, Sessions, Trials} from './collections';
+import {Experiments, Sessions, Templates, Trials} from './collections';
 import {Meteor} from 'meteor/meteor';
+
 import NanoTimer from 'NanoTimer';
 // TODO: Use mqtt imports instead of require?
 const mqtt = require('mqtt'),
     timers = new Map();
 
 if (Meteor.isServer) Meteor.methods({
-    'addExperiment': (experiment) => {
+    'addExperiment': (fields) => {
+        const template = Templates.findOne({
+            $and: [{name: fields.template},
+                {$or: [{users: 'any'}, {users: {$elemMatch: {$eq: Meteor.userId()}}}]}]
+        });
+
         return Experiments.insert({
             investigator: {
                 id: Meteor.userId(),
-                name: {first: experiment['investigator-first'], last: experiment['investigator-last']}
+                name: {first: fields['investigator-first'], last: fields['investigator-last']}
             },
-            link: '/experiments/' + experiment.title.replace(/( )|(\W)/g, '-'),
-            title: experiment.title,
+            link: '/experiments/' + fields.title.replace(/( )|(\W)/g, '-'),
+            templates: [template._id],
+            title: fields.title,
             users: [Meteor.userId()]
         });
     },
-    'addSession': (device, experiment, length, settings) => {
-        // const device = devices[0];
+    'addSession': (device, experiment, form) => {
+        console.log(device, experiment, form);
+
         return Sessions.insert({
             date: new Date(),
-            device: 'mqtt://' + device,
+            device: device,
             experiment: experiment,
-            settings: settings,
+            settings: form,
             subject: 'MouseID',
             trials: [],
-            user: Meteor.userId(),
+            user: Meteor.userId()
         });
     },
-    'addTrial': (number, id) => {
+    'addTemplate': (template) => Templates.insert({
+        creator: template.creator,
+        devices: template.devices,
+        name: template.name,
+        number: template.number,
+        session: template.session,
+        stages: template.stages,
+        users: template.users
+    }),
+    'addTrial': (id, number) => {
         const session = Sessions.findOne(id),
-            settings = session.settings[number - 1],
-            stage = 1;
+            trial = Trials.insert({
+                date: new Date(),
+                experiment: session.experiment,
+                number: number,
+                session: id,
+                stages: session.settings.stages[number - 1],
+                subject: 'MouseID'
+            });
 
-        /** Randomly generate stimuli within specified session parameters: */
-        if (settings) Meteor.call('generateStimuli', id, number, settings, stage, (error, result) => {
-            if (!error) {
-                const trial = Trials.insert({
-                    date: new Date(),
-                    experiment: session.experiment,
-                    number: number,
-                    session: id,
-                    stages: [{
-                        data: [], visuals: [{
-                            bars: {span: 300, weight: 10},
-                            cross: {span: 75, weight: 5}
-                        }]
-                    }, {data: [], visuals: result}],
-                    subject: 'MouseID'
-                });
-                if (trial) Meteor.call('updateSession', id, 'trials', trial, '');
-            } else {
-                console.log(error);
-            }
-        });
+        if (trial) Meteor.call('updateSession', id, 'trials', trial);
+        return trial;
     },
-    'mqttSend': (address, topic, message) => {
-        const client = mqtt.connect(address);
+    'addUser': (username, id) => Meteor.users.update({'profile.username': username}, {
+        $push: {'profile.experiments': id}
+    }),
+    'mqttSend': (id, topic, message) => {
+        const device = Meteor.users.findOne(id),
+            address = 'mqtt://' + device.profile.address,
+            client = mqtt.connect(address);
+        console.log(id, device, topic, message);
+
         client.publish(topic, JSON.stringify(message));
     },
+    'removeUser': (username, id) => Meteor.users.update({'profile.username': username}, {
+        $pull: {'profile.experiments': id}
+    }),
     'updateExperiment': (experiment, values) => {
         const users = Meteor.users.find({'profile.username': {$in: values.users}}).fetch(),
             ids = _.pluck(users, '_id');
 
-        Experiments.update(experiment, {
+        _.difference(experiment.users, ids).forEach((id) => {
+            console.log('rem: ', id);
+            Meteor.call('removeUser', id, experiment._id);
+        });
+        _.difference(ids, experiment.users).forEach((id) => {
+            console.log('add: ', id);
+            Meteor.call('addUser', id, experiment._id);
+        });
+
+        Experiments.update(experiment._id, {
             $set: {
                 users: ids
             }
@@ -112,20 +135,17 @@ if (Meteor.isServer) Meteor.methods({
 
         timers.set(key, timer);
     },
-    'updateTrial': (number, response, session, stage) => {
-        Trials.update({number: number, session: session, stages: {$elemMatch: {data: {$exists: true}}}},
-            {
-                $currentDate: {
-                    lastModified: true
-                },
-                $push: {
-                    ['stages.' + stage + '.data']: response
-                }
-            }, {multi: true});
-    },
-    'updateUser': (username, id) => {
-        Meteor.users.update({'profile.username': username}, {
-            $push: {'profile.experiments': id}
-        });
-    }
+    'updateTrial': (number, response, session, stage) => Trials.update({
+            number: number,
+            session: session,
+            stages: {$elemMatch: {data: {$exists: true}}}
+        },
+        {
+            $currentDate: {
+                lastModified: true
+            },
+            $push: {
+                ['stages.' + stage + '.data']: response
+            }
+        }, {multi: true})
 });

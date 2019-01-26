@@ -1,7 +1,8 @@
 import './data.html';
-import './profile.html';
-import './profile';
-import './tablesort';
+import '/imports/ui/components/profile.html';
+
+import '/imports/ui/components/profile';
+import '/imports/ui/components/tablesort';
 
 import _ from 'underscore';
 import moment from 'moment/moment';
@@ -90,18 +91,19 @@ Template.data.helpers({
         return (id) ? Sessions.findOne(id) : '';
     },
     trials() {
-        console.log(this);
-        return Trials.find({experiment: this._id, subject: 'MouseID'});
+        return Trials.find({experiment: Template.currentData()._id, subject: 'MouseID'});
     }
 });
 
 Template.data.onCreated(function () {
-    this.session = new ReactiveVar('');
-
     this.autorun(() => {
+        console.log(this.data._id);
+        this.subscribe('sessions.experiment', this.data._id);
         /** Subscribe to devices and authorized users: */
-        this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': true}]});
+        this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': {$ne: false}}]});
     });
+
+    this.session = new ReactiveVar('');
 });
 
 Template.data.onRendered(function () {
@@ -109,11 +111,11 @@ Template.data.onRendered(function () {
 });
 
 Template.sessionList.helpers({
-    box(address) {
-        return Meteor.users.findOne({'profile.device': true, 'profile.address': address.replace('mqtt://', '')});
+    box(id) {
+        return Meteor.users.findOne(id);
     },
-    session() {
-        return Sessions.find({experiment: this._id});
+    session(id) {
+        return Sessions.find({experiment: id});
     }
 });
 

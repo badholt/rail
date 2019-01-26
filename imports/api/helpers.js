@@ -10,7 +10,7 @@ Template.registerHelpers({
         if (float) return float.toFixed(places);
     },
     range(start, stop, step) {
-        return _.map(_.range(start, stop, step), (i) => ({index: i, order: i + 1}));
+        return Math.abs(stop - start) > 0 ? _.map(_.range(start, stop, step), (i) => ({index: i, order: i + 1})) : [];
     },
     relativeDate(date) {
         return moment(date).fromNow();

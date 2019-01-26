@@ -1,0 +1,136 @@
+<template name="sessionSetup">
+    <form id="device-form" class="ui equal width inverted form">
+        <div class="fields">
+            <div class="field">
+                <label>Current Template</label>
+                {{> templateDropdown}}
+            </div>
+
+            <div class="field">
+                <label>Device(s)</label>
+                {{> deviceDropdown}}
+            </div>
+        </div>
+    </form>
+
+    <div id="session-accordion" class="ui fluid inverted accordion">
+        <div class="title">
+            <i class="dropdown icon"></i>
+            Session Settings
+        </div>
+        <div class="content">
+            {{#with session}}
+                {{> sessionForm}}
+            {{/with}}
+        </div>
+
+        <div id="stages" class="title">
+            <i class="dropdown icon"></i>
+            Stages
+        </div>
+        <div class="content">
+            <div class="ui grey inverted top attached tabular menu">
+                {{#each stages}}
+                    {{> stageItem index=@index page=page}}
+                {{/each}}
+
+                <div class="right floated menu">
+                    <a id="add-stage" class="ui animated button item">
+                        <div class="visible content">
+                            <i class="plus icon"></i>
+                        </div>
+                        <div class="hidden content">Add</div>
+                    </a>
+                </div>
+            </div>
+
+            <div class="ui bottom attached inverted segment">
+                <div id="stages-accordion" class="accordion">
+                    {{#each stage page stages}}
+                        {{> stagePage (section @index)}}
+                    {{/each}}
+
+                    <div class="ui hidden divider"></div>
+
+                    {{> elementDropdown}}
+                </div>
+            </div>
+        </div>
+
+        <div class="ui hidden divider"></div>
+        <button class="ui black fluid button" type="submit">Run</button>
+    </div>
+
+    {{#if success}}
+        {{> sessionSuccess}}
+    {{/if}}
+</template>
+
+<template name="sessionSuccess">
+    <div id="success" class="ui icon success message transition hidden in">
+        <i class="exclamation icon"></i>
+        <i class="close icon"></i>
+        <div class="header">
+            Session successfully created.
+        </div>
+    </div>
+</template>
+
+<template name="stageItem">
+    <a class="stage {{#if $eq index page}}active{{/if}} item">
+        {{stage index}}
+    </a>
+</template>
+
+<template name="stagePage">
+    {{#if $eq type 'audio'}}
+        <div id="{{type}}-section" class="title">
+            <i class="dropdown icon"></i>
+            <i class="grey link music icon"></i>
+            Audio
+        </div>
+        <div class="content">
+            {{> audioForm}}
+        </div>
+    {{/if}}
+    {{#if $eq type 'cross'}}
+        <div id="{{type}}-section" class="title">
+            <i class="dropdown icon"></i>
+            <i class="grey link plus icon"></i>
+            Cross
+        </div>
+        <div class="content">
+            {{> crossForm}}
+        </div>
+    {{/if}}
+    {{#if $eq type 'light'}}
+        <div id="{{type}}-section" class="title">
+            <i class="dropdown icon"></i>
+            <i class="grey link lightbulb icon"></i>
+            Light
+        </div>
+        <div class="content">
+            {{> lightForm}}
+        </div>
+    {{/if}}
+    {{#if $eq type 'reward'}}
+        <div id="{{type}}-section" class="title">
+            <i class="dropdown icon"></i>
+            <i class="grey link star icon"></i>
+            Reward
+        </div>
+        <div class="content">
+            {{> rewardForm}}
+        </div>
+    {{/if}}
+    {{#if $eq type 'stimuli'}}
+        <div id="{{type}}-section" class="title">
+            <i class="dropdown icon"></i>
+            <i class="grey link bars icon"></i>
+            Stimuli
+        </div>
+        <div class="content">
+            {{> stimuliForm}}
+        </div>
+    {{/if}}
+</template>

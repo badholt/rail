@@ -2,73 +2,76 @@ import './blacklist.html';
 
 import _ from 'underscore';
 
-import {calculateWeights} from '../../api/client.methods';
 import {Template} from "meteor/templating";
 
 Template.blacklist.helpers({
-    blacklist(row) {
-        const stimulus = Template.instance().data.stimulus,
-            stimuli = Template.instance().parent(3).stimuli.get(),
-            visuals = stimuli.visuals[stimulus];
+    blacklist(y) {
+        const index = Template.instance().data.index,
+            session = Template.instance().parent(4),
+            page = session.page.get(),
+            stages = session.stages.get(),
+            stimuli = stages[page][index];
 
-        if (visuals) return _.filter(visuals.grid.blacklist, _.matches({y: row}));
+        if (stimuli && stimuli.grid) return {
+            blacklist: _.filter(stimuli.grid.blacklist, _.matches({y: y})),
+            row: y,
+            stimulus: index,
+            weighted: stimuli.grid.weighted,
+            x: stimuli.grid.x,
+            y: stimuli.grid.y
+        };
     },
-    columns() {
-        return Template.instance().data.columns;
-    },
-    rows() {
-        return Template.instance().data.rows;
-    },
-    weighted() {
-        return Template.instance().data.weighted;
+    grid() {
+        return Template.instance().data.grid;
     }
 });
 
 Template.blacklistCell.events({
     'click .column'(event, template) {
-        const accordion = template.parent(5),
-            blacklistTemplate = template.parent(2),
-            stimulus = blacklistTemplate.data.stimulus,
-            stimuli = accordion.stimuli.get(),
-            blacklist = stimuli.visuals[stimulus].grid.blacklist,
+        const session = template.parent(6),
+            page = session.page.get(),
+            stages = session.stages.get(),
+            stimulus = stages[page][Template.instance().data.stimulus],
+            blacklist = stimulus.grid.blacklist,
             cell = template.data.cell,
             index = _.findIndex(blacklist, _.matches({x: cell.x, y: cell.y}));
 
-        if (!_.contains(stimuli.visuals[stimulus].variables, 'grid') && this.cell.blacklist) {
+        if (!_.contains(stimulus.variables, 'grid.blacklist') && this.cell.blacklist) {
             _.each(blacklist, (element, i) => blacklist[i].blacklist = true);
         }
 
         blacklist[index].blacklist = !this.cell.blacklist;
         // if (blacklistTemplate.data.weighted) calculateWeights(blacklist, 1);
-        console.log(this, blacklistTemplate.data);
-        accordion.stimuli.set(stimuli);
+        session.stages.set(stages);
     },
     'input input'(event, template) {
         const target = event.target || event.srcElement,
-            accordion = template.parent(5),
-            blacklistTemplate = template.parent(2),
-            stimulus = blacklistTemplate.data.stimulus,
-            stimuli = accordion.stimuli.get(),
-            blacklist = stimuli.visuals[stimulus].grid.blacklist,
-            index = _.findIndex(blacklist, _.matches({x: this.cell.x, y: this.cell.y})),
-            value = parseFloat($('#stimulus-form-' + (stimulus + 1)).form('get value', target.name));
-        console.log(target, value, index, blacklist, this);
-        blacklist[index].weight = value;
+            number = Template.instance().data.stimulus,
+            session = template.parent(6),
+            page = session.page.get(),
+            stages = session.stages.get(),
+            stimulus = stages[page][number],
+            blacklist = stimulus.grid.blacklist,
+            index = _.findIndex(blacklist, _.matches({x: this.cell.x, y: this.cell.y}));
+
+        blacklist[index].weight = parseFloat($('#stimulus-form-' + (number + 1))
+            .form('get value', target.name));
         // calculateWeights(_.filter(blacklist, !_.matches({x: cell.x, y: cell.y})),
         //     1 - cell.weight);
-        console.log(stimuli);
-        accordion.stimuli.set(stimuli);
+        session.stages.set(stages);
     }
 });
 
 Template.blacklistRow.helpers({
-    cell(column) {
-        return _.find(Template.instance().data.blacklist, _.matches({x: column}));
-    },
-    row() {
-        return Template.instance().data.row;
-    },
-    weighted() {
-        return Template.instance().data.weighted;
+    cell(x) {
+        const row = Template.instance().data;
+        if (row) {
+            const cell = _.find(row.blacklist, _.matches({x: x}));
+
+            return {
+                cell: cell, column: x, row: row.row, stimulus: row.stimulus,
+                weighted: row.weighted
+            };
+        }
     }
 });

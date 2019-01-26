@@ -1,14 +1,14 @@
-import '../../ui/layouts/bare';
-import '../../ui/layouts/frame';
-import '../../ui/pages/create';
-import '../../ui/pages/experiment';
-import '../../ui/pages/home';
-import '../../ui/pages/notFound';
-import '../../ui/components/data';
-import '../../ui/pages/trial';
+import '/imports/ui/layouts/bare';
+import '/imports/ui/layouts/frame';
+import '/imports/ui/pages/create';
+import '/imports/ui/pages/data';
+import '/imports/ui/pages/experiment';
+import '/imports/ui/pages/home';
+import '/imports/ui/pages/notFound';
+import '/imports/ui/pages/trial';
 
-import {FlowRouter} from 'meteor/kadira:flow-router';
 import {BlazeLayout} from 'meteor/kadira:blaze-layout';
+import {FlowRouter} from 'meteor/kadira:flow-router';
 
 BlazeLayout.setRoot('body');
 
@@ -26,12 +26,6 @@ FlowRouter.route('/create', {
     },
 });
 
-FlowRouter.notFound = {
-    action() {
-        BlazeLayout.render('frame', {main: 'notFound'});
-    },
-};
-
 FlowRouter.route('/experiments/:link/', {
     triggersEnter: [function (context, redirect) {
         redirect(context.path + '/run');
@@ -47,8 +41,20 @@ FlowRouter.route('/experiments/:link/:action', {
     }
 });
 
-FlowRouter.route('/:session/trial/:trial/stage/:stage', {
+FlowRouter.notFound = {
+    action() {
+        BlazeLayout.render('frame', {main: 'notFound'});
+    },
+};
+
+FlowRouter.route('/session/:session', {
     action(params) {
         BlazeLayout.render('bare', {main: 'trial'});
     }
 });
+
+// FlowRouter.route('/:session/trial/:trial/stage/:stage', {
+//     action(params) {
+//         BlazeLayout.render('bare', {main: 'trial'});
+//     }
+// });

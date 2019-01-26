@@ -1,0 +1,22 @@
+<template name="rewardForm">
+    <form id="reward-form" class="ui inverted form">
+        <div class="two fields">
+            <div class="field">
+                <label>
+                    Delay
+                    <span class="ui mini horizontal label">ms</span>
+                </label>
+                <input type="number" name="reward.delay"
+                       placeholder="#" value="{{delay}}">
+            </div>
+            <div class="field">
+                <label>
+                    Duration
+                    <span class="ui mini horizontal label">ms</span>
+                </label>
+                <input type="number" name="reward.duration"
+                       placeholder="#" value="{{duration}}">
+            </div>
+        </div>
+    </form>
+</template>

@@ -1,0 +1,35 @@
+<template name="audioForm">
+    <form id="audio-form" class="ui inverted form">
+        <div class="two fields">
+            <div class="field">
+                <label>
+                    Delay
+                    <span class="ui mini horizontal label">ms</span>
+                </label>
+                <input type="number" name="audio.delay"
+                       placeholder="#" value="{{delay}}">
+            </div>
+            <div class="field">
+                <label>
+                    Duration
+                    <span class="ui mini horizontal label">ms</span>
+                </label>
+                <input type="number" name="audio.duration"
+                       placeholder="#" value="{{duration}}">
+            </div>
+            <div class="field">
+                <label class="">
+                    <i class="music icon"></i>
+                    {{file.name}}
+                    <span class="ui mini horizontal label">
+                        .{{file.type}}
+                    </span>
+                </label>
+
+                <audio controls>
+                    <source src="{{file.source}}" type="audio/{{file.type}}">
+                </audio>
+            </div>
+        </div>
+    </form>
+</template>

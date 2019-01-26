@@ -1,0 +1,19 @@
+<template name="elementDropdown">
+    <div id="elements" class="ui floating icon dropdown">
+        <a class="ui black animated button item">
+            <div class="visible content">
+                <i class="plus icon"></i>
+            </div>
+            <div class="hidden content">Add</div>
+        </a>
+
+        <div class="menu">
+            {{#each element}}
+                <div class="item" data-value="{{name}}">
+                    <i class="{{icon}} icon"></i>
+                    {{name}}
+                </div>
+            {{/each}}
+        </div>
+    </div>
+</template>

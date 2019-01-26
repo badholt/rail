@@ -1,9 +1,11 @@
 import './menu.html';
 import './profile.html';
-import './profile';
+
 import '/imports/api/collections';
+import '/imports/ui/components/profile';
 
 import {Experiments, Sessions} from '../../api/collections';
+import {FlowRouter} from 'meteor/kadira:flow-router';
 import {Meteor} from 'meteor/meteor';
 import {ReactiveVar} from 'meteor/reactive-var';
 import {Template} from 'meteor/templating';
@@ -16,6 +18,7 @@ Template.menu.events({
                 link = '/experiments/' + FlowRouter.getParam('link'),
                 tabs = template.tabs.get(),
                 experiment = Experiments.findOne({link: link});
+            console.log(tabs);
 
             if (experiment) {
                 tabs[experiment._id] = '/' + action;
@@ -27,7 +30,7 @@ Template.menu.events({
 
 Template.menu.helpers({
     experiment() {
-        return Template.instance().experiments();
+        return Experiments.find();
     },
     session() {
         return Sessions.find({trials: {$size: 1}});
@@ -38,26 +41,18 @@ Template.menu.helpers({
 });
 
 Template.menu.onCreated(function () {
-    const user = Meteor.user();
-    if (user.profile.device) {
-        this.autorun(() => {
-            this.subscribe('sessions.device', 'mqtt://' + user.profile.address);
-        });
-    } else {
-        this.tabs = new ReactiveVar({});
+    this.autorun(() => {
+        const user = Meteor.user();
 
-        this.autorun(() => {
-            this.experiments = () => Experiments.find({});
-        });
-        this.autorun(() => {
+        if (user.profile.device) {
+            this.subscribe('sessions.device', user._id);
+        } else {
             this.subscribe('experiments.user', user._id);
-        });
-    }
+            this.tabs = new ReactiveVar({});
+        }
+    });
 });
 
 Template.sessionWindow.onCreated(function () {
-    const stage = 1,
-        trial = 1;
-
-    FlowRouter.go('/' + this.data._id + '/trial/' + trial + '/stage/' + stage);
+    FlowRouter.go('/session/' + this.data._id);
 });

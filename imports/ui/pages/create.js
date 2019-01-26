@@ -1,9 +1,11 @@
 import './create.html';
 
+import '/imports/ui/components/dropdown/template';
+
 import {Experiments} from '/imports/api/collections';
 import {FlowRouter} from 'meteor/kadira:flow-router';
+import {Meteor} from 'meteor/meteor';
 import {Template} from 'meteor/templating';
-import {Meteor} from "meteor/meteor";
 
 Template.createExperiment.events({
     'submit #experiment-form'(event) {

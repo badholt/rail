@@ -1,4 +1,4 @@
-import {Accounts} from 'meteor/accounts-base'
+import {Accounts} from 'meteor/accounts-base';
 import {AccountsTemplates} from 'meteor/useraccounts:core';
 
 const pwd = AccountsTemplates.removeField('password');

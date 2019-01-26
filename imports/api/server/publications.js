@@ -1,5 +1,5 @@
 import {Meteor} from 'meteor/meteor';
-import {Experiments, Sessions, Trials} from "/imports/api/collections";
+import {Experiments, Sessions, Templates, Trials} from '/imports/api/collections';
 
 Meteor.publish('experiments', function () {
     return Experiments.find();
@@ -12,14 +12,26 @@ Meteor.publish('experiments.user', function (id) {
 
 });
 
-Meteor.publish('sessions.device', function (address) {
-    return Sessions.find({device: address});
+Meteor.publish('sessions.device', function (id) {
+    return Sessions.find({device: id});
 });
 Meteor.publish('sessions.experiment', function (id) {
     return Sessions.find({experiment: id});
 });
 Meteor.publish('sessions.single', function (id) {
     return Sessions.find(id);
+});
+
+Meteor.publish('templates', function () {
+    return Templates.find();
+});
+Meteor.publish('templates.experiment', function (id, user) {
+    const experiment = Experiments.findOne(id);
+    if (experiment) return Templates.find({$and: [{_id: {$in: experiment.templates}},
+            {$or: [{users: 'any'}, {users: {$elemMatch: {$eq: user}}}]}]});
+});
+Meteor.publish('templates.user', function (id) {
+    return Templates.find({$or: [{users: 'any'}, {users: {$elemMatch: {$eq: id}}}]});
 });
 
 Meteor.publish('trials.experiment', function (id) {

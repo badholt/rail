@@ -1,23 +1,27 @@
 <template name="experiment">
-    {{#with info}}
-        <div class="ui divided inverted padded stackable grid">
-            <div class="ui two wide column">
-                {{> experimentMenu}}
-            </div>
+    {{#each experiment}}
+        {{#if isActivePath regex=link}}
+            <div class="ui divided inverted padded stackable grid">
+                <div class="ui two wide column">
+                    {{> experimentMenu}}
+                </div>
 
-            <div class="ui twelve wide column">
-                {{#if isActivePath regex='/run'}}
-                    {{> accordion}}
-                {{/if}}
-                {{#if isActivePath regex='/data'}}
-                    {{> data}}
-                {{/if}}
-                {{#if isActivePath regex='/settings'}}
-                    {{> settingsForm}}
-                {{/if}}
+                <div class="ui twelve wide column">
+                    {{#if isActivePath regex='/run'}}
+                        {{#with template templates 0}}
+                            {{> sessionSetup}}
+                        {{/with}}
+                    {{/if}}
+                    {{#if isActivePath regex='/data'}}
+                        {{> data}}
+                    {{/if}}
+                    {{#if isActivePath regex='/settings'}}
+                        {{> settingsForm}}
+                    {{/if}}
+                </div>
             </div>
-        </div>
-    {{/with}}
+        {{/if}}
+    {{/each}}
 </template>
 
 <template name="experimentMenu">

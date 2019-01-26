@@ -1,28 +1,38 @@
 import './experiment.html';
-import '../components/data';
-import '../components/run';
-import '../components/settings';
 
-import {Experiments} from '../../api/collections';
+import '/imports/ui/pages/data';
+import '/imports/ui/pages/run';
+import '/imports/ui/pages/settings';
+
+import {Experiments, Templates} from '../../api/collections';
 import {FlowRouter} from 'meteor/kadira:flow-router';
 import {Template} from 'meteor/templating';
+import {Meteor} from "meteor/meteor";
 
 Template.experiment.helpers({
-    info() {
-        return Template.instance().experiment();
+    experiment() {
+        return Experiments.find();
+    },
+    path(action) {
+        return Template.currentData().link + action;
+    },
+    template(templates, index) {
+        /** For now we return the first(!) template in the list: */
+        return Templates.findOne({_id: templates[index]});
     }
 });
 
 Template.experiment.onCreated(function () {
+    this.getId = (experiment) => {
+        if (experiment && experiment._id) return experiment._id;
+    };
     this.getLink = () => FlowRouter.getParam('link');
+    this.getExperiment = () => Experiments.findOne({link: '/experiments/' + this.getLink()});
 
     this.autorun(() => {
-        this.experiment = () => Experiments.findOne({link: '/experiments/' + this.getLink()});
-        this.getExperiment = (experiment) => {
-            if (experiment && experiment._id) return experiment._id;
-        };
-
-        this.subscribe('sessions.experiment', this.getExperiment(this.experiment()));
-        this.subscribe('trials.experiment', this.getExperiment(this.experiment()));
+        const id = this.getId(this.getExperiment());
+        this.subscribe('sessions.experiment', id);
+        this.subscribe('templates.experiment', id, Meteor.userId());
+        this.subscribe('trials.experiment', id);
     });
 });

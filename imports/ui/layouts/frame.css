@@ -1,4 +1,9 @@
 /**------ TAGS: ------*/
+audio {
+    height: 60%;
+    width: 100%;
+}
+
 body, html {
     background: none;
 }

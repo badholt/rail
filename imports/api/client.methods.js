@@ -1,4 +1,5 @@
 import _ from 'underscore';
+import update from 'immutability-helper';
 
 import {Meteor} from 'meteor/meteor';
 
@@ -43,11 +44,13 @@ export const calculateCenter = (height, width) => ({
                 },
                 spacing: 2,
                 span: 100,
-                variables: ['grid'],
+                variables: ['grid.blacklist'],
                 weight: 5
             };
+
             visuals.push(previous);
         }
+
         return visuals;
     },
     randomLocation = (width, height, locations) => {
@@ -55,18 +58,16 @@ export const calculateCenter = (height, width) => ({
             y = _.random(1, height),
             location = {x: x, y: y},
             key = JSON.stringify(location);
+
         return (!locations.get(key)) ? location : randomLocation(width, height, locations);
     },
     randomEntry = (entries) => {
-        console.log(entries);
         const i = _.random(0, entries.length - 1),
             entry = entries[i],
-            key = JSON.parse(entry[0]),
             value = entry[1],
             r = _.random(0, 100) / 100;
-        console.log(i, key, value, r);
 
-        return (r < value) ? key : randomEntry(entries);
+        return (r < value) ? entry : randomEntry(entries);
     };
 
 Meteor.methods({
@@ -74,98 +75,62 @@ Meteor.methods({
         x: Math.floor(width / 2),
         y: Math.floor(height / 2)
     }),
-    'generateSettings': (stimuli, trials) => {
-        // TODO: Enable more settings & stages customization
-        // Settings currently hard-codes the first stage (cross),
-        // but eventually settings will include customizable stages
-        const stage = 1;
-        let stages = [[{
-                bars: {span: 300, weight: 10},
-                cross: {span: 75, weight: 5}
-            }], []],
-            settings = [];
+    'generateTrials': (form) => {
+        let trials = [];
 
-        /** Add settings for each stimulus within a stage: */
-        stimuli.visuals.forEach((value, index) => {
-            stages[stage].push({
-                bars: value.bars,
-                correct: _.filter(trials.correct, (condition) => condition.stimulus === index),
-                delay: value.delay,
-                duration: value.duration,
-                frequency: value.frequency,
-                grid: {
-                    blacklist: _.map(_.filter(value.grid.blacklist, (element) => !element.blacklist),
-                        (element) => [JSON.stringify({x: element.x, y: element.y}), element.weight]),
-                    x: value.grid.x, y: value.grid.y
-                },
-                iti: trials.iti,
-                light: trials.light,
-                map: [],
-                opacity: value.contrast,
-                spacing: value.spacing,
-                span: value.span,
-                variables: value.variables,
-                weight: value.weight
-            });
-        });
+        _.each(form.stages, (stage, i) => {
+            const combinations = new Map();
+            trials.push([]);
 
-        for (let i = 0; i < trials.total; i++) settings.push(stages);
-        return settings;
-    },
-    'generateStimuli': (session, trial, settings, stage) => {
-        let locations = new Map(),
-            orientation = Math.random() > 0.5 ? 0 : 90,
-            stimuli = [],
-            visuals = settings[stage];
+            _.each(stage, (element, j) => {
+                trials[i].push([]);
 
-        // TODO: Coupled orientations
-        for (let i = 0; i < visuals.length; i++) {
-            const stimulus = visuals[i],
-                span = stimulus.span,
-                variable = _.contains(stimulus.variables, 'grid'),
-                weight = stimulus.weight;
-            let location = JSON.parse(stimulus.grid.blacklist[0][0]);
+                if (element.type === 'stimuli') {
+                    let stimuli = [];
 
-            if (variable) {
-                const previous = new Map(stimulus.map),
-                    merge = new Map([...stimulus.grid.blacklist, ...locations, ...stimulus.map]),
-                    unused = _.filter([...merge], (element) => element[1]);
-                let map = [];
+                    _.each(element.variables, (variable) => {
+                        /** TODO: For other variables, we could generate arrays of possible
+                         *  values comparable to the blacklist here (i.e. [0, 0.25, 0.5, 0.75, 1] for contrast)
+                         */
+                        const options = (variable !== 'location') ? element[variable]
+                            : _.filter(element.grid.blacklist, (location) => !location.blacklist),
+                            nOptions = _.size(options),
+                            nStimuli = _.size(stimuli);
 
-                location = randomEntry(unused);
+                        if (nStimuli > 0) {
+                            const repeats = nOptions / nStimuli;
 
-                if (unused.length > 1) {
-                    previous.set(JSON.stringify(location), 0);
-                    map = [...previous.entries()];
-                } else {
-                    // const curve = _.first(settings, trial + 1);
-                    // console.log('reset', curve);
+                            if (repeats >= 1) _.times(Math.round(repeats), () =>
+                                stimuli = update(stimuli, {$push: stimuli}));
+
+                            stimuli = _.map(stimuli, (stimulus, n) =>
+                                update(stimulus, {[variable]: {$set: options[Math.floor(n / nOptions) % nOptions]}}));
+                        } else {
+                            _.each(options, (stimulus) =>
+                                stimuli = update(stimuli, {$push: [{[variable]: stimulus}]}));
+                        }
+                    });
+
+                    _.each(stimuli, (element) => combinations.set(element, element.location.weight));
                 }
 
-                Meteor.call('updateSession', session,
-                    'settings.$[].' + stage + '.' + i + '.map', map);
-            }
+                let map = [...combinations.entries()];
 
-            stimuli.push({
-                bars: stimulus.bars,
-                delay: stimulus.delay,
-                duration: stimulus.duration,
-                frequency: stimulus.frequency,
-                grid: stimulus.grid,
-                height: (orientation === 0) ? weight : span,
-                light: stimulus.light,
-                location: location,
-                opacity: stimulus.opacity,
-                orientation: {value: orientation, units: 'deg'},
-                spacing: stimulus.spacing,
-                width: (orientation === 0) ? span : weight
+                _.times(form.session.total, () => {
+                    if (map.length > 0) {
+                        const random = randomEntry(map);
+
+                        trials[i][j].push(_.defaults(random[0], element));
+                        map = (map.length > 1) ? _.without(map, random) : [...combinations.entries()];
+                    } else {
+                        trials[i][j].push(element);
+                    }
+                });
             });
 
-            /** Prevent multiple stimuli from appearing at the same location:  */
-            locations.set(JSON.stringify(location), 0);
-            /** Prevent pairs of stimuli from sharing the same orientation: */
-            orientation = 90 - orientation;
-        }
-        return stimuli;
+            trials = update(trials, {[i]: {$set: _.zip(...trials[i])}});
+        });
+
+        return {session: form.session, stages: _.zip(...trials)};
     }
 });

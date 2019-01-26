@@ -1,9 +1,7 @@
 <template name="profileAvatar">
     {{#with user this}}
         {{#if profile.picture}}
-            <div class="ui avatar image">
-                <img src="{{profile.picture}}">
-            </div>
+            <img class="ui avatar image" src="{{profile.picture}}">
         {{else}}
             <div class="ui inverted tiny header">
                 <i class="{{#if profile.device}}cube{{else}}user{{/if}} icon"></i>
@@ -12,5 +10,7 @@
                 </div>
             </div>
         {{/if}}
+    {{else}}
+        <i class="circular fitted inverted left floated tiny {{this}} icon"></i>
     {{/with}}
 </template>
