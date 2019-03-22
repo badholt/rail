@@ -13,7 +13,7 @@ Template.deviceDropdown.helpers({
     encrypt(id) {
         const encrypted = _.uniqueId('user_');
 
-        Template.instance().parent().cipher[encrypted] = id;
+        Template.instance().parent(2).cipher[encrypted] = id;
         return encrypted;
     },
     online(status) {

@@ -129,9 +129,7 @@
             Size
         </h5>
 
-        {{#with stimulus}}
-            <svg width="100%">{{> bars}}</svg>
-        {{/with}}
+        {{> stimulusPreview}}
 
         {{#unless frequency}}
             <div class="fields">
@@ -206,4 +204,12 @@
             </div>
         </div>
     </form>
+</template>
+
+<template name="stimulusPreview">
+    <svg class="stimulus-preview" width="100%">
+        {{#with stimulus}}
+            {{> bars center=center data=data}}
+        {{/with}}
+    </svg>
 </template>

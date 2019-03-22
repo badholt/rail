@@ -1,5 +1,16 @@
 <template name="audioForm">
     <form id="audio-form" class="ui inverted form">
+        <div class="field">
+            <label>
+                Audio Type
+                <select class="ui dropdown">
+                    <option value="file">File</option>
+                    <option value="noise">Noise</option>
+                    <option value="wave">Waveform</option>
+                </select>
+            </label>
+        </div>
+
         <div class="two fields">
             <div class="field">
                 <label>
@@ -26,9 +37,12 @@
                     </span>
                 </label>
 
-                <audio controls>
-                    <source src="{{file.source}}" type="audio/{{file.type}}">
-                </audio>
+                <canvas class="canvas"></canvas>
+                {{#if file}}
+                    <audio class="audio" controls>
+                        <source src="{{file.source}}" type="audio/{{file.type}}">
+                    </audio>
+                {{/if}}
             </div>
         </div>
     </form>

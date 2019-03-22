@@ -1,12 +1,12 @@
 import './client.methods';
 
-import {Experiments, Sessions, Templates, Trials} from './collections';
+import {Experiments, Sessions, Subjects, Templates, Trials} from './collections';
 import {Meteor} from 'meteor/meteor';
 
+import moment from 'moment/moment';
 import NanoTimer from 'NanoTimer';
 // TODO: Use mqtt imports instead of require?
-const mqtt = require('mqtt'),
-    timers = new Map();
+const mqtt = require('mqtt');
 
 if (Meteor.isServer) Meteor.methods({
     'addExperiment': (fields) => {
@@ -14,6 +14,7 @@ if (Meteor.isServer) Meteor.methods({
             $and: [{name: fields.template},
                 {$or: [{users: 'any'}, {users: {$elemMatch: {$eq: Meteor.userId()}}}]}]
         });
+        console.log(fields, template);
 
         return Experiments.insert({
             investigator: {
@@ -26,22 +27,26 @@ if (Meteor.isServer) Meteor.methods({
             users: [Meteor.userId()]
         });
     },
-    'addSession': (device, experiment, form) => {
-        console.log(device, experiment, form);
-
-        return Sessions.insert({
-            date: new Date(),
-            device: device,
-            experiment: experiment,
-            settings: form,
-            subject: 'MouseID',
-            trials: [],
-            user: Meteor.userId()
-        });
-    },
+    'addSession': (device, experiment, form) => Sessions.insert({
+        date: new Date(),
+        device: device,
+        experiment: experiment,
+        settings: form,
+        subject: 'MouseID',
+        trials: [],
+        user: Meteor.userId()
+    }),
+    'addSubject': (age, id, protocol, sex, strain) => Subjects.insert({
+        birthday: moment().subtract(age, 'days').calendar(),
+        identifier: id,
+        protocol: protocol,
+        sex: sex,
+        strain: strain
+    }),
     'addTemplate': (template) => Templates.insert({
-        creator: template.creator,
-        devices: template.devices,
+        author: Meteor.userId(),
+        devices: 'any',
+        inputs: template.inputs,
         name: template.name,
         number: template.number,
         session: template.session,
@@ -50,14 +55,17 @@ if (Meteor.isServer) Meteor.methods({
     }),
     'addTrial': (id, number) => {
         const session = Sessions.findOne(id),
+            stages = session.settings.stages[number - 1],
             trial = Trials.insert({
+                data: Array.from(stages, () => []),
                 date: new Date(),
                 experiment: session.experiment,
                 number: number,
                 session: id,
-                stages: session.settings.stages[number - 1],
+                stages: stages,
                 subject: 'MouseID'
             });
+        console.log(trial);
 
         if (trial) Meteor.call('updateSession', id, 'trials', trial);
         return trial;
@@ -69,7 +77,6 @@ if (Meteor.isServer) Meteor.methods({
         const device = Meteor.users.findOne(id),
             address = 'mqtt://' + device.profile.address,
             client = mqtt.connect(address);
-        console.log(id, device, topic, message);
 
         client.publish(topic, JSON.stringify(message));
     },
@@ -116,36 +123,13 @@ if (Meteor.isServer) Meteor.methods({
             });
         }
     },
-    'updateTimer': (session, key, args, interval) => {
-        let timer = (timers.has(key)) ? timers.get(key) : new NanoTimer();
-        const active = timer.hasTimeout();
-
-        if (!active) {
-            console.log('Started timer for ' + key + " at " + Date.now());
-            Meteor.call('updateSession', session._id, 'timers.' + key, true);
-
-            return timer.setTimeout(Meteor.bindEnvironment((err, res) => {
-                console.log('Completed timer for ' + key + " at " + Date.now());
-                return Meteor.call('updateSession', session._id, 'timers.' + key, false);
-            }), args, interval);
-        } else {
-            console.log('Stopped timer for ' + key + " at " + Date.now());
-            timer.clearTimeout();
-        }
-
-        timers.set(key, timer);
-    },
-    'updateTrial': (number, response, session, stage) => Trials.update({
-            number: number,
-            session: session,
-            stages: {$elemMatch: {data: {$exists: true}}}
-        },
+    'updateTrial': (id, key, operation, value) => Trials.update({_id: id},
         {
             $currentDate: {
                 lastModified: true
             },
-            $push: {
-                ['stages.' + stage + '.data']: response
+            ['$' + operation]: {
+                [key]: value
             }
         }, {multi: true})
 });

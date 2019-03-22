@@ -5,6 +5,7 @@ import '/imports/ui/components/cross';
 import '/imports/ui/components/stimulus';
 import '/imports/ui/components/dropdown/device';
 import '/imports/ui/components/dropdown/element';
+import '/imports/ui/components/dropdown/input';
 import '/imports/ui/components/forms/audio';
 import '/imports/ui/components/forms/cross';
 import '/imports/ui/components/forms/light';
@@ -18,6 +19,12 @@ import {FlowRouter} from 'meteor/kadira:flow-router';
 import {Meteor} from 'meteor/meteor';
 import {ReactiveVar} from 'meteor/reactive-var';
 import {Template} from 'meteor/templating';
+import {Templates} from "../../api/collections";
+
+const hasTemplate = (id, template) => {
+    const templates = Templates.find({$or: [{users: 'any'}, {users: {$elemMatch: {$eq: id}}}]}).fetch();
+    return _.some(templates, (t) => _.isEqual(_.omit(t, '_id'), template));
+};
 
 Template.sessionSetup.events({
     'click #add-stage'() {
@@ -26,6 +33,15 @@ Template.sessionSetup.events({
 
         stages.push([]);
         template.stages.set(stages);
+    },
+    'click #save'(event, template) {
+        const exists = hasTemplate(Meteor.userId(), _.omit(template.data, '_id'));
+        console.log(exists);
+        if (!exists) {
+            Meteor.call('addTemplate', template.data);
+        } else {
+            console.log('Already saved!');
+        }
     },
     'click button'() {
         const template = Template.instance();
@@ -39,7 +55,17 @@ Template.sessionSetup.events({
     }
 });
 
-Template.sessionSetup.helpers({
+Template.sessionTemplate.helpers({
+    object() {
+        console.log(this);
+    },
+    hasTemplate() {
+        console.log(Template.instance().data, Template.currentData());
+        return hasTemplate(Meteor.userId(), _.omit(Template.currentData(), '_id'));
+    },
+    input(page, inputs) {
+        return inputs[page];
+    },
     page() {
         return Template.instance().page.get();
     },
@@ -50,18 +76,26 @@ Template.sessionSetup.helpers({
         return Template.instance().session.get();
     },
     stage(page, stages) {
-        return stages[page];
+        if (stages) return stages[page];
     },
     stages() {
         return Template.instance().stages.get();
     },
     success() {
         return Template.instance().success.get();
+    },
+    template(id) {
+        console.log(id);
+        return Templates.findOne({_id: id});
+    },
+    templateId() {
+        return Template.instance().templateId.get();
     }
 });
 
 Template.sessionSetup.onCreated(function () {
     this.cipher = {}; // For dropdown decryption
+    this.inputs = new ReactiveVar(this.data.inputs);
     this.page = new ReactiveVar(0);
     this.session = new ReactiveVar(this.data.session);
     this.stages = new ReactiveVar(this.data.stages);
@@ -73,18 +107,20 @@ Template.sessionSetup.onCreated(function () {
         if (devices) _.each(devices, (id) => {
             Meteor.call('generateTrials', form.data, (error, trials) => {
                 console.log(error, trials);
-                if (!error) Meteor.call('addSession', form.cipher[id], experiment, trials, (error, session) => {
-                    if (!error) Meteor.call('addTrial', session, 1, () => {
-                        /** A submission success message appears for 5 seconds: */
-                        this.success.set(true);
-                        $('#success').transition('fade');
-                        Meteor.setTimeout(() => this.success.set(false), 5000);
+                if (!error) Meteor.call('addSession', form.cipher[id], experiment,
+                    {inputs: form.data.inputs, session: form.data.session, stages: trials}, (error, session) => {
+                        if (!error) Meteor.call('addTrial', session, 1, () => {
+                            /** A submission success message appears for 5 seconds: */
+                            this.success.set(true);
+                            $('#success').transition('fade');
+                            Meteor.setTimeout(() => this.success.set(false), 5000);
+                        });
                     });
-                });
             });
         });
     };
     this.success = new ReactiveVar(false);
+    this.templateId = new ReactiveVar(this.data.templates[0]);
 });
 
 Template.sessionSetup.onRendered(function () {
@@ -100,7 +136,8 @@ Template.sessionSuccess.onRendered(function () {
 
 Template.stageItem.events({
     'click .stage'(event, template) {
-        Template.instance().parent().page.set(template.data.index);
+        console.log(event, template);
+        Template.instance().parent(2).page.set(template.data.index);
     }
 });
 

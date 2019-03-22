@@ -7,12 +7,10 @@ import '/imports/ui/components/tablesort';
 import _ from 'underscore';
 import moment from 'moment/moment';
 
-import {correctEvent} from '/imports/ui/pages/trial';
-import {saveAs} from 'file-saver';
 import {Meteor} from 'meteor/meteor';
 import {Template} from 'meteor/templating';
 import {ReactiveVar} from 'meteor/reactive-var';
-import {Experiments, Sessions, Trials} from '/imports/api/collections';
+import {Sessions, Trials} from '/imports/api/collections';
 
 const fs = require('fs'),
     analyzeData = function (comparisons, stages) {
@@ -108,6 +106,7 @@ Template.data.onCreated(function () {
 
 Template.data.onRendered(function () {
     $('table').tablesort();
+    console.log(this);
 });
 
 Template.sessionList.helpers({
@@ -119,41 +118,56 @@ Template.sessionList.helpers({
     }
 });
 
-Template.trialList.helpers({
-    analyses(trial) {
-        const analysis = Template.instance().analysis.get();
-        console.log(analysis);
-        return analysis[trial - 1];
+Template.settingsList.helpers({
+    element(stages) {
+        return _.flatten(_.unique(stages, (stage) => JSON.stringify(stage)));
     },
-    comparisons() {
-        return {
-            time: ['timeStamp']
+    string(property) {
+        return (_.isArray(property) || _.isObject(property)) ? JSON.stringify(property) : property;
+    },
+    text(key) {
+        const text = {
+            delay: 'Delay (before session start)',
+            duration: 'Duration',
+            iti: 'Intertrial Interval (ITI)',
+            total: 'No. of Trials'
         };
+
+        return (text[key]) ? text[key] : key;
+    }
+});
+
+Template.settingsList.onRendered(function () {
+    $('.ui.accordion').accordion();
+});
+
+Template.trialList.helpers({
+    events(data) {
+        const types = _.map(data, (stage) => _.toArray(_.groupBy(stage, (element) =>
+            element.type.endsWith('.fired') || element.type.endsWith('.next'))));
+        console.log(data, types, _.flatten(types, true));
+        return _.flatten(types, true);
     },
-    correct(data) {
-        // console.log(this, Template.instance());
+    group(group) {
+        return group
     },
-    max() {
-        return _.max(_.map(this.settings, (trial) => trial.length));
+    length(trial) {
+        return _.flatten(trial).length;
     },
-    trial() {
-        return Trials.find({session: this._id});
+    trial(id) {
+        return Trials.findOne(id);
+    },
+    unique() {
+        return Template.instance().unique.get();
     }
 });
 
 Template.trialList.onCreated(function () {
-    this.analysis = new ReactiveVar([]);
-});
+    const unique = _.unique(this.data.settings.stages, (trial) => JSON.stringify(trial)),
+        measured = _.map(unique, (trial, i) => {
+            const stages = _.map(trial, (stage, j) => ({number: j + 1, span: stage.length, stage: stage}));
+            return {number: i + 1, span: _.flatten(trial).length, stages: stages};
+        });
 
-Template.trialList.onRendered(function () {
-    Trials.find({_id: {$in: this.data.trials}}).forEach((trial) => {
-        const analyses = Template.instance().analysis.get(),
-            comparisons = {
-                time: ['timeStamp']
-            },
-            stages = trial.stages;
-
-        analyses.push(analyzeData(comparisons, stages));
-        Template.instance().analysis.set(analyses);
-    });
+    this.unique = new ReactiveVar(measured);
 });

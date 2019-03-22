@@ -4,13 +4,13 @@ import {Meteor} from "meteor/meteor";
 import {Template} from 'meteor/templating';
 import {Templates} from '../../../api/collections';
 
-Template.templateDropdown.events({
-    'change #templates'(event, template) {
-        console.log(this, template);
-    }
-});
-
 Template.templateDropdown.helpers({
+    encrypt(id) {
+        const encrypted = _.uniqueId('user_');
+
+        Template.instance().parent(2).cipher[encrypted] = id;
+        return encrypted;
+    },
     template() {
         return Templates.find();
     }
@@ -24,5 +24,12 @@ Template.templateDropdown.onCreated(function () {
 });
 
 Template.templateDropdown.onRendered(function () {
-    $('#templates').dropdown();
+    const form = Template.instance().parent();
+
+    $('#templates').dropdown({
+        action: (text, value) => {
+            const id = form.cipher[value];
+            form.templateId.set(id);
+        }
+    });
 });

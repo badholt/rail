@@ -10,13 +10,14 @@ Template.lightForm.events({
         if (!_.isNaN(value)) {
             const session = template.parent(2),
                 page = session.page.get(),
+                property = target.name.split('.')[1],
                 stages = session.stages.get();
 
-            switch (target.name) {
-                case 'light.delay':
-                case 'light.dim':
-                case 'light.duration':
-                    stages[page][this.index][target.name] = value;
+            switch (property) {
+                case 'delay':
+                case 'dim':
+                case 'duration':
+                    stages[page][this.index][property] = value;
                     session.stages.set(stages);
                     break;
             }

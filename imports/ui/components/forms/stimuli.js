@@ -1,9 +1,11 @@
 import './stimuli.html';
 
 import _ from "underscore";
+import update from 'immutability-helper';
 
-import {calculateWeights, generateBlacklist, generateVisuals} from "../../../api/client.methods";
-import {Template} from "meteor/templating";
+import {calculateCenter, calculateWeights, generateBlacklist, generateVisuals} from '../../../api/client.methods';
+import {Template} from 'meteor/templating';
+import {Trials} from "../../../api/collections";
 
 Template.stimuliForm.helpers({
     stimuli(index) {
@@ -81,16 +83,13 @@ Template.stimulusForm.events({
 
 Template.stimulusForm.helpers({
     attend(index) {
-        const session = Template.instance().parent(3),
-            trials = session.trials.get();
-
-        return _.some(trials.correct, (condition) => condition.stimulus === index);
+        // const session = Template.instance().parent(3),
+        //     trials = session.trials.get();
+        //
+        // return _.some(trials.correct, (condition) => condition.stimulus === index);
     },
     checked(field) {
         return _.contains(this.variables, field);
-    },
-    stimulus() {
-        return _.extend(this, {preview: true});
     },
     weighted() {
         return this.grid.weighted;
@@ -99,6 +98,7 @@ Template.stimulusForm.helpers({
 
 Template.stimulusForm.onRendered(function () {
     let template = Template.instance().parent(3);
+    console.log(template);
 
     $('.ui.checkbox').checkbox({
         onChecked: function () {
@@ -153,4 +153,44 @@ Template.stimulusForm.onRendered(function () {
             template.stages.set(stages);
         }
     });
+});
+
+Template.stimulusPreview.helpers({
+    stimulus() {
+        if (Template.instance().rendered.get()) {
+            const container = $('svg.stimulus-preview'),
+                height = container.height(),
+                width = container.width(),
+                orientation = (this.orientation) ? this.orientation[0] : {units: 'deg', value: 0};
+
+            if (height && width) return {
+                center: _.mapObject(calculateCenter(height, width), (value)=> value * 2),
+                data: update(this, {orientation: {$set: orientation}})
+            };
+
+            Template.instance().rendered.set(false);
+        } else {
+            Template.instance().rendered.set(true);
+        }
+    }
+});
+
+Template.stimulusPreview.onCreated(function () {
+    this.autorun(() => {
+        this.getDimensions = () => {
+            const container = $('svg.stimulus-preview'),
+                height = container.height(),
+                width = container.width();
+
+            console.log(container, height, width);
+        }
+
+    });
+
+    this.rendered = new ReactiveVar(false);
+});
+
+Template.stimulusPreview.onRendered(function () {
+    Template.instance().getDimensions();
+    Template.instance().rendered.set(true);
 });

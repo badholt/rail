@@ -9,23 +9,198 @@ Meteor.startup(() => {
             {
                 author: 'default bars',
                 devices: 'any',
+                inputs: [
+                    [{
+                        conditions: [],
+                        correct: [{
+                            action: '+',
+                            delay: 0,
+                            specifications: {amount: 1},
+                            targets: ['stage']
+                        }],
+                        event: 'click',
+                        incorrect: []
+                    }],
+                    [
+                        {
+                            conditions: [
+                                {
+                                    comparison: '<',
+                                    objects: [{name: 'event', property: 'clientX'}],
+                                    subjects: [{name: 'center', property: 'x'}]
+                                },
+                                {
+                                    comparison: '=',
+                                    objects: [{name: 'stimuli', property: '0.orientation.value'}],
+                                    subjects: [{name: 'number', property: 90}]
+                                }
+                            ],
+                            correct: [
+                                {
+                                    action: 'insert',
+                                    delay: 0,
+                                    targets: [
+                                        {
+                                            type: 'audio',
+                                            delay: 0,
+                                            duration: 1000,
+                                            file: {
+                                                name: 'Beep',
+                                                source: '/audio/beep.wav',
+                                                type: 'wav'
+                                            },
+                                            loop: 'loop'
+                                        },
+                                        {
+                                            type: 'reward',
+                                            commands: [
+                                                {
+                                                    command: 'on',
+                                                    delay: 0
+                                                },
+                                                {
+                                                    command: 'off',
+                                                    delay: 1000
+                                                }
+                                            ],
+                                            delay: 1000,
+                                            duration: 1000
+                                        }]
+                                },
+                                {
+                                    action: '+',
+                                    delay: 0,
+                                    specifications: {amount: 1},
+                                    targets: ['trial']
+                                }
+                            ],
+                            event: 'click',
+                            incorrect: [
+                                {
+                                    action: 'insert',
+                                    delay: 0,
+                                    targets: [
+                                        {
+                                            type: 'light',
+                                            commands: [
+                                                {
+                                                    command: 'dim',
+                                                    delay: 0,
+                                                    dim: 10,
+                                                    numbers: 'LED1'
+                                                },
+                                                {
+                                                    command: 'on',
+                                                    delay: 0,
+                                                    numbers: 'LED1'
+                                                },
+                                                {
+                                                    command: 'off',
+                                                    delay: 9000,
+                                                    numbers: 'LED1'
+                                                }
+                                            ],
+                                            delay: 1000,
+                                            dim: 10,
+                                            duration: 10000
+                                        }
+                                    ]
+                                },
+                                {
+                                    action: '+',
+                                    delay: 0,
+                                    specifications: {amount: 1},
+                                    targets: ['trial']
+                                }
+                            ]
+                        },
+                        {
+                            conditions: [
+                                {
+                                    comparison: '<',
+                                    objects: [{name: 'center', property: 'x'}],
+                                    subjects: [{name: 'event', property: 'clientX'}]
+                                },
+                                {
+                                    comparison: '=',
+                                    objects: [{name: 'stimuli', property: '0.orientation.value'}],
+                                    subjects: [{name: 'number', property: 0}]
+                                }
+                            ],
+                            correct: [
+                                {
+                                    action: 'insert',
+                                    delay: 0,
+                                    targets: [
+                                        {
+                                            type: 'audio',
+                                            delay: 0,
+                                            duration: 1000,
+                                            file: {
+                                                name: 'Beep',
+                                                source: '/audio/beep.wav',
+                                                type: 'wav'
+                                            },
+                                            loop: 'loop'
+                                        },
+                                        {
+                                            type: 'reward',
+                                            commands: [
+                                                {
+                                                    command: 'on',
+                                                    delay: 0
+                                                },
+                                                {
+                                                    command: 'off',
+                                                    delay: 1000
+                                                }
+                                            ],
+                                            delay: 1000,
+                                            duration: 1000
+                                        }
+                                    ]
+                                }
+                            ],
+                            event: 'click',
+                            incorrect: [{
+                                action: 'insert',
+                                delay: 0,
+                                targets: [
+                                    {
+                                        type: 'light',
+                                        commands: [
+                                            {
+                                                command: 'dim',
+                                                delay: 0,
+                                                dim: 10,
+                                                numbers: 'LED1'
+                                            },
+                                            {
+                                                command: 'on',
+                                                delay: 0,
+                                                numbers: 'LED1'
+                                            },
+                                            {
+                                                command: 'off',
+                                                delay: 9000,
+                                                numbers: 'LED1'
+                                            }
+                                        ],
+                                        delay: 1000,
+                                        dim: 10,
+                                        duration: 10000
+                                    }
+                                ]
+                            }]
+                        },
+                    ]
+                ],
                 name: 'Gratings',
                 number: 1,
                 session: {
-                    correct: [{event: 'left', orientation: {value: 90, units: 'deg'}, stimulus: 0},
-                        {event: 'right', orientation: {value: 0, units: 'deg'}, stimulus: 0}],
                     delay: 0,
                     duration: 300000,
                     iti: 10000,
-                    light: {
-                        delay: 0,
-                        dim: 50,
-                        duration: 3000
-                    },
-                    reward: {
-                        delay: 0,
-                        duration: 1000
-                    },
                     total: 5
                 },
                 stages: [
@@ -129,6 +304,19 @@ Meteor.startup(() => {
             {
                 author: 'default bell',
                 devices: 'any',
+                inputs: [
+                    [{
+                        conditions: [],
+                        correct: [{
+                            action: '+',
+                            specifications: {amount: 1},
+                            delay: 0,
+                            targets: ['trial']
+                        }],
+                        event: 'click',
+                        incorrect: []
+                    }]
+                ],
                 name: 'Shaping',
                 number: 0, //TODO Make variable (here) obsolete
                 session: {
@@ -156,17 +344,18 @@ Meteor.startup(() => {
                                 {
                                     command: 'dim',
                                     delay: 0,
-                                    dim: 10
+                                    dim: 10,
+                                    numbers: 'LED1'
                                 },
                                 {
                                     command: 'on',
                                     delay: 0,
-                                    numbers: [1]
+                                    numbers: 'LED1'
                                 },
                                 {
                                     command: 'off',
-                                    delay: 10000,
-                                    numbers: [1]
+                                    delay: 9000,
+                                    numbers: 'LED1'
                                 }
                             ],
                             delay: 1000,

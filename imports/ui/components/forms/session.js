@@ -9,15 +9,18 @@ Template.sessionForm.events({
 
         if (!_.isNaN(value)) {
             const form = template.parent(),
+                property = target.name.split('.')[1],
                 session = form.session.get();
-
-            switch (target.name) {
+            console.log(form, session);
+            switch (property) {
                 case 'correct':
+                case 'delay':
+                case 'duration':
                 case 'iti':
                 case 'light.duration':
                 case 'total':
-                    session[target.name] = value;
-                    session.session.set(session);
+                    session[property] = value;
+                    form.session.set(session);
                     break;
             }
         }

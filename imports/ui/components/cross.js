@@ -57,7 +57,8 @@ Template.cross.onRendered(function () {
 
         if (number && session) {
             const stage = 0;
-            Meteor.call('updateTrial', number, {type: 'cross', timeStamp: Date.now()}, session._id, stage);
+            // Meteor.call('updateTrial', number, {type: 'cross', timeStamp: Date.now()}, session._id, stage);
+            // Meteor.call('updateTrial', trial._id, 'data.' + stage, 'push', data);
         }
 
         renderCross(this.data, false);

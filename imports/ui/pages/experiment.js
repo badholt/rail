@@ -15,24 +15,20 @@ Template.experiment.helpers({
     },
     path(action) {
         return Template.currentData().link + action;
-    },
-    template(templates, index) {
-        /** For now we return the first(!) template in the list: */
-        return Templates.findOne({_id: templates[index]});
     }
 });
 
 Template.experiment.onCreated(function () {
-    this.getId = (experiment) => {
-        if (experiment && experiment._id) return experiment._id;
-    };
     this.getLink = () => FlowRouter.getParam('link');
     this.getExperiment = () => Experiments.findOne({link: '/experiments/' + this.getLink()});
 
     this.autorun(() => {
-        const id = this.getId(this.getExperiment());
-        this.subscribe('sessions.experiment', id);
-        this.subscribe('templates.experiment', id, Meteor.userId());
-        this.subscribe('trials.experiment', id);
+        const experiment = this.getExperiment();
+
+        if (experiment) {
+            this.subscribe('sessions.experiment', experiment._id);
+            this.subscribe('templates.experiment', experiment._id, Meteor.userId());
+            this.subscribe('trials.experiment', experiment._id);
+        }
     });
 });

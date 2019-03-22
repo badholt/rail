@@ -1,27 +1,47 @@
 <template name="trial">
     {{#with session}}
-        {{#with trial this}}
-            {{#each stage stages}}
-                <svg width="100%" height="100%">
+        {{#with trial}}
+            <svg width="100%" height="100%">
+                {{#each stage stages}}
                     {{#if $eq type 'cross'}}
                         {{> cross}}
                     {{/if}}
                     {{#if $eq type 'stimuli'}}
-                        {{> bars}}
+                        {{#if timer delay duration type}}
+                            {{> bars center=center data=this}}
+                        {{/if}}
                     {{/if}}
-                </svg>
+                    {{#if $eq type 'audio'}}
+                        {{audio file}}
+                    {{/if}}
+                    {{#if $eq type 'light'}}
+                        {{command this}}
+                    {{/if}}
+                    {{#if $eq type 'reward'}}
+                        {{command this}}
+                    {{/if}}
+                {{/each}}
 
-                {{#if $eq type 'audio'}}
-                    {{> audioComponent}}
-                    {{audio}}
-                {{/if}}
-                {{#if $eq type 'light'}}
-                    {{command}}
-                {{/if}}
-                {{#if $eq type 'reward'}}
-                    {{command}}
-                {{/if}}
-            {{/each}}
+                {{#each responses}}
+                    {{#if $eq type 'cross'}}
+                        {{> cross}}
+                    {{/if}}
+                    {{#if $eq type 'stimuli'}}
+                        {{#if timer delay duration type}}
+                            {{> bars center=center data=this}}
+                        {{/if}}
+                    {{/if}}
+                    {{#if $eq type 'audio'}}
+                        {{audio this}}
+                    {{/if}}
+                    {{#if $eq type 'light'}}
+                        {{command this}}
+                    {{/if}}
+                    {{#if $eq type 'reward'}}
+                        {{command this}}
+                    {{/if}}
+                {{/each}}
+            </svg>
         {{/with}}
     {{/with}}
 </template>

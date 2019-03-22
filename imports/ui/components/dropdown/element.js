@@ -2,7 +2,6 @@ import './element.html';
 
 import {Template} from "meteor/templating";
 
-
 Template.elementDropdown.helpers({
     element() {
         return [
@@ -23,7 +22,7 @@ Template.elementDropdown.onRendered(function () {
         onChange: (value) => {
             const stages = parent.stages.get(),
             page = parent.page.get();
-            console.log(value, stages, page, stages[page]);
+
             stages[page].push({type: value});
             parent.stages.set(stages);
         }

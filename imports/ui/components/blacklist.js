@@ -36,7 +36,7 @@ Template.blacklistCell.events({
             cell = template.data.cell,
             index = _.findIndex(blacklist, _.matches({x: cell.x, y: cell.y}));
 
-        if (!_.contains(stimulus.variables, 'grid.blacklist') && this.cell.blacklist) {
+        if (!_.contains(stimulus.variables, 'location') && this.cell.blacklist) {
             _.each(blacklist, (element, i) => blacklist[i].blacklist = true);
         }
 

@@ -1,26 +1,22 @@
 <template name="sessionForm">
     <form id="session-form" class="ui equal width inverted form">
         <div class="fields">
-            {{#if delay}}
-                <div class="field">
-                    <label>
-                        Delay (Before Session Start)
-                        <span class="ui mini horizontal label">ms</span>
-                    </label>
-                    <input type="number" name="session.delay"
-                           placeholder="#" value="{{delay}}">
-                </div>
-            {{/if}}
-            {{#if iti}}
-                <div class="field">
-                    <label>
-                        Intertrial Interval (ITI)
-                        <span class="ui mini horizontal label">ms</span>
-                    </label>
-                    <input type="number" name="iti"
-                           placeholder="#" value="{{iti}}">
-                </div>
-            {{/if}}
+            <div class="field">
+                <label>
+                    Delay (before session start)
+                    <span class="ui mini horizontal label">ms</span>
+                </label>
+                <input type="number" name="session.delay"
+                       placeholder="#" value="{{delay}}">
+            </div>
+            <div class="field">
+                <label>
+                    Intertrial Interval (ITI)
+                    <span class="ui mini horizontal label">ms</span>
+                </label>
+                <input type="number" name="session.iti"
+                       placeholder="#" value="{{iti}}">
+            </div>
             {{#if light}}
                 <div class="field">
                     <label>
@@ -47,7 +43,7 @@
             {{#if total}}
                 <div class="field">
                     <label>No. of Trials</label>
-                    <input type="number" name="total" placeholder="#1+" value="{{total}}">
+                    <input type="number" name="session.total" placeholder="#1+" value="{{total}}">
                 </div>
             {{/if}}
         </div>

@@ -1,14 +1,40 @@
 <template name="sessionSetup">
-    <form id="device-form" class="ui equal width inverted form">
-        <div class="fields">
-            <div class="field">
-                <label>Current Template</label>
-                {{> templateDropdown}}
-            </div>
+    {{#with template templateId}}
+        {{> sessionTemplate}}
 
-            <div class="field">
-                <label>Device(s)</label>
-                {{> deviceDropdown}}
+        {{#if success}}
+            {{> sessionSuccess}}
+        {{/if}}
+    {{/with}}
+</template>
+
+<template name="sessionSuccess">
+    <div id="success" class="ui icon success message transition hidden in">
+        <i class="exclamation icon"></i>
+        <i class="close icon"></i>
+        <div class="header">
+            Session successfully created.
+        </div>
+    </div>
+</template>
+
+<template name="sessionTemplate">
+    <form id="device-form" class="ui equal width inverted form">
+        <div class="ui basic segment">
+            <a id="save" class="ui {{#if hasTemplate}}grey{{else}}blue{{/if}} corner label">
+                <i class="save icon"></i>
+            </a>
+
+            <div class="fields">
+                <div class="field">
+                    <label>Current Template</label>
+                    {{> templateDropdown}}
+                </div>
+
+                <div class="field">
+                    <label>Device(s)</label>
+                    {{> deviceDropdown}}
+                </div>
             </div>
         </div>
     </form>
@@ -16,7 +42,7 @@
     <div id="session-accordion" class="ui fluid inverted accordion">
         <div class="title">
             <i class="dropdown icon"></i>
-            Session Settings
+            <span class="ui inverted header">Session Settings</span>
         </div>
         <div class="content">
             {{#with session}}
@@ -26,7 +52,7 @@
 
         <div id="stages" class="title">
             <i class="dropdown icon"></i>
-            Stages
+            <span class="ui inverted header">Stages</span>
         </div>
         <div class="content">
             <div class="ui grey inverted top attached tabular menu">
@@ -46,33 +72,70 @@
 
             <div class="ui bottom attached inverted segment">
                 <div id="stages-accordion" class="accordion">
-                    {{#each stage page stages}}
-                        {{> stagePage (section @index)}}
-                    {{/each}}
+                    <div class="ui horizontal divider">
+                        {{> elementDropdown}}
+                    </div>
+                    <section class="ui inverted segment">
+                        {{#each stage page stages}}
+                            {{> stagePage (section @index)}}
+                        {{/each}}
+                    </section>
 
-                    <div class="ui hidden divider"></div>
 
-                    {{> elementDropdown}}
+                    <div class="ui horizontal divider">
+                        {{> inputDropdown}}
+                    </div>
+                    <section class="ui inverted segment">
+                        {{#each input page inputs}}
+                            <div id="inputs" class="input title">
+                                <i class="dropdown icon"></i>
+                                <i class="grey link hand pointer icon"></i>
+                                {{event}}
+                            </div>
+                            <div class="content">
+                                If {{event}}
+
+                                {{#each conditions}}
+                                    {{property}} of
+
+                                    {{#each objects}}
+                                        {{this}}
+                                    {{/each}}
+
+                                    {{comparison}}
+
+                                    {{#each subjects}}
+                                        {{this}}
+                                    {{/each}}
+                                {{/each}},
+
+                                {{#each correct}}
+                                    {{action}}{{amount}}
+
+                                    {{#each subjects}}
+                                        {{this}}
+                                        {{type}}
+                                    {{/each}}
+                                {{/each}}
+
+                                {{#if incorrect}}
+                                    else
+                                    {{#each incorrect}}
+                                        {{action}}
+                                        {{#each objects}}
+                                            {{type}}
+                                        {{/each}}
+                                    {{/each}}
+                                {{/if}}
+                            </div>
+                        {{/each}}
+                    </section>
                 </div>
             </div>
         </div>
 
         <div class="ui hidden divider"></div>
         <button class="ui black fluid button" type="submit">Run</button>
-    </div>
-
-    {{#if success}}
-        {{> sessionSuccess}}
-    {{/if}}
-</template>
-
-<template name="sessionSuccess">
-    <div id="success" class="ui icon success message transition hidden in">
-        <i class="exclamation icon"></i>
-        <i class="close icon"></i>
-        <div class="header">
-            Session successfully created.
-        </div>
     </div>
 </template>
 

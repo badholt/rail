@@ -1,15 +1,17 @@
 <template name="bars">
-    <g id="stimulus-at-{{location.x}}-{{location.y}}" class="stimulus"
-       style="transform: rotate({{orientation.value}}{{orientation.units}});
-               transform-origin: center">
-        {{#each range 0 (gratings max) 1}}
-            {{> bar (dimensions)}}
-        {{/each}}
+    {{#with data}}
+        <g id="region">
+            <g id="stimulus-at-{{location.x}}-{{location.y}}">
+                {{#each range 0 (gratings max) 1}}
+                    {{> bar (dimensions)}}
+                {{/each}}
+            </g>
 
-        <rect class="horizontal-{{location.x}}-of-{{grid.x}}
+            <rect class="horizontal-{{location.x}}-of-{{grid.x}}
             vertical-{{location.y}}-of-{{grid.y}} region" fill="transparent"
-              height="{{max}}" width="{{max}}"></rect>
-    </g>
+                  height="{{max}}" width="{{max}}"></rect>
+        </g>
+    {{/with}}
 </template>
 
 <template name="bar">

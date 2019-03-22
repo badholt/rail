@@ -13,6 +13,7 @@ import {Template} from 'meteor/templating';
 Template.menu.events({
     'click .menu a.item'(event, template) {
         const item = $('.tabular.menu .active.item').get(0);
+        console.log(this, event, template, item);
         if (item) {
             const action = item.getAttribute('id'),
                 link = '/experiments/' + FlowRouter.getParam('link'),
@@ -41,9 +42,9 @@ Template.menu.helpers({
 });
 
 Template.menu.onCreated(function () {
-    this.autorun(() => {
-        const user = Meteor.user();
+    const user = Meteor.user();
 
+    this.autorun(() => {
         if (user.profile.device) {
             this.subscribe('sessions.device', user._id);
         } else {

@@ -8,9 +8,7 @@
 
                 <div class="ui twelve wide column">
                     {{#if isActivePath regex='/run'}}
-                        {{#with template templates 0}}
-                            {{> sessionSetup}}
-                        {{/with}}
+                        {{> sessionSetup}}
                     {{/if}}
                     {{#if isActivePath regex='/data'}}
                         {{> data}}
