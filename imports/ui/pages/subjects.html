@@ -1,0 +1,165 @@
+<template name="subjectPanel">
+    <div class="ui centered three column padded grid">
+        {{#each subjects}}
+            {{> subjectCard}}
+        {{/each}}
+
+        <label id="add-subject" class="ui bottom attached black button label">
+            <i class="huge icons">
+                <i class="green paw icon"></i>
+                <i class="corner inverted add icon"></i>
+            </i>
+        </label>
+
+        {{> subjectModal}}
+    </div>
+</template>
+
+<template name="subjectCard">
+    <div class="column">
+        <div class="ui green card">
+            <div class="center aligned content">
+                <div class="ui icon header">
+                    <i class="green inverted large right floated circular paw icon"></i>
+
+                    {{identifier}}
+
+                    <span class="sub header">
+                        {{#if name}}"{{name}}"{{/if}}
+                    </span>
+                </div>
+
+                <div class="meta">
+                    <div class="ui tiny label">
+                        <i class="dna icon"></i>
+                        {{strain}}
+                    </div>
+
+                    <div class="ui tiny label">
+                        <i class="{{#if $eq sex 'F'}}venus{{else}}mars{{/if}} icon"></i>
+                    </div>
+
+                    <div class="ui tiny label">
+                        <i class="birthday icon"></i>
+                        {{relativeDate birthday true}} old
+                    </div>
+                </div>
+
+                <div class="description">
+                    <label class="ui green label">
+                        Participating in Experiment ...
+                    </label>
+                </div>
+            </div>
+
+            <div class="extra content">
+                <span class="left floated">
+                    <i class="clipboard list icon"></i>
+                    {{protocol}}
+                </span>
+
+                <span class="right floated">
+                    <i class="clock icon"></i>
+                    last seen
+                </span>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template name="subjectForm">
+    <div class="ui inverted form">
+        <div class="three fields">
+            <div class="field">
+                <label>Identifier</label>
+                <input name="id" placeholder="ex: M16" type="text">
+            </div>
+
+            <div class="field">
+                <label class="ui inverted header">
+                    Name
+                    <span class="content">
+                        <span class="sub header">(optional)</span>
+                    </span>
+                </label>
+
+                <input name="name" placeholder="ex: Toffee" type="text">
+            </div>
+
+            <div class="field">
+                <label>Protocol</label>
+                <select name="protocol" class="ui search dropdown">
+                    <option value="">ex: MO17A81</option>
+                    <option value="MO17A68">MO17A68</option>
+                    <option value="MO17A81">MO17A81</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="three fields">
+            <div class="field">
+                <label>Age</label>
+
+                <div class="ui right labeled input">
+                    <input name="age" type="number" placeholder="ex: 8">
+                    <div class="ui dropdown label">
+                        <div class="text">weeks</div>
+                        <i class="dropdown icon"></i>
+                        <div class="menu">
+                            <div class="item">days</div>
+                            <div class="item">weeks</div>
+                            <div class="item">months</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Sex</label>
+                <select name="sex" class="ui dropdown">
+                    <option value="f">Female</option>
+                    <option value="m">Male</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label>Strain</label>
+                <select name="strain" class="ui search dropdown">
+                    <option value="wt">c57</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="field">
+            <label class="ui inverted header">
+                Description
+                <span class="content">
+                    <span class="sub header">(optional)</span>
+                </span>
+            </label>
+
+            <textarea autocomplete="off" name="description" placeholder="Tags and definitions" rows="2"></textarea>
+        </div>
+    </div>
+</template>
+
+<template name="subjectModal">
+    <div class="ui basic small modal">
+        <i class="close icon"></i>
+        <div class="ui huge green dividing header">
+            <i class="icons">
+                <i class="green paw icon"></i>
+                <i class="corner inverted add icon"></i>
+            </i>
+
+            Add New Subject
+        </div>
+        <div class="content">
+            {{> subjectForm}}
+        </div>
+
+        <button class="ui fluid labeled green icon button">
+            <i class="check icon"></i> Add
+        </button>
+    </div>
+</template>

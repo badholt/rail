@@ -15,13 +15,14 @@ Template.elementDropdown.helpers({
 });
 
 Template.elementDropdown.onRendered(function () {
-    const parent = this.parent();
+    const parent = this.parent(2);
 
     $('#elements').dropdown({
         on: 'hover',
         onChange: (value) => {
             const stages = parent.stages.get(),
             page = parent.page.get();
+            console.log(stages, page);
 
             stages[page].push({type: value});
             parent.stages.set(stages);

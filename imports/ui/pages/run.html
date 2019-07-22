@@ -1,6 +1,6 @@
 <template name="sessionSetup">
     {{#with template templateId}}
-        {{> sessionTemplate}}
+        {{> sessionTemplate inputs=inputs page=page session=session stages=stages template=templateId}}
 
         {{#if success}}
             {{> sessionSuccess}}
@@ -57,7 +57,7 @@
         <div class="content">
             <div class="ui grey inverted top attached tabular menu">
                 {{#each stages}}
-                    {{> stageItem index=@index page=page}}
+                    {{> stageItem (index @index)}}
                 {{/each}}
 
                 <div class="right floated menu">
@@ -86,49 +86,77 @@
                         {{> inputDropdown}}
                     </div>
                     <section class="ui inverted segment">
-                        {{#each input page inputs}}
-                            <div id="inputs" class="input title">
-                                <i class="dropdown icon"></i>
-                                <i class="grey link hand pointer icon"></i>
-                                {{event}}
-                            </div>
-                            <div class="content">
-                                If {{event}}
+                        <div class="ui middle aligned divided list">
+                            {{#each input page inputs}}
+                                <div class="item">
+                                    <div class="right floated content">
+                                        <i class="grey link cancel icon"></i>
+                                    </div>
 
-                                {{#each conditions}}
-                                    {{property}} of
+                                    <div class="content">
+                                        <span class="ui black inverted label">If </span>
 
-                                    {{#each objects}}
-                                        {{this}}
-                                    {{/each}}
+                                        {{> eventDropdown}}
 
-                                    {{comparison}}
+                                        {{#each conditions}}
+                                            {{#each objects}}
+                                                <a class="ui mini grey image label">
+                                                    {{name}}
+                                                    <span class="detail">{{property}}</span>
+                                                </a>
+                                            {{/each}}
 
-                                    {{#each subjects}}
-                                        {{this}}
-                                    {{/each}}
-                                {{/each}},
+                                            <a class="ui mini grey image label">{{comparison}}</a>
 
-                                {{#each correct}}
-                                    {{action}}{{amount}}
+                                            {{#each subjects}}
+                                                <a class="ui mini grey image label">
+                                                    {{action}}
+                                                    <span class="detail">{{property}}</span>
+                                                </a>
+                                            {{/each}}
 
-                                    {{#each subjects}}
-                                        {{this}}
-                                        {{type}}
-                                    {{/each}}
-                                {{/each}}
-
-                                {{#if incorrect}}
-                                    else
-                                    {{#each incorrect}}
-                                        {{action}}
-                                        {{#each objects}}
-                                            {{type}}
+                                            &
                                         {{/each}}
-                                    {{/each}}
-                                {{/if}}
-                            </div>
-                        {{/each}}
+
+                                        {{> conditionsDropdown}}
+
+                                        <span class="ui black inverted label">
+                                            <i class="right arrow icon"></i>
+                                        </span>
+
+                                        {{> correctDropdown}}
+<!--                                        {{#each correct}}-->
+<!--                                            <a class="ui mini grey image label">-->
+<!--                                                {{action}}-->
+<!--                                                {{#if specifications.amount}}-->
+<!--                                                    <span class="detail">{{specifications.amount}}</span>-->
+<!--                                                {{/if}}-->
+<!--                                            </a>-->
+
+<!--                                            {{#each targets}}-->
+<!--                                                <a class="ui mini grey label">-->
+<!--                                                    {{#unless type}}{{this}}{{else}}{{type}}{{/unless}}-->
+<!--                                                </a>-->
+<!--                                            {{/each}}-->
+
+<!--                                            <span class="ui black inverted label"> & </span>-->
+<!--                                        {{/each}}-->
+
+                                        {{> incorrectDropdown}}
+<!--                                        {{#if incorrect}}-->
+<!--                                            else-->
+<!--                                            {{#each incorrect}}-->
+<!--                                                <a class="ui mini grey label">{{action}}</a>-->
+
+<!--                                                {{#each objects}}-->
+<!--                                                    <a class="ui mini grey label">{{type}}</a>-->
+<!--                                                {{/each}}-->
+<!--                                            {{/each}}-->
+<!--                                        {{/if}}-->
+                                    </div>
+                                </div>
+                            {{/each}}
+                        </div>
                     </section>
                 </div>
             </div>
@@ -140,8 +168,8 @@
 </template>
 
 <template name="stageItem">
-    <a class="stage {{#if $eq index page}}active{{/if}} item">
-        {{stage index}}
+    <a class="stage {{#if active}}active{{/if}} item">
+        {{index}}
     </a>
 </template>
 

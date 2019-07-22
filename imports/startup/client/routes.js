@@ -2,9 +2,11 @@ import '/imports/ui/layouts/bare';
 import '/imports/ui/layouts/frame';
 import '/imports/ui/pages/create';
 import '/imports/ui/pages/data';
+import '/imports/ui/pages/devices';
 import '/imports/ui/pages/experiment';
 import '/imports/ui/pages/home';
 import '/imports/ui/pages/notFound';
+import '/imports/ui/pages/subjects';
 import '/imports/ui/pages/trial';
 
 import {BlazeLayout} from 'meteor/kadira:blaze-layout';
@@ -23,6 +25,13 @@ FlowRouter.route('/create', {
     name: 'create',
     action() {
         BlazeLayout.render('frame', {main: 'createExperiment'});
+    },
+});
+
+FlowRouter.route('/devices', {
+    name: 'devices',
+    action() {
+        BlazeLayout.render('frame', {main: 'devicePanel'});
     },
 });
 
@@ -53,8 +62,9 @@ FlowRouter.route('/session/:session', {
     }
 });
 
-// FlowRouter.route('/:session/trial/:trial/stage/:stage', {
-//     action(params) {
-//         BlazeLayout.render('bare', {main: 'trial'});
-//     }
-// });
+FlowRouter.route('/subjects', {
+    name: 'subjects',
+    action() {
+        BlazeLayout.render('frame', {main: 'subjectPanel'});
+    },
+});

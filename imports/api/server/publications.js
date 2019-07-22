@@ -22,6 +22,9 @@ Meteor.publish('sessions.single', function (id) {
     return Sessions.find(id);
 });
 
+Meteor.publish('subjects', function () {
+    return Subjects.find();
+});
 Meteor.publish('subjects.experiment', function (id) {
     return Subjects.find({experiments: {$elemMatch: {$eq: id}}});
 });

@@ -10,10 +10,7 @@ const mqtt = require('mqtt');
 
 if (Meteor.isServer) Meteor.methods({
     'addExperiment': (fields) => {
-        const template = Templates.findOne({
-            $and: [{name: fields.template},
-                {$or: [{users: 'any'}, {users: {$elemMatch: {$eq: Meteor.userId()}}}]}]
-        });
+        const template = Templates.findOne(fields.template);
         console.log(fields, template);
 
         return Experiments.insert({
@@ -27,24 +24,28 @@ if (Meteor.isServer) Meteor.methods({
             users: [Meteor.userId()]
         });
     },
-    'addSession': (device, experiment, form) => Sessions.insert({
-        date: new Date(),
-        device: device,
-        experiment: experiment,
-        settings: form,
-        subject: 'MouseID',
-        trials: [],
-        user: Meteor.userId()
-    }),
+    'addSession': (device, experiment, inputs, session, trials) => {
+        console.log(device, experiment, inputs, session, trials);
+        return Sessions.insert({
+            date: new Date(),
+            device: device,
+            experiment: experiment,
+            settings: {inputs: inputs, session: session, stages: trials},
+            subject: 'MouseID',
+            trials: [],
+            user: Meteor.userId()
+        });
+    },
     'addSubject': (age, id, protocol, sex, strain) => Subjects.insert({
         birthday: moment().subtract(age, 'days').calendar(),
         identifier: id,
+        name: "",
         protocol: protocol,
         sex: sex,
         strain: strain
     }),
     'addTemplate': (template) => Templates.insert({
-        author: Meteor.userId(),
+        author: Meteor.userId() || template.author,
         devices: 'any',
         inputs: template.inputs,
         name: template.name,
@@ -55,8 +56,10 @@ if (Meteor.isServer) Meteor.methods({
     }),
     'addTrial': (id, number) => {
         const session = Sessions.findOne(id),
-            stages = session.settings.stages[number - 1],
-            trial = Trials.insert({
+            stages = session.settings.stages[number - 1];
+        console.log('add trial', id, session, stages);
+        if (stages) {
+            const trial = Trials.insert({
                 data: Array.from(stages, () => []),
                 date: new Date(),
                 experiment: session.experiment,
@@ -65,10 +68,11 @@ if (Meteor.isServer) Meteor.methods({
                 stages: stages,
                 subject: 'MouseID'
             });
-        console.log(trial);
+            console.log('insert trial', trial);
 
-        if (trial) Meteor.call('updateSession', id, 'trials', trial);
-        return trial;
+            if (trial) Meteor.call('updateSession', id, 'trials', trial);
+            return trial;
+        }
     },
     'addUser': (username, id) => Meteor.users.update({'profile.username': username}, {
         $push: {'profile.experiments': id}

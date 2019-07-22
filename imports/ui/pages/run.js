@@ -21,14 +21,94 @@ import {ReactiveVar} from 'meteor/reactive-var';
 import {Template} from 'meteor/templating';
 import {Templates} from "../../api/collections";
 
-const hasTemplate = (id, template) => {
+const hasTemplate = (id, data) => {
     const templates = Templates.find({$or: [{users: 'any'}, {users: {$elemMatch: {$eq: id}}}]}).fetch();
-    return _.some(templates, (t) => _.isEqual(_.omit(t, '_id'), template));
+    console.log(id, data, templates);
+    return _.some(templates, (template) => {
+        const a = _.pick(template, 'inputs', 'session', 'stages'),
+            b = _.pick(data, 'inputs', 'session', 'stages'),
+            inputs = _.isEqual(a.inputs, b.inputs),
+            session = _.isEqual(a.session, b.session),
+            stages = _.isEqual(
+                _.map(a.stages, (stage) => _.map(stage, (element) => _.omit(element, 'index'))),
+                _.map(a.stages, (stage) => _.map(stage, (element) => _.omit(element, 'index'))));
+        console.log(a, b, inputs, session, stages);
+        return inputs && session && stages;
+    });
 };
 
-Template.sessionSetup.events({
+Template.sessionSetup.helpers({
+    inputs() {
+        return Template.instance().inputs.get();
+    },
+    page() {
+        return Template.instance().page.get();
+    },
+    session() {
+        return Template.instance().session.get();
+    },
+    stages() {
+        return Template.instance().stages.get();
+    },
+    success() {
+        return Template.instance().success.get();
+    },
+    template(id) {
+        const template = Templates.findOne(id);
+        console.log(id, template);
+        if (template) {
+            Template.instance().inputs.set(template.inputs);
+            Template.instance().session.set(template.session);
+            Template.instance().stages.set(template.stages);
+            return template;
+        }
+    },
+    templateId() {
+        return Template.instance().templateId.get();
+    }
+});
+
+Template.sessionSetup.onCreated(function () {
+    this.cipher = {}; // For dropdown decryption
+    this.inputs = new ReactiveVar('');
+    this.page = new ReactiveVar(0);
+    this.session = new ReactiveVar('');
+    this.stages = new ReactiveVar('');
+    this.submitForm = (inputs, session, stages) => {
+        const devices = $('#devices').dropdown('get values'),
+            experiment = this.parent().getExperiment()._id;
+        console.log(experiment, inputs, session, stages, this.parent());
+
+        if (devices) _.each(devices, (id) => {
+            Meteor.call('generateTrials', inputs, session, stages, (error, trials) => {
+                console.log(error, trials);
+                if (!error) Meteor.call('addSession', this.cipher[id], experiment,
+                    inputs, session, trials, (error, session) => {
+                        console.log(error, session);
+                        if (!error) Meteor.call('addTrial', session, 1, () => {
+                            /** A submission success message appears for 5 seconds: */
+                            // this.success.set(true);
+                            // $('#success').transition('fade');
+                            // Meteor.setTimeout(() => this.success.set(false), 5000);
+                        });
+                    });
+            });
+        });
+    };
+    this.success = new ReactiveVar(false);
+    this.templateId = new ReactiveVar(this.data.templates[0]);
+});
+
+Template.sessionSuccess.onRendered(function () {
+    $('.message .close')
+        .on('click', function () {
+            $(this).closest('.message').transition('fade');
+        });
+});
+
+Template.sessionTemplate.events({
     'click #add-stage'() {
-        const template = Template.instance(),
+        const template = Template.instance().parent(),
             stages = template.stages.get();
 
         stages.push([]);
@@ -44,106 +124,57 @@ Template.sessionSetup.events({
         }
     },
     'click button'() {
-        const template = Template.instance();
-        template.submitForm(template);
+        const template = Template.instance().parent();
+        console.log(template, Template.currentData());
+        template.submitForm(template.inputs.get(), template.session.get(), template.stages.get());
     },
     'submit .form'(event) {
         event.preventDefault();
 
-        const template = Template.instance();
-        template.submitForm(template);
+        const template = Template.instance().parent();
+        template.submitForm(template.inputs.get(), template.session.get(), template.stages.get());
     }
 });
 
 Template.sessionTemplate.helpers({
-    object() {
-        console.log(this);
-    },
     hasTemplate() {
-        console.log(Template.instance().data, Template.currentData());
-        return hasTemplate(Meteor.userId(), _.omit(Template.currentData(), '_id'));
+        return hasTemplate(Meteor.userId(), Template.currentData());
+    },
+    index(index) {
+        const page = Template.instance().data.page,
+            active = _.isEqual(index, page);
+
+        return {index: ++index, active: active};
     },
     input(page, inputs) {
         return inputs[page];
     },
-    page() {
-        return Template.instance().page.get();
-    },
+    // page() {
+    //     return Template.instance().parent().page.get();
+    // },
     section(index) {
         return _.extend(this, {index: index});
     },
-    session() {
-        return Template.instance().session.get();
-    },
     stage(page, stages) {
         if (stages) return stages[page];
-    },
-    stages() {
-        return Template.instance().stages.get();
-    },
-    success() {
-        return Template.instance().success.get();
-    },
-    template(id) {
-        console.log(id);
-        return Templates.findOne({_id: id});
-    },
-    templateId() {
-        return Template.instance().templateId.get();
     }
 });
 
-Template.sessionSetup.onCreated(function () {
-    this.cipher = {}; // For dropdown decryption
-    this.inputs = new ReactiveVar(this.data.inputs);
-    this.page = new ReactiveVar(0);
-    this.session = new ReactiveVar(this.data.session);
-    this.stages = new ReactiveVar(this.data.stages);
-    this.submitForm = (form) => {
-        const devices = $('#devices').dropdown('get values'),
-            experiment = form.parent().getExperiment()._id;
-        console.log(experiment, form.parent());
+Template.sessionTemplate.onRendered(function () {
+    const parent = Template.instance().parent();
 
-        if (devices) _.each(devices, (id) => {
-            Meteor.call('generateTrials', form.data, (error, trials) => {
-                console.log(error, trials);
-                if (!error) Meteor.call('addSession', form.cipher[id], experiment,
-                    {inputs: form.data.inputs, session: form.data.session, stages: trials}, (error, session) => {
-                        if (!error) Meteor.call('addTrial', session, 1, () => {
-                            /** A submission success message appears for 5 seconds: */
-                            this.success.set(true);
-                            $('#success').transition('fade');
-                            Meteor.setTimeout(() => this.success.set(false), 5000);
-                        });
-                    });
-            });
-        });
-    };
-    this.success = new ReactiveVar(false);
-    this.templateId = new ReactiveVar(this.data.templates[0]);
-});
+    parent.inputs.set(this.data.inputs);
+    parent.page.set(0);
+    parent.session.set(this.data.session);
+    parent.stages.set(this.data.stages);
 
-Template.sessionSetup.onRendered(function () {
     $('#session-accordion').accordion({exclusive: false});
-});
-
-Template.sessionSuccess.onRendered(function () {
-    $('.message .close')
-        .on('click', function () {
-            $(this).closest('.message').transition('fade');
-        });
 });
 
 Template.stageItem.events({
     'click .stage'(event, template) {
-        console.log(event, template);
-        Template.instance().parent(2).page.set(template.data.index);
-    }
-});
-
-Template.stageItem.helpers({
-    stage(index) {
-        return index + 1;
+        console.log(event, template, template.parent(), template.parent(2));
+        Template.instance().parent(2).page.set(template.data.index - 1);
     }
 });
 

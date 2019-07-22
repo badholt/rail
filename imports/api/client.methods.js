@@ -75,11 +75,12 @@ Meteor.methods({
         x: Math.floor(width / 2),
         y: Math.floor(height / 2)
     }),
-    'generateTrials': (form) => {
+    'generateTrials': (inputs, session, stages) => {
         // TODO: Find way to generate "add on" stimuli with session parameters
         let trials = [];
+        console.log('form', inputs, session, stages);
 
-        _.each(form.stages, (stage, i) => {
+        _.each(stages, (stage, i) => {
             const combinations = new Map();
             trials.push([]);
 
@@ -115,9 +116,9 @@ Meteor.methods({
                     _.each(stimuli, (element) => combinations.set(element, element.location.weight));
                 }
 
-                const n = (form.session.duration)
-                    ? Math.round(form.session.duration / form.session.iti) * 6
-                    : form.session.total;
+                const n = (session.duration)
+                    ? Math.round(session.duration / session.iti) * 6
+                    : session.total;
                 let map = [...combinations.entries()];
 
                 _.times(n, () => {

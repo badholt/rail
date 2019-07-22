@@ -13,14 +13,7 @@ Template.stimuliForm.helpers({
     }
 });
 
-Template.stimulusForm.events({
-    'click i.trophy.icon'(event, template) {
-        const session = template.parent(3),
-            trials = session.trials.get();
-
-        _.each(trials.correct, (condition) => condition.stimulus = this.index);
-        session.trials.set(trials);
-    },
+Template.stimuliForm.events({
     'input input'(event, template) {
         const target = event.target || event.srcElement,
             value = parseFloat($('#' + target.form.id).form('get value', target.name));
@@ -30,8 +23,9 @@ Template.stimulusForm.events({
             const session = template.parent(3),
                 page = session.page.get(),
                 stages = session.stages.get(),
-                stage = stages[page][this.index];
+                stage = stages[page][this.index - 1];
             let grid;
+            console.log(session, page, stage, this);
 
             switch (target.name) {
                 case 'bars':
@@ -69,6 +63,7 @@ Template.stimulusForm.events({
                     break;
                 case 'number':
                     session[target.name] = value;
+                    console.log(session, target.name, value);
                     const values = (value < stages[page].length)
                         ? _.first(stages[page], value)
                         : generateVisuals(stages[page], stages[page].length, value);
@@ -79,6 +74,16 @@ Template.stimulusForm.events({
             }
         }
     },
+});
+
+Template.stimulusForm.events({
+    'click i.trophy.icon'(event, template) {
+        const session = template.parent(3),
+            trials = session.trials.get();
+
+        _.each(trials.correct, (condition) => condition.stimulus = this.index);
+        session.trials.set(trials);
+    }
 });
 
 Template.stimulusForm.helpers({
@@ -164,7 +169,7 @@ Template.stimulusPreview.helpers({
                 orientation = (this.orientation) ? this.orientation[0] : {units: 'deg', value: 0};
 
             if (height && width) return {
-                center: _.mapObject(calculateCenter(height, width), (value)=> value * 2),
+                center: _.mapObject(calculateCenter(height, width), (value) => value * 2),
                 data: update(this, {orientation: {$set: orientation}})
             };
 

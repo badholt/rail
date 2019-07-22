@@ -17,6 +17,7 @@ Template.deviceDropdown.helpers({
         return encrypted;
     },
     online(status) {
+        console.log(this, status);
         return (status.online) ? 'green' : 'red';
     }
 });

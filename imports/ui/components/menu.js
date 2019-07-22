@@ -11,7 +11,7 @@ import {ReactiveVar} from 'meteor/reactive-var';
 import {Template} from 'meteor/templating';
 
 Template.menu.events({
-    'click .menu a.item'(event, template) {
+    'click .ui.menu > a.item'(event, template) {
         const item = $('.tabular.menu .active.item').get(0);
         console.log(this, event, template, item);
         if (item) {
@@ -25,6 +25,8 @@ Template.menu.events({
                 tabs[experiment._id] = '/' + action;
                 template.tabs.set(tabs);
             }
+        } else {
+            console.log(template.tabs.get());
         }
     }
 });

@@ -1,0 +1,47 @@
+<template name="devicePanel">
+    <div class="ui centered three column padded grid">
+        {{#each devices}}
+            {{> deviceCard}}
+        {{/each}}
+    </div>
+</template>
+
+<template name="deviceCard">
+    <div class="column">
+        <div class="ui {{#if status.online}}{{#unless status.idle}}green{{else}}yellow{{/unless}}
+        {{else}}red{{/if}} card">
+            <div class="content">
+                <i class="{{#if status.online}}{{#unless status.idle}}green{{else}}yellow{{/unless}}
+                {{else}}red{{/if}} large right floated circle icon"></i>
+
+                <a href="http://camera.railpage.org" target="_parent">
+                    <i class="large black link right floated video icon"></i>
+                </a>
+
+                <a href="http://controls.railpage.org" target="_parent">
+                    <i class="large black link right floated sliders icon"></i>
+                </a>
+
+                <a id="toggle-lights"><i class="large black link right floated lightbulb icon"></i></a>
+
+                <div class="header">{{profile.name}}</div>
+
+                <div class="description">
+                    <label class="ui label">{{profile.device}}</label>
+                </div>
+            </div>
+
+            <div class="extra content">
+                <span class="left floated">
+                    <i class="globe icon"></i>
+                    {{profile.address}}
+                </span>
+
+                <span class="right floated">
+                    <i class="clock icon"></i>
+                    {{relativeDate status.lastLogin.date false}}
+                </span>
+            </div>
+        </div>
+    </div>
+</template>

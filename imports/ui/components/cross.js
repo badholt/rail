@@ -51,9 +51,9 @@ Template.cross.onCreated(function () {
 Template.cross.onRendered(function () {
     const parent = this.parent();
 
-    if (parent.trial && parent.session()) {
+    if (parent.trial && parent.sessionData()) {
         const number = this.parent().trial.get(),
-            session = this.parent().session();
+            session = this.parent().sessionData();
 
         if (number && session) {
             const stage = 0;

@@ -4,14 +4,15 @@
             <label>No. of Stimuli</label>
             <input type="number" name="number" placeholder="#1+" value="{{number}}">
         </div>
-
-        <div class="ui divided inverted {{#if $gt number 1}}two{{else}}one{{/if}} column grid">
-            <div class="row">
-                <div class="column">
-                    {{> stimulusForm (stimuli index)}}
+        {{#if number}}
+            <div class="ui divided inverted {{#if $gt number 1}}two{{else}}one{{/if}} column grid">
+                <div class="row">
+                    <div class="column">
+                        {{> stimulusForm (stimuli 1)}}
+                    </div>
                 </div>
             </div>
-        </div>
+        {{/if}}
     </form>
 </template>
 

@@ -36,7 +36,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
 Template.trial.events({
     'click'(e, template) {
         const event = collectClickEvent(e),
-            session = template.session(),
+            session = template.sessionData(),
             stage = template.stage.get() - 1,
             number = template.trial.get() - 1,
             variables = {
@@ -69,8 +69,9 @@ Template.trial.events({
         _.each(session.settings.inputs[stage], (input) => {
             if (input.event === event.type) {
                 const correct = conditionsMet(input, variables);
-                _.each((correct) ? input.correct : input.incorrect, (action) => _.each(action.targets, (target) =>
-                    variables[action.action](action.delay, action.specifications, target)));
+                _.each((correct) ? input.correct : input.incorrect, (action) =>
+                    _.each(action.targets, (target) =>
+                        variables[action.action](action.delay, action.specifications, target)));
             }
         });
 
@@ -80,15 +81,17 @@ Template.trial.events({
 
 Template.trial.helpers({
     audio(element) {
+        console.log(this, element);
         const template = Template.instance(),
             audio = new Tone.Player(element.file.source, () => {
                 audio.loop = true;
                 template.timedAudio(audio, element.delay, element.duration);
-            }).toMaster(),
-            osc = new Tone.Oscillator(600, "sine", () => {
-                template.timedAudio(osc, element.delay, element.duration);
-            }).toMaster().start();
+            }).toMaster();
+        // osc = new Tone.Oscillator(600, "sine", () => {
+        //     template.timedAudio(osc, element.delay, element.duration);
+        // }).toMaster();
 
+        // template.timedAudio(osc, element.delay, element.duration);
         console.log(element);
     },
     center() {
@@ -96,7 +99,7 @@ Template.trial.helpers({
     },
     command(data) {
         const template = Template.instance(),
-            session = template.session();
+            session = template.sessionData();
 
         _.each(data.commands, async (command) => {
             if (!template.timers[data.type + '.' + command.command]) try {
@@ -111,15 +114,15 @@ Template.trial.helpers({
         return Template.instance().responses.get();
     },
     session() {
-        return Template.instance().session();
+        return Template.instance().sessionData();
     },
     stage(stages) {
         const template = Template.instance(),
             number = template.trial.get(),
-            session = template.session(),
+            session = template.sessionData(),
             stage = template.stage.get() - 1;
 
-        console.log(stages, this);
+        console.log(stages, stage, stages[stage], this);
 
         if (!template.timers['session.iti']) {
             template.recordEvent({type: 'trial.' + number + '.start'});
@@ -164,12 +167,12 @@ Template.trial.onCreated(function () {
     this.getSession = () => FlowRouter.getParam('session');
 
     const id = this.getSession();
-    this.session = () => Sessions.findOne(id);
+    this.sessionData = () => Sessions.findOne(id);
 
     this.autorun(() => {
         this.getTrial = (number) => Trials.findOne({number: number, session: id});
 
-        const session = this.session();
+        const session = this.sessionData();
         if (session) this.subscribe('experiments.single', session.experiment);
 
         this.subscribe('sessions.single', id);
@@ -181,10 +184,12 @@ Template.trial.onCreated(function () {
         this.recordEvent({type: 'stage.' + value + '.start'});
         this.stage.set(value);
     }, delay);
-    this.nextTrial = (delay, number) => Meteor.setTimeout(() => {
+    this.nextTrial = (delay, increment) => Meteor.setTimeout(() => {
         /** Proceed to next trial or exit: */
-        const next = number + 1,
-            session = this.session();
+        const number = this.trial.get(),
+            next = number + 1,
+            session = this.sessionData();
+        console.log(number, next, increment);
 
         if (session.settings.session.duration || number < session.settings.stages.length) {
             // TODO: Shutdown sequence, reset state of lights, etc.
@@ -238,7 +243,7 @@ Template.trial.onCreated(function () {
 });
 
 Template.trial.onRendered(function () {
-    const session = this.session();
+    const session = this.sessionData();
 
     Meteor.setTimeout(() => {
         this.trial.set(1);

@@ -22,7 +22,15 @@
             {{/unless}}
 
             <div class="right menu">
-                <a id="home" class="{{isActiveRoute 'home'}} ui item" href="/" tabindex="2">
+                <a id="subject-panel" class="{{isActiveRoute 'subjects'}} ui item" href="/subjects">
+                    <i class="fitted inverted paw icon"></i>
+                </a>
+
+                <a id="device-panel" class="{{isActiveRoute 'devices'}} ui item" href="/devices">
+                    <i class="fitted inverted th large icon"></i>
+                </a>
+
+                <a id="home" class="{{isActiveRoute 'home'}} ui item" href="/" tabindex="3">
                     {{> profileAvatar currentUser._id}}
                 </a>
                 {{> atNavButton}}

@@ -8,7 +8,7 @@ Template.sessionForm.events({
             value = parseFloat($('#' + target.form.id).form('get value', target.name));
 
         if (!_.isNaN(value)) {
-            const form = template.parent(),
+            const form = template.parent(2),
                 property = target.name.split('.')[1],
                 session = form.session.get();
             console.log(form, session);

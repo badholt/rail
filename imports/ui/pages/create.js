@@ -6,11 +6,15 @@ import {Experiments} from '/imports/api/collections';
 import {FlowRouter} from 'meteor/kadira:flow-router';
 import {Meteor} from 'meteor/meteor';
 import {Template} from 'meteor/templating';
+import {ReactiveVar} from "meteor/reactive-var";
 
 Template.createExperiment.events({
-    'submit #experiment-form'(event) {
+    'submit #experiment-form'(event, template) {
         event.preventDefault();
         const fields = $('#experiment-form').form('get values');
+
+        fields.template = template.cipher[fields.template];
+        console.log(fields, template.cipher);
 
         Meteor.call('addExperiment', fields, (error, result) => {
             if (!error) {
@@ -32,4 +36,7 @@ Template.createExperiment.onCreated(function () {
     this.autorun(() => {
         this.subscribe('experiments.user', Meteor.userId);
     });
+
+    this.cipher = {}; // For dropdown decryption
+    this.templateId = new ReactiveVar('');
 });

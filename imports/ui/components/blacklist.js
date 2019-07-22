@@ -7,10 +7,12 @@ import {Template} from "meteor/templating";
 Template.blacklist.helpers({
     blacklist(y) {
         const index = Template.instance().data.index,
-            session = Template.instance().parent(4),
+            session = Template.instance().parent(5),
             page = session.page.get(),
-            stages = session.stages.get(),
-            stimuli = stages[page][index];
+            stages = session.stages.get();
+
+        console.log(session, page, stages);
+        const stimuli = stages[page][index];
 
         if (stimuli && stimuli.grid) return {
             blacklist: _.filter(stimuli.grid.blacklist, _.matches({y: y})),

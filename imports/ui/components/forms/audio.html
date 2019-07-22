@@ -3,7 +3,7 @@
         <div class="field">
             <label>
                 Audio Type
-                <select class="ui dropdown">
+                <select class="audio-type ui dropdown">
                     <option value="file">File</option>
                     <option value="noise">Noise</option>
                     <option value="wave">Waveform</option>
@@ -29,19 +29,31 @@
                        placeholder="#" value="{{duration}}">
             </div>
             <div class="field">
-                <label class="">
-                    <i class="music icon"></i>
-                    {{file.name}}
-                    <span class="ui mini horizontal label">
+                {{#if $eq audioType 'file'}}
+                    <label class="">
+                        <i class="music icon"></i>
+                        {{file.name}}
+                        <span class="ui mini horizontal label">
                         .{{file.type}}
                     </span>
-                </label>
+                    </label>
 
-                <canvas class="canvas"></canvas>
-                {{#if file}}
+                    <!--                <canvas class="canvas"></canvas>-->
                     <audio class="audio" controls>
                         <source src="{{file.source}}" type="audio/{{file.type}}">
                     </audio>
+                {{/if}}
+
+                {{#if $eq audioType 'noise'}}
+                {{/if}}
+
+                {{#if $eq audioType 'wave'}}
+                    <label>
+                        Frequency
+                        <span class="ui mini horizontal label">hz</span>
+                    </label>
+                    <input type="number" name="wave.frequency"
+                           placeholder="#" value="{{wave.frequency}}">
                 {{/if}}
             </div>
         </div>
