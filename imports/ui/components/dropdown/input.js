@@ -1,46 +1,59 @@
 import './input.html';
 
+import update from 'immutability-helper';
+
 import {Template} from "meteor/templating";
+
+Template.comparisonsDropdown.helpers({
+    comparison() {
+        return [
+            {
+                name: '<'
+            },
+            {
+                name: '='
+            }
+        ];
+    }
+});
 
 Template.conditionsDropdown.helpers({
     condition() {
         return [
             {
-                comparison: "<",
-                objects: [
-                    {
-                        name: "event",
-                        property: "clientX"
-                    }
-                ],
-                subjects: [
-                    {
-                        name: "center",
-                        property: "x"
-                    }
-                ]
+                name: 'event',
+                values: ['clientX', 'clientY']
             },
             {
-                comparison: "=",
-                objects: [
-                    {
-                        name: "stimuli",
-                        property: "0.orientation.value"
-                    }
-                ],
-                subjects: [
-                    {
-                        name: "number",
-                        property: 90
-                    }
-                ]
+                name: 'center',
+                values: ['x', 'y']
+            },
+            {
+                name: 'number'
+            },
+            {
+                name: 'stimuli.0',
+                values: ['orientation.value']
             }
         ];
     }
 });
 
 Template.conditionsDropdown.onRendered(function () {
-    $('.conditions').dropdown();
+    $('.conditions').dropdown({
+        allowCategorySelection: true
+    });
+});
+
+Template.conditionsItem.events({
+    'click .condition.item > .right.content > .close'(e, template) {
+        const input = template.parent(2).data,
+            session = template.parent(5),
+            inputs = session.inputs.get();
+
+        session.inputs.set(update(inputs,
+            {[input.stage]: {[input.index]: {conditions: {$splice: [[template.data.item, 1]]}}}}));
+    }
 });
 
 Template.correctDropdown.helpers({
@@ -65,22 +78,18 @@ Template.correctDropdown.onRendered(function () {
 });
 
 Template.eventDropdown.helpers({
-    event() {
+    events() {
         return [
             {name: 'click', icon: 'mouse pointer'},
-            {name: 'infrared', icon: 'wifi'}
+            {name: 'infrared', icon: 'wifi'},
+            {name: 'pin', icon: 'microchip'}
         ];
     }
 });
 
 Template.eventDropdown.onRendered(function () {
-    const data = Template.currentData(),
-        events = $('#events');
-    console.log(data);
-
+    const events = $('.events.dropdown');
     events.dropdown();
-
-    if (data.event) events.dropdown('set selected', data.event);
 });
 
 Template.incorrectDropdown.helpers({
@@ -123,7 +132,7 @@ Template.incorrectDropdown.helpers({
                     amount: 1
                 },
                 targets: [
-                    trial
+                    'trial'
                 ]
             }
         ];
@@ -138,7 +147,8 @@ Template.inputDropdown.helpers({
     input() {
         return [
             {name: 'click', icon: 'mouse pointer'},
-            {name: 'infrared', icon: 'wifi'}
+            {name: 'infrared', icon: 'wifi'},
+            {name: 'pin', icon: 'microchip'}
         ];
     }
 });
@@ -161,4 +171,34 @@ Template.inputDropdown.onRendered(function () {
             parent.inputs.set(inputs);
         }
     });
+});
+
+
+Template.inputItem.events({
+    'click .add-condition'(e, template) {
+        const session = template.parent(3),
+            inputs = session.inputs.get(),
+            values = template.$('.ui.form').form('get values'),
+            condition = update(values, {
+                objects: {$apply: (value) => ([_.object(['name', 'property'], value.split(','))])},
+                subjects: {$apply: (value) => ([_.object(['name', 'property'], value.split(','))])},
+            });
+
+        console.log(condition, session);
+
+        session.inputs.set(update(inputs,
+            {[template.data.stage]: {[template.data.index]: {conditions: {$push: [condition]}}}}));
+    },
+    'click .input.item > .right.content > .close'(e, template) {
+        const session = template.parent(3),
+            inputs = session.inputs.get();
+
+        session.inputs.set(update(inputs, {[template.data.stage]: {$splice: [[template.data.index, 1]]}}));
+    }
+});
+
+Template.inputList.helpers({
+    input(page, inputs) {
+        return inputs[page];
+    }
 });

@@ -81,7 +81,7 @@ Meteor.startup(() => {
                                     delay: 0,
                                     targets: [
                                         {
-                                            type: 'light',
+                                            type: 'lights',
                                             commands: [
                                                 {
                                                     command: 'dim',
@@ -167,7 +167,7 @@ Meteor.startup(() => {
                                 delay: 0,
                                 targets: [
                                     {
-                                        type: 'light',
+                                        type: 'lights',
                                         commands: [
                                             {
                                                 command: 'dim',
@@ -339,7 +339,7 @@ Meteor.startup(() => {
                             loop: 'loop'
                         },
                         {
-                            type: 'light',
+                            type: 'lights',
                             commands: [
                                 {
                                     command: 'dim',

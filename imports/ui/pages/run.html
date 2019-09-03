@@ -36,6 +36,14 @@
                     {{> deviceDropdown}}
                 </div>
             </div>
+
+            <div class="fields">
+                {{#each device}}
+                    <div class="field">
+                        {{> subjectsDropdown}}
+                    </div>
+                {{/each}}
+            </div>
         </div>
     </form>
 
@@ -50,11 +58,11 @@
             {{/with}}
         </div>
 
-        <div id="stages" class="title">
+        <div id="stages" class="active title">
             <i class="dropdown icon"></i>
             <span class="ui inverted header">Stages</span>
         </div>
-        <div class="content">
+        <div class="active content">
             <div class="ui grey inverted top attached tabular menu">
                 {{#each stages}}
                     {{> stageItem (index @index)}}
@@ -76,87 +84,16 @@
                         {{> elementDropdown}}
                     </div>
                     <section class="ui inverted segment">
-                        {{#each stage page stages}}
-                            {{> stagePage (section @index)}}
-                        {{/each}}
+                        {{> stagePage (stage page stages)}}
                     </section>
 
 
                     <div class="ui horizontal divider">
                         {{> inputDropdown}}
                     </div>
+
                     <section class="ui inverted segment">
-                        <div class="ui middle aligned divided list">
-                            {{#each input page inputs}}
-                                <div class="item">
-                                    <div class="right floated content">
-                                        <i class="grey link cancel icon"></i>
-                                    </div>
-
-                                    <div class="content">
-                                        <span class="ui black inverted label">If </span>
-
-                                        {{> eventDropdown}}
-
-                                        {{#each conditions}}
-                                            {{#each objects}}
-                                                <a class="ui mini grey image label">
-                                                    {{name}}
-                                                    <span class="detail">{{property}}</span>
-                                                </a>
-                                            {{/each}}
-
-                                            <a class="ui mini grey image label">{{comparison}}</a>
-
-                                            {{#each subjects}}
-                                                <a class="ui mini grey image label">
-                                                    {{action}}
-                                                    <span class="detail">{{property}}</span>
-                                                </a>
-                                            {{/each}}
-
-                                            &
-                                        {{/each}}
-
-                                        {{> conditionsDropdown}}
-
-                                        <span class="ui black inverted label">
-                                            <i class="right arrow icon"></i>
-                                        </span>
-
-                                        {{> correctDropdown}}
-<!--                                        {{#each correct}}-->
-<!--                                            <a class="ui mini grey image label">-->
-<!--                                                {{action}}-->
-<!--                                                {{#if specifications.amount}}-->
-<!--                                                    <span class="detail">{{specifications.amount}}</span>-->
-<!--                                                {{/if}}-->
-<!--                                            </a>-->
-
-<!--                                            {{#each targets}}-->
-<!--                                                <a class="ui mini grey label">-->
-<!--                                                    {{#unless type}}{{this}}{{else}}{{type}}{{/unless}}-->
-<!--                                                </a>-->
-<!--                                            {{/each}}-->
-
-<!--                                            <span class="ui black inverted label"> & </span>-->
-<!--                                        {{/each}}-->
-
-                                        {{> incorrectDropdown}}
-<!--                                        {{#if incorrect}}-->
-<!--                                            else-->
-<!--                                            {{#each incorrect}}-->
-<!--                                                <a class="ui mini grey label">{{action}}</a>-->
-
-<!--                                                {{#each objects}}-->
-<!--                                                    <a class="ui mini grey label">{{type}}</a>-->
-<!--                                                {{/each}}-->
-<!--                                            {{/each}}-->
-<!--                                        {{/if}}-->
-                                    </div>
-                                </div>
-                            {{/each}}
-                        </div>
+                        {{> inputList}}
                     </section>
                 </div>
             </div>
@@ -194,7 +131,7 @@
             {{> crossForm}}
         </div>
     {{/if}}
-    {{#if $eq type 'light'}}
+    {{#if $eq type 'lights'}}
         <div id="{{type}}-section" class="title">
             <i class="dropdown icon"></i>
             <i class="grey link lightbulb icon"></i>

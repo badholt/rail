@@ -1,47 +1,170 @@
 <template name="devicePanel">
-    <div class="ui centered three column padded grid">
-        {{#each devices}}
-            {{> deviceCard}}
-        {{/each}}
+    <div class="ui padded grid">
+        <div class="column">
+            <div class="ui centered cards">
+                {{#each devices}}
+                    {{> deviceCard}}
+                {{/each}}
+            </div>
+        </div>
     </div>
 </template>
 
 <template name="deviceCard">
-    <div class="column">
-        <div class="ui {{#if status.online}}{{#unless status.idle}}green{{else}}yellow{{/unless}}
-        {{else}}red{{/if}} card">
-            <div class="content">
-                <i class="{{#if status.online}}{{#unless status.idle}}green{{else}}yellow{{/unless}}
-                {{else}}red{{/if}} large right floated circle icon"></i>
+    <div class="ui {{color status}} card">
+        <div class="content">
+            <i class="{{color status}} large right floated circle icon"></i>
 
-                <a href="http://camera.railpage.org" target="_parent">
-                    <i class="large black link right floated video icon"></i>
-                </a>
+            <a href="http://{{profile.address}}:8081" target="_blank">
+                <i class="large black link right floated video icon"></i>
+            </a>
 
-                <a href="http://controls.railpage.org" target="_parent">
-                    <i class="large black link right floated sliders icon"></i>
-                </a>
+            <a href="http://{{profile.address}}:8080" target="_blank">
+                <i class="large black link right floated sliders icon"></i>
+            </a>
 
-                <a id="toggle-lights"><i class="large black link right floated lightbulb icon"></i></a>
+            <!--            <a id="toggle-lights"><i class="large black link right floated lightbulb icon"></i></a>-->
 
-                <div class="header">{{profile.name}}</div>
+            <h1 class="editable header" title="name">
+                {{> editField name='name' placeholder=profile.name value=profile.name}}
+            </h1>
 
-                <div class="description">
-                    <label class="ui label">{{profile.device}}</label>
+            <div class="description">
+                <div class="ui mini message">{{profile.device}}</div>
+
+                <div id="pins-{{profile.username}}" class="ui icon list mini message">
+                    <i class="link microchip icon"></i>
+
+                    <div class="content">
+                        <div class="header">Assigned Pins</div>
+
+                        <div class="ui mini labels list">
+                            {{#each profile.components}}
+                                <label class="ui {{color ../status}} label">
+                                    {{pin}}
+                                    <span class="detail">{{device}}</span>
+                                    <span class="detail">{{mode}}</span>
+                                </label>
+                            {{else}}
+                                <label class="ui {{color ../status}} label">None</label>
+                            {{/each}}
+                        </div>
+                    </div>
                 </div>
+
+                {{#if pi status.board profile}}
+                    {{> piModal}}
+                {{/if}}
             </div>
+        </div>
 
-            <div class="extra content">
-                <span class="left floated">
+        <div class="extra content">
+                <span class="editable left floated" title="address">
                     <i class="globe icon"></i>
-                    {{profile.address}}
+                    {{> editField name='address' placeholder=profile.address value=profile.address}}
                 </span>
 
-                <span class="right floated">
+            <span class="right floated">
                     <i class="clock icon"></i>
-                    {{relativeDate status.lastLogin.date false}}
+                {{relativeDate status.lastLogin.date false}}
+            </span>
+        </div>
+    </div>
+
+    {{> deviceModal}}
+</template>
+
+<template name="deviceModal">
+    <div id="modal-device" class="ui basic mini modal">
+        <div class="content">
+            <form class="ui mini form">
+                <div class="two fields">
+                    <div class="field">
+                        <label>Device</label>
+                        <select class="ui dropdown" name="device">
+                            <option value="led">LED</option>
+                            <option value="reward.out">Reward</option>
+                            <option value="sensor">IR Sensor</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label>Mode</label>
+                        <select class="ui dropdown" name="mode">
+                            <option value="GND">GND</option>
+                            <option value="IN">IN</option>
+                            <option value="OUT">OUT</option>
+                            <option value="V">V</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</template>
+
+<template name="editField">
+    {{#unless $eq edit name}}
+        {{value}}
+    {{else}}
+        <span class="ui form">
+            <span class="ui inline field">
+                <span class="ui transparent input">
+                    <input name="{{name}}" placeholder="{{placeholder}}" type="text" value="{{value}}">
                 </span>
+            </span>
+        </span>
+    {{/unless}}
+</template>
+
+<template name="piModal">
+    <div id="modal-{{profile.username}}" class="ui basic modal">
+        <div class="content">
+            <div class="ui two column grid">
+                <div class="stretched row">
+                    {{#each boards status.board.pins}}
+                        <div class="column">
+                            <table class="ui celled center aligned collapsing very compact inverted selectable
+                            small unstackable table">
+                                <thead>
+                                <tr>
+                                    {{#each headings @index}}
+                                        <th>{{this}}</th>
+                                    {{/each}}
+                                </tr>
+                                </thead>
+
+                                <tbody>
+                                {{#each pin @index this ../profile.components}}
+                                    {{> piRow}}
+                                {{/each}}
+                                </tbody>
+                            </table>
+                        </div>
+                    {{/each}}
+                </div>
             </div>
         </div>
     </div>
+</template>
+
+<template name="piRow">
+    <tr class="ui horizontal mini labels row
+{{#if component}}inverted blue segment{{/if}}">
+        {{#if board}}
+            <td class="collapsing">{{physical}}</td>
+        {{/if}}
+
+        {{#each property pairs}}
+            <td class="collapsing">
+                {{#if value}}
+                    <label class="ui {{#unless ../mode}}black{{/unless}} label">{{value}}</label>
+                {{/if}}
+            </td>
+        {{/each}}
+
+        {{#unless board}}
+            <td class="collapsing">{{physical}}</td>
+        {{/unless}}
+    </tr>
 </template>

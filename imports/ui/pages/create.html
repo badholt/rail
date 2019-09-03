@@ -1,31 +1,37 @@
 <template name="createExperiment">
     <div class="ui padded grid">
-        <div class="ui centered ten wide column">
+        <div class="ui centered column">
             {{> experimentForm}}
         </div>
     </div>
 </template>
 
 <template name="experimentForm">
-    <form id="experiment-form" class="ui inverted form">
+    <form id="experiment-form" class="ui inverted form container">
+        <h4 class="ui dividing inverted header">Experiment</h4>
+
         <div class="field">
             <label>Title</label>
             <input type="text" name="title" placeholder="Experiment Title">
         </div>
 
-        <div class="inline fields">
-            <label>Investigator</label>
-            <div class="ten wide field">
-                <input type="text" name="investigator-first" placeholder="First Name">
-            </div>
-            <div class="ten wide field">
-                <input type="text" name="investigator-last" placeholder="Last Name">
-            </div>
-        </div>
-
         <div class="field">
             <label>Template</label>
             {{> templateDropdown}}
+        </div>
+
+        <h4 class="ui dividing inverted header">Investigator</h4>
+
+        <div class="equal width fields">
+            <div class="field">
+                <label>First Name</label>
+                <input type="text" name="investigator-first" placeholder="First Name">
+            </div>
+
+            <div class="field">
+                <label>Last Name</label>
+                <input type="text" name="investigator-last" placeholder="Last Name">
+            </div>
         </div>
 
         <div class="ui divider"></div>

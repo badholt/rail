@@ -1,12 +1,16 @@
 import './client.methods';
 
+import _ from 'underscore';
+import moment from 'moment/moment';
+
 import {Experiments, Sessions, Subjects, Templates, Trials} from './collections';
 import {Meteor} from 'meteor/meteor';
 
-import moment from 'moment/moment';
 import NanoTimer from 'NanoTimer';
 // TODO: Use mqtt imports instead of require?
-const mqtt = require('mqtt');
+const bound = Meteor.bindEnvironment((callback) => callback()),
+    clients = new Map(),
+    mqtt = require('mqtt');
 
 if (Meteor.isServer) Meteor.methods({
     'addExperiment': (fields) => {
@@ -24,25 +28,27 @@ if (Meteor.isServer) Meteor.methods({
             users: [Meteor.userId()]
         });
     },
-    'addSession': (device, experiment, inputs, session, trials) => {
-        console.log(device, experiment, inputs, session, trials);
+    'addSession': (device, experiment, inputs, session, subjects, trials) => {
         return Sessions.insert({
             date: new Date(),
             device: device,
             experiment: experiment,
             settings: {inputs: inputs, session: session, stages: trials},
-            subject: 'MouseID',
+            subjects: subjects,
             trials: [],
             user: Meteor.userId()
         });
     },
-    'addSubject': (age, id, protocol, sex, strain) => Subjects.insert({
-        birthday: moment().subtract(age, 'days').calendar(),
-        identifier: id,
-        name: "",
-        protocol: protocol,
-        sex: sex,
-        strain: strain
+    'addSubject': (fields) => Subjects.insert({
+        birthday: moment().subtract(fields.age, fields.unit).calendar(),
+        description: fields.description,
+        experiments: fields.experiments,
+        identifier: fields.identifier,
+        name: fields.name,
+        protocol: fields.protocol,
+        sex: fields.sex,
+        strain: fields.strain,
+        tags: fields.tags
     }),
     'addTemplate': (template) => Templates.insert({
         author: Meteor.userId() || template.author,
@@ -57,7 +63,7 @@ if (Meteor.isServer) Meteor.methods({
     'addTrial': (id, number) => {
         const session = Sessions.findOne(id),
             stages = session.settings.stages[number - 1];
-        console.log('add trial', id, session, stages);
+        console.log('add trial:\n', id, session, stages);
         if (stages) {
             const trial = Trials.insert({
                 data: Array.from(stages, () => []),
@@ -68,7 +74,7 @@ if (Meteor.isServer) Meteor.methods({
                 stages: stages,
                 subject: 'MouseID'
             });
-            console.log('insert trial', trial);
+            console.log('insert trial:\t', trial);
 
             if (trial) Meteor.call('updateSession', id, 'trials', trial);
             return trial;
@@ -77,12 +83,80 @@ if (Meteor.isServer) Meteor.methods({
     'addUser': (username, id) => Meteor.users.update({'profile.username': username}, {
         $push: {'profile.experiments': id}
     }),
-    'mqttSend': (id, topic, message) => {
-        const device = Meteor.users.findOne(id),
-            address = 'mqtt://' + device.profile.address,
-            client = mqtt.connect(address);
+    'mqttConnect': (id) => {
+        if (clients.has(id)) {
+            const client = clients.get(id);
+            client.reconnect();
+        } else {
+            const device = Meteor.users.findOne(id),
+                client = mqtt.connect('mqtt://' + device.profile.address);
 
-        client.publish(topic, JSON.stringify(message));
+            client.on('connect', () => client.subscribe('response'));
+            client.on('message', (topic, payload) => bound(() => {
+                if (topic === 'response') {
+                    const message = JSON.parse(payload.toString('utf8'));
+                    console.log(message);
+                    if (message.sender) switch (message.sender) {
+                        case 'board':
+                            const text = message['board']['pins'].split(/(?:[^.\\\s\w]+)(?:\+?\\n\s?\+?)?/igm),
+                                cells = _.filter(text, (cell, i) =>
+                                    i > 15 && i < (text.length - 16) && (i - 15) % 13),
+                                groups = _.chunk(cells, 6),
+                                pins = _.map(groups, (row, i) => {
+                                    const pin = (i % 2) ? row.reverse() : row;
+
+                                    return {
+                                        bcm: pin[0].trim(),
+                                        mode: pin[3].trim(),
+                                        name: pin[2].trim(),
+                                        physical: pin[5].trim(),
+                                        voltage: pin[4].trim(),
+                                        wpi: pin[1].trim()
+                                    };
+                                });
+
+                            Meteor.call('updateUser', id, 'status.board.pins', 'set', pins);
+                            break;
+                        case 'lights':
+                        case 'reward':
+                            break;
+                    }
+                } else if (topic === 'client') {
+                    const message = JSON.parse(payload.toString());
+
+                    if (message.command) switch (message.command) {
+                        case 'disconnect':
+                            client.end();
+                            break;
+                        case 'reconnect':
+                            client.reconnect();
+                            break;
+                        case 'subscribe':
+                            client.subscribe(message.topic);
+                            break;
+                        case 'unsubscribe':
+                            client.unsubscribe(message.topic);
+                            break;
+                    }
+                }
+            }));
+
+            clients.set(id, client);
+        }
+    },
+    'mqttSend': (id, topic, message) => {
+        if (clients.has(id)) {
+            const client = clients.get(id);
+
+            if (!client.connected) client.reconnect();
+            client.publish(topic, JSON.stringify(message));
+        } else {
+            Meteor.call('mqttConnect', id, (error) => {
+                const client = clients.get(id);
+
+                if (!error) client.publish(topic, JSON.stringify(message));
+            });
+        }
     },
     'removeUser': (username, id) => Meteor.users.update({'profile.username': username}, {
         $pull: {'profile.experiments': id}
@@ -107,13 +181,14 @@ if (Meteor.isServer) Meteor.methods({
         });
     },
     'updateSession': (session, key, value) => {
+        console.log(session, key, value);
         if (key === 'trials') {
             Sessions.update(session, {
                 $currentDate: {
                     lastModified: true
                 },
                 $push: {
-                    [key]: value
+                    trials: value
                 }
             });
         } else {
@@ -127,13 +202,37 @@ if (Meteor.isServer) Meteor.methods({
             });
         }
     },
-    'updateTrial': (id, key, operation, value) => Trials.update({_id: id},
+    'updateSubject': (id, fields) => Subjects.update({_id: id},
         {
             $currentDate: {
                 lastModified: true
             },
-            ['$' + operation]: {
-                [key]: value
+            $set: {
+                birthday: moment().subtract(fields.age, fields.unit).toDate(),
+                description: fields.description,
+                experiments: fields.experiments,
+                identifier: fields.identifier,
+                name: fields.name,
+                protocol: fields.protocol,
+                sex: fields.sex,
+                strain: fields.strain,
+                tags: fields.tags
             }
-        }, {multi: true})
+        }, {multi: true}),
+    'updateTrial': (id, key, operation, value) => Trials.update({_id: id}, {
+        $currentDate: {
+            lastModified: true
+        },
+        ['$' + operation]: {
+            [key]: value
+        }
+    }, {multi: true}),
+    'updateUser': (id, key, operation, value) => Meteor.users.update({_id: id}, {
+        $currentDate: {
+            lastModified: true
+        },
+        ['$' + operation]: {
+            [key]: value
+        }
+    })
 });

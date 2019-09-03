@@ -30,22 +30,19 @@
         </div>
 
         <div class="fields">
-            {{#if duration}}
-                <div class="field">
-                    <label>
-                        Duration
-                        <span class="ui mini horizontal label">ms</span>
-                    </label>
-                    <input type="number" name="session.duration"
-                           placeholder="#" value="{{duration}}">
-                </div>
-            {{/if}}
-            {{#if total}}
-                <div class="field">
-                    <label>No. of Trials</label>
-                    <input type="number" name="session.total" placeholder="#1+" value="{{total}}">
-                </div>
-            {{/if}}
+            <div class="field">
+                <label>
+                    Duration
+                    <span class="ui mini horizontal label">ms</span>
+                </label>
+                <input type="number" name="session.duration"
+                       placeholder="#" value="{{duration}}">
+            </div>
+
+            <div class="field">
+                <label>No. of Trials</label>
+                <input type="number" name="session.total" placeholder="#1+" value="{{total}}">
+            </div>
         </div>
     </form>
 </template>

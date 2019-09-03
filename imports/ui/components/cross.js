@@ -49,13 +49,13 @@ Template.cross.onCreated(function () {
 });
 
 Template.cross.onRendered(function () {
-    const parent = this.parent();
+    const parent = this.parent(),
+        session = parent.session.get();
 
-    if (parent.trial && parent.sessionData()) {
-        const number = this.parent().trial.get(),
-            session = this.parent().sessionData();
+    if (session && parent.trial) {
+        const number = parent.trial.get();
 
-        if (number && session) {
+        if (number) {
             const stage = 0;
             // Meteor.call('updateTrial', number, {type: 'cross', timeStamp: Date.now()}, session._id, stage);
             // Meteor.call('updateTrial', trial._id, 'data.' + stage, 'push', data);

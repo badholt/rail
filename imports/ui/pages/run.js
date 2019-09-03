@@ -6,6 +6,7 @@ import '/imports/ui/components/stimulus';
 import '/imports/ui/components/dropdown/device';
 import '/imports/ui/components/dropdown/element';
 import '/imports/ui/components/dropdown/input';
+import '/imports/ui/components/dropdown/subjects';
 import '/imports/ui/components/forms/audio';
 import '/imports/ui/components/forms/cross';
 import '/imports/ui/components/forms/light';
@@ -15,7 +16,6 @@ import '/imports/ui/components/forms/session';
 
 import _ from 'underscore';
 
-import {FlowRouter} from 'meteor/kadira:flow-router';
 import {Meteor} from 'meteor/meteor';
 import {ReactiveVar} from 'meteor/reactive-var';
 import {Template} from 'meteor/templating';
@@ -75,15 +75,19 @@ Template.sessionSetup.onCreated(function () {
     this.session = new ReactiveVar('');
     this.stages = new ReactiveVar('');
     this.submitForm = (inputs, session, stages) => {
-        const devices = $('#devices').dropdown('get values'),
+        const form = $('#device-form').form('get values'),
+            devices = form.devices.split(','),
             experiment = this.parent().getExperiment()._id;
-        console.log(experiment, inputs, session, stages, this.parent());
 
         if (devices) _.each(devices, (id) => {
+            const device = this.cipher[id],
+                subjects = _.map(form[id], (subject) => this.cipher[subject]);
+            console.log(id, this.cipher, form, subjects);
+
             Meteor.call('generateTrials', inputs, session, stages, (error, trials) => {
                 console.log(error, trials);
-                if (!error) Meteor.call('addSession', this.cipher[id], experiment,
-                    inputs, session, trials, (error, session) => {
+                if (!error) Meteor.call('addSession', device, experiment,
+                    inputs, session, subjects, trials, (error, session) => {
                         console.log(error, session);
                         if (!error) Meteor.call('addTrial', session, 1, () => {
                             /** A submission success message appears for 5 seconds: */
@@ -137,6 +141,14 @@ Template.sessionTemplate.events({
 });
 
 Template.sessionTemplate.helpers({
+    device() {
+        const template = Template.instance(),
+            devices = template.devices.get(),
+            cipher = template.parent().cipher,
+            ids = _.map(devices, (encrypted) => cipher[encrypted.value]);
+
+        return Meteor.users.find({_id: {$in: ids}});
+    },
     hasTemplate() {
         return hasTemplate(Meteor.userId(), Template.currentData());
     },
@@ -146,18 +158,13 @@ Template.sessionTemplate.helpers({
 
         return {index: ++index, active: active};
     },
-    input(page, inputs) {
-        return inputs[page];
-    },
-    // page() {
-    //     return Template.instance().parent().page.get();
-    // },
-    section(index) {
-        return _.extend(this, {index: index});
-    },
     stage(page, stages) {
         if (stages) return stages[page];
     }
+});
+
+Template.sessionTemplate.onCreated(function () {
+    this.devices = new ReactiveVar(0);
 });
 
 Template.sessionTemplate.onRendered(function () {

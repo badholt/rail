@@ -14,15 +14,16 @@ import {ReactiveVar} from 'meteor/reactive-var';
 import {Template} from 'meteor/templating';
 
 export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
-    _.pick(e, 'clientX', 'clientY', 'timeStamp', 'screenX', 'screenY', 'target', 'type', 'which'), (key, value) =>
-        (value instanceof Node) ? {
+    _.pick(e, 'clientX', 'clientY', 'timeStamp', 'screenX', 'screenY', 'target', 'type', 'which'),
+    (key, value) => (value instanceof Node) ? {
             classes: value.classList,
             id: value.id,
             parent: {
                 classes: value.parentNode.classList,
                 id: value.parentNode.id
             }
-        } : (value instanceof Window) ? 'Window' : value, ' ')),
+        } :
+        (value instanceof Window) ? 'Window' : value, ' ')),
     conditionsMet = (input, variables) => _.every(input.conditions, (condition) =>
         _.every(condition.objects, (object) => {
             const o = variables[object.name](object.property);
@@ -36,7 +37,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
 Template.trial.events({
     'click'(e, template) {
         const event = collectClickEvent(e),
-            session = template.sessionData(),
+            session = template.session.get(),
             stage = template.stage.get() - 1,
             number = template.trial.get() - 1,
             variables = {
@@ -80,182 +81,234 @@ Template.trial.events({
 });
 
 Template.trial.helpers({
-    audio(element) {
-        console.log(this, element);
-        const template = Template.instance(),
-            audio = new Tone.Player(element.file.source, () => {
-                audio.loop = true;
-                template.timedAudio(audio, element.delay, element.duration);
-            }).toMaster();
-        // osc = new Tone.Oscillator(600, "sine", () => {
-        //     template.timedAudio(osc, element.delay, element.duration);
-        // }).toMaster();
-
-        // template.timedAudio(osc, element.delay, element.duration);
-        console.log(element);
-    },
-    center() {
-        return Template.instance().center;
-    },
-    command(data) {
-        const template = Template.instance(),
-            session = template.sessionData();
-
-        _.each(data.commands, async (command) => {
-            if (!template.timers[data.type + '.' + command.command]) try {
-                await template.timedCommand(session.device, data.type, command, command.delay + data.delay);
-                template.recordEvent({type: data.type + '.' + command.command + '.sent'});
-            } catch (error) {
-                console.log(error);
-            }
-        }); // TODO: Ensure 10mL!
-    },
-    responses() {
-        return Template.instance().responses.get();
-    },
     session() {
-        return Template.instance().sessionData();
+        return Template.instance().session.get();
     },
-    stage(stages) {
-        const template = Template.instance(),
-            number = template.trial.get(),
-            session = template.sessionData(),
-            stage = template.stage.get() - 1;
-
-        console.log(stages, stage, stages[stage], this);
-
-        if (!template.timers['session.iti']) {
-            template.recordEvent({type: 'trial.' + number + '.start'});
-            template.timers['session.iti'] = Meteor.setTimeout(() =>
-                template.nextTrial(0, number), session.settings.session.iti);
-        }
-
-        return stages[stage];
+    stage() {
+        return Template.instance().stage.get();
     },
-    timer(delay, duration, type) {
-        const template = Template.instance();
+    trial(trials) {
+        const number = Template.instance().trial.get(),
+            id = trials[number],
+            trial = Trials.findOne(id);
 
-        if (!template.timers[type + '.start']) {
-            template.timers[type + '.start'] = Meteor.setTimeout(() => {
-                template.recordEvent({type: type + '.start'});
-                template.toggles[type] = true;
-            }, delay);
-
-            template.timers[type + '.end'] = Meteor.setTimeout(() => {
-                template.recordEvent({type: type + '.end'});
-                template.toggles[type] = false;
-            }, delay + duration);
-        }
-
-        // console.log(performance.now(), template.toggles[type]);
-        return template.toggles[type];
-    },
-    trial() {
-        const template = Template.instance(),
-            number = template.trial.get();
-
-        return template.getTrial(number);
+        console.log('trial:\n', this, number, id, trial);
+        if (trial) return trial;
     }
 });
 
 Template.trial.onCreated(function () {
     this.center = calculateCenter($(window).height(), $(window).width());
+    this.responses = new ReactiveVar([]);
+    this.session = new ReactiveVar();
+    this.stage = new ReactiveVar(1);
+    this.timers = {};
+    this.trial = new ReactiveVar(0);
+    this.toggles = {};
+
     this.clearTimers = (timers) => {
         _.each(timers, (value) => Meteor.clearTimeout(value));
         this.timers = {};
     };
     this.getSession = () => FlowRouter.getParam('session');
-
-    const id = this.getSession();
-    this.sessionData = () => Sessions.findOne(id);
-
-    this.autorun(() => {
-        this.getTrial = (number) => Trials.findOne({number: number, session: id});
-
-        const session = this.sessionData();
-        if (session) this.subscribe('experiments.single', session.experiment);
-
-        this.subscribe('sessions.single', id);
-        this.subscribe('trials.session', id);
-    });
-
     this.nextStage = (delay, number) => this.timers['stage'] = Meteor.setTimeout(() => {
         const value = this.stage.get() + number;
-        this.recordEvent({type: 'stage.' + value + '.start'});
+        this.recordEvent({timeStamp: performance.now(), type: 'stage.' + value + '.start'});
         this.stage.set(value);
     }, delay);
     this.nextTrial = (delay, increment) => Meteor.setTimeout(() => {
         /** Proceed to next trial or exit: */
         const number = this.trial.get(),
             next = number + 1,
-            session = this.sessionData();
-        console.log(number, next, increment);
+            session = this.session.get();
+
+        console.log(this.timers);
+        this.clearTimers(this.timers);
+        // TODO: Shutdown sequence, reset state of lights, etc.
+        this.recordEvent({timeStamp: performance.now(), type: 'trial.' + number + '.end'});
+        console.log('NEXT:\t', this.timers, number, next, session);
 
         if (session.settings.session.duration || number < session.settings.stages.length) {
-            // TODO: Shutdown sequence, reset state of lights, etc.
-            this.recordEvent({type: 'trial.' + number + '.end'});
-            this.clearTimers(this.timers);
+            Meteor.call('addTrial', session._id, next, (error, response) => {
+                console.log(error, response);
+            });
+
             this.responses.set([]);
-
-            Meteor.call('addTrial', session._id, next);
-
             this.stage.set(1);
             this.trial.set(next);
-            this.recordEvent({type: 'trial.' + next + '.start'});
+            console.log(number, next, increment, this.trial.get());
         } else {
-            this.recordEvent({type: 'session.end'});
+            this.recordEvent({timeStamp: performance.now(), type: 'session.end'});
             FlowRouter.go('/');
         }
     }, delay);
-
-    this.responses = new ReactiveVar([]);
-    this.stage = new ReactiveVar(1);
-    this.trial = new ReactiveVar(0);
-    this.timers = {};
-    this.toggles = {};
-
     this.recordEvent = (event) => {
-        const data = _.extend(event, {date: new Date(), timeStamp: performance.now()}),
-            number = this.trial.get(),
+        const number = this.trial.get(),
             stage = this.stage.get() - 1,
             trial = this.getTrial(number);
 
-        if (trial) Meteor.call('updateTrial', trial._id, 'data.' + stage, 'push', data);
+        if (trial) Meteor.call('updateTrial', trial._id, 'data.' + stage, 'push', event);
     };
-
+    this.sessionData = () => Sessions.findOne(id);
     // TODO: Add data updates to each trial for firing events
-    this.timedAudio = (audio, delay, duration) => Meteor.setTimeout(() => {
-        if (!this.timers['audio.start']) {
-            this.timers['audio.start'] = audio.start();
-            this.recordEvent({type: 'audio.start'});
+    this.timedAudio = (audio, delay, duration, name) => Meteor.setTimeout(() => {
+        const start = name + '.start',
+            stop = name + '.stop';
+
+        if (!this.timers[start]) {
+            this.timers[start] = audio.start(); //TODO: Find way to store actual handle
+            this.recordEvent({timeStamp: performance.now(), type: start});
         }
 
-        if (!this.timers['audio.stop']) this.timers['audio.stop'] = Meteor.setTimeout(() => {
+        if (!this.timers[stop]) this.timers[stop] = Meteor.setTimeout(() => {
             audio.stop();
-            this.recordEvent({type: 'audio.stop'});
+            this.recordEvent({timeStamp: performance.now(), type: stop});
         }, duration);
-    }, delay);
+
+        console.log(name, this.timers);
+    }, delay, (error, response) => console.log(error, response));
     this.timedCommand = (device, topic, message, delay) => {
         const timer = topic + '.' + message.command;
         return this.timers[timer] = Meteor.setTimeout(() => Meteor.call('mqttSend', device, topic, message,
-            () => this.recordEvent({type: timer + '.fired'})), delay);
+            () => this.recordEvent({timeStamp: performance.now(), type: timer + '.fired'})), delay);
     };
+
+    const id = this.getSession();
+    this.autorun(() => {
+        this.getTrial = (number) => Trials.findOne({number: number, session: id});
+
+        this.subscribe('sessions.single', id);
+        this.subscribe('trials.session', id);
+    });
+    this.autorun(() => {
+        const session = this.sessionData();
+
+        this.session.set(session);
+        if (session) this.subscribe('experiments.single', session.experiment);
+    });
 });
 
-Template.trial.onRendered(function () {
-    const session = this.sessionData();
+Template.trialElement.helpers({
+    audio(element) {
+        console.log('audio:\n', this, element);
+        const template = Template.instance().parent(3),
+            name = 'audio.' + element.file.name + '.' + template.trial.get(),
+            audio = new Tone.Player(element.file.source, () => {
+                audio.loop = true;
+                template.timedAudio(audio, element.delay, element.duration, name);
+            }).toMaster();
+        // osc = new Tone.Oscillator(600, "sine", () => {
+        //     template.timedAudio(osc, element.delay, element.duration);
+        // }).toMaster();
 
-    Meteor.setTimeout(() => {
-        this.trial.set(1);
-        this.recordEvent({type: 'session.start'});
-    }, session.settings.session.delay);
+        // template.timedAudio(osc, element.delay, element.duration);
+        console.log('audio:\t', this, '\ntemplate:\t', template);
+    },
+    center() {
+        return Template.instance().parent(2).center;
+    },
+    command(data) {
+        const template = Template.instance().parent(3),
+            session = template.session.get();
 
-    if (session.settings.session.duration) {
+        _.each(data.commands, async (command) => {
+            if (!template.timers[data.type + '.' + command.command]) try {
+                await template.timedCommand(session.device, data.type, command, command.delay + data.delay);
+
+                template.recordEvent({
+                    timeStamp: performance.now(),
+                    type: data.type + '.' + command.command + '.sent'
+                });
+            } catch (error) {
+                console.log(error);
+            }
+        }); // TODO: Ensure 10mL!
+    },
+    timer(delay, duration, type) {
+        const template = Template.instance().parent(3);
+
+        if (!template.timers[type + '.start']) {
+            template.timers[type + '.start'] = Meteor.setTimeout(() => {
+                template.recordEvent({timeStamp: performance.now(), type: type + '.start'});
+                template.toggles[type] = true;
+            }, delay);
+
+            template.timers[type + '.end'] = Meteor.setTimeout(() => {
+                template.recordEvent({timeStamp: performance.now(), type: type + '.end'});
+                template.toggles[type] = false;
+            }, delay + duration);
+        }
+
+        // console.log(performance.now(), template.toggles[type]);
+        return template.toggles[type];
+    }
+});
+
+Template.trialElement.onRendered(function () {
+    console.log('element rendered:\t', this.data);
+});
+
+Template.trialElements.helpers({
+    responses() {
+        return Template.instance().parent(2).responses.get();
+    }
+});
+
+Template.trialElements.onRendered(function () {
+    const template = this.parent(2),
+        session = template.session.get(),
+        trial = template.trial.get();
+
+    /** Sets Trial-level timers: */
+    if (session.settings) {
+        const pre = 'trial.' + trial;
+
+        console.log(!template.timers[pre + '.iti'], template.timers);
+
+        if (!template.timers[pre + '.iti']) {
+            /** Sets timer for maximum trial duration: */
+            template.timers[pre + '.iti'] = Meteor.setTimeout(() => {
+                console.log(pre + ' ITI just ENDED');
+                return template.nextTrial(0, 1);
+            }, session.settings.session.iti);
+
+            /** Records trial start: */
+            template.recordEvent({timeStamp: performance.now(), type: pre + '.start'});
+        }
+    }
+    console.log(trial, template.trial.get());
+});
+
+Template.trialSVG.helpers({
+    elements(trial, stage) {
+        if (trial) return trial.stages[stage - 1];
+    }
+});
+
+Template.trialSVG.onRendered(function () {
+    const template = this.parent(),
+        session = template.session.get(),
+        trial = template.trial.get();
+    console.log(this, template, session, trial);
+
+    /** Sets Session-level timers: */
+    if (session.settings) {
+        /** Delays onset of first trial: */
         Meteor.setTimeout(() => {
-            this.recordEvent({type: 'trial.' + this.trial.get() + '.end'});
-            this.recordEvent({type: 'session.end'});
-            this.clearTimers(this.timers);
-            FlowRouter.go('/');
-        }, session.settings.session.delay + session.settings.session.duration);
+            template.recordEvent({timeStamp: performance.now(), type: 'session.start'});
+        }, session.settings.session.delay);
+
+        /** Sets timer for session duration: */
+        if (session.settings.session.duration) {
+            Meteor.setTimeout(() => {
+                template.recordEvent({
+                    timeStamp: performance.now(),
+                    type: 'trial.' + template.trial.get() + '.end'
+                });
+                template.recordEvent({timeStamp: performance.now(), type: 'session.end'});
+                template.clearTimers(template.timers);
+                FlowRouter.go('/');
+            }, session.settings.session.delay + session.settings.session.duration);
+        }
     }
 });

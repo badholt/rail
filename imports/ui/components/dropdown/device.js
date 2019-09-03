@@ -11,14 +11,12 @@ Template.deviceDropdown.helpers({
         return Meteor.users.find({'profile.device': {$ne: false}});
     },
     encrypt(id) {
-        const encrypted = _.uniqueId('user_');
+        const cipher = Template.instance().parent(2).cipher,
+            ids = _.invert(cipher),
+            encrypted = (!ids[id]) ? _.uniqueId('device_') : ids[id];
 
-        Template.instance().parent(2).cipher[encrypted] = id;
+        cipher[encrypted] = id;
         return encrypted;
-    },
-    online(status) {
-        console.log(this, status);
-        return (status.online) ? 'green' : 'red';
     }
 });
 
@@ -30,5 +28,24 @@ Template.deviceDropdown.onCreated(function () {
 });
 
 Template.deviceDropdown.onRendered(function () {
-    $('#devices').dropdown();
+    const template = Template.instance().parent();
+
+    $('#devices').dropdown({
+        onChange(values) {
+            const devices = _.map(values.split(','), (value) => {
+                const selected = $(this).find('div[data-value="' + value + '"]');
+
+                console.log(template);
+                return ({
+                    name: selected.html(),
+                    value: value
+                });
+            });
+
+            template.devices.set(devices);
+        },
+        sortSelect: true
+    });
+
+    template.devices.set([]);
 });
