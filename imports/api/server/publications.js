@@ -7,6 +7,10 @@ Meteor.publish('experiments', function () {
 Meteor.publish('experiments.single', function (id) {
     return Experiments.find(id);
 });
+Meteor.publish('experiments.subject', function (id) {
+    const experiments = Subjects.findOne(id).experiments;
+    return Experiments.find({_id: {$in: experiments}});
+});
 Meteor.publish('experiments.user', function (id) {
     return Experiments.find({users: {$elemMatch: {$eq: id}}});
 
@@ -51,5 +55,5 @@ Meteor.publish('trials.session', function (id) {
 });
 
 Meteor.publish('users', function (params) {
-    return Meteor.users.find(params, {fields: {profile: 1, status: 1}});
+    return Meteor.users.find(params, {fields: {lastModified: 1, profile: 1, status: 1}});
 });

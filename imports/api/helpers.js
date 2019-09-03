@@ -1,5 +1,6 @@
 import {Template} from "meteor/templating";
 import moment from "moment/moment";
+import {unitOfTime} from "moment";
 
 Template.registerHelpers({
     add(increment, index) {
@@ -20,5 +21,8 @@ Template.registerHelpers({
     },
     relativeDate(date, suffix) {
         return moment(date).fromNow(suffix);
+    },
+    replace(string, selector, replacement) {
+        return string.replace(new RegExp(selector, 'g'), replacement);
     }
 });

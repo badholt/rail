@@ -81,7 +81,7 @@ Meteor.startup(() => {
                                     delay: 0,
                                     targets: [
                                         {
-                                            type: 'light',
+                                            type: 'lights',
                                             commands: [
                                                 {
                                                     command: 'dim',
@@ -167,7 +167,7 @@ Meteor.startup(() => {
                                 delay: 0,
                                 targets: [
                                     {
-                                        type: 'light',
+                                        type: 'lights',
                                         commands: [
                                             {
                                                 command: 'dim',
@@ -307,29 +307,47 @@ Meteor.startup(() => {
                 inputs: [
                     [{
                         conditions: [],
-                        correct: [{
-                            action: '+',
-                            specifications: {amount: 1},
-                            delay: 0,
-                            targets: ['trial']
-                        }],
+                        correct: [
+                            {
+                                action: 'insert',
+                                delay: 0,
+                                targets: [{
+                                    type: 'lights',
+                                    commands: [
+                                        {
+                                            command: 'off',
+                                            delay: 0,
+                                            pins: 'LED1'
+                                        }
+                                    ],
+                                    delay: 0,
+                                    dim: 10,
+                                    duration: 0
+                                }]
+                            },
+                            {
+                                action: '+',
+                                specifications: {amount: 1},
+                                delay: 0,
+                                targets: ['trial']
+                            }],
                         event: 'click',
                         incorrect: []
                     }]
                 ],
-                name: 'Shaping',
+                name: 'Shaping I',
                 number: 0, //TODO Make variable (here) obsolete
                 session: {
-                    delay: 30000,
-                    duration: 300000,
-                    iti: 11000,
-                    total: 5
+                    delay: 180000,
+                    duration: 1800000,
+                    iti: 30000,
+                    total: 0
                 }, // TODO Might need Stage settings (i.e. individual duration/iti for each stage)
                 stages: [
                     [
                         {
                             type: 'audio',
-                            delay: 0,
+                            delay: 20000,
                             duration: 1000,
                             file: {
                                 name: 'Beep',
@@ -339,43 +357,39 @@ Meteor.startup(() => {
                             loop: 'loop'
                         },
                         {
-                            type: 'light',
+                            type: 'lights',
                             commands: [
                                 {
                                     command: 'dim',
                                     delay: 0,
                                     dim: 10,
-                                    numbers: 'LED1'
+                                    pins: 'LED1'
                                 },
                                 {
                                     command: 'on',
-                                    delay: 0,
-                                    numbers: 'LED1'
+                                    delay: 20000,
+                                    pins: 'LED1'
                                 },
                                 {
                                     command: 'off',
-                                    delay: 9000,
-                                    numbers: 'LED1'
+                                    delay: 30000,
+                                    pins: 'LED1'
                                 }
                             ],
-                            delay: 1000,
+                            delay: 0,
                             dim: 10,
-                            duration: 10000
+                            duration: 50000
                         },
                         {
                             type: 'reward',
                             commands: [
                                 {
-                                    command: 'on',
-                                    delay: 0
-                                },
-                                {
-                                    command: 'off',
-                                    delay: 1000
+                                    command: 'dispense',
+                                    amount: 0.01
                                 }
                             ],
-                            delay: 1000,
-                            duration: 1000
+                            delay: 0,
+                            duration: (1 / 15)
                         }
                     ]
                 ],

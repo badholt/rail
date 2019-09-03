@@ -1,0 +1,20 @@
+<template name="subjectsDropdown">
+    <label for="subjects_{{profile.username}}">Subject(s) in
+        <span class="ui black label">
+            <i class="{{#if status.online}}green{{else}}red{{/if}} left floated cube icon"></i> {{profile.name}}
+        </span>
+    </label>
+
+    <select class="ui black labels multiple search dropdown" multiple="" name="{{encrypt _id}}">
+        <div class="default value"></div>
+        <option class="item" value="">
+            <i class="left floated paw icon"></i> Subject(s)
+        </option>
+
+        {{#each subject}}
+            <option class="item" value="{{encrypt _id}}">
+                <i class="green left floated paw icon"></i> {{identifier}}
+            </option>
+        {{/each}}
+    </select>
+</template>

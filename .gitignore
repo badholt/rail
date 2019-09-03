@@ -1,4 +1,4 @@
 .idea/
-.meteor/
+.meteor/local
 node_modules/
 private/

@@ -5,6 +5,8 @@
         </div>
 
         <div class="ui basic segment">
+            {{> dataMenu}}
+
             <h2 class="ui inverted breadcrumb header">
                 <i class="inverted grey right chevron icon divider"></i>
 
@@ -21,7 +23,7 @@
                 <div class="section">Trials</div>
             </h2>
 
-            <div class="ui inverted segment">
+            <div class="ui inverted stacked segment">
                 {{> trialList}}
             </div>
         </div>
@@ -39,11 +41,19 @@
     {{/with}}
 </template>
 
+<template name="dataMenu">
+    <div class="ui compact inverted right floated stackable menu">
+        <a id="download" class="item">
+            <i class="fitted download icon"></i>
+        </a>
+    </div>
+</template>
+
 <template name="sessionList">
-    <table id="session-list" class="ui very basic center aligned inverted sortable celled table">
+    <table id="session-list" class="ui very basic celled center aligned inverted small sortable table">
         <thead>
         <tr>
-            <th class="sorted">Subject</th>
+            <th class="sorted">Subject(s)</th>
             <th class="sorted">Date & Time</th>
             <th class="sorted">Device</th>
             <th class="sorted">User</th>
@@ -54,7 +64,14 @@
         {{#each session _id}}
             <tr>
                 <td class="selectable">
-                    <a>{{subject}}</a>
+                    <div class="ui black labels">
+                        {{#each subject subjects}}
+                            <a class="ui label">
+                                <i class="fitted {{#if $eq sex 'm'}}blue mars{{else}}pink venus{{/if}} icon"></i>
+                                {{identifier}}
+                            </a>
+                        {{/each}}
+                    </div>
                 </td>
                 <td class="collapsible selectable">
                     <a>
@@ -99,8 +116,8 @@
 
 <template name="settingsList">
     {{#with settings}}
-        <div class="ui compact inverted segment">
-            <table class="ui very basic inverted padded sortable stackable table">
+        <div class="ui compact inverted stacked segment">
+            <table class="ui very basic celled inverted padded sortable table">
                 <tbody>
                 {{#each properties session}}
                     <tr>
@@ -112,33 +129,35 @@
             </table>
         </div>
 
-        <div class="ui compact inverted segment">
-            <table class="ui very basic compact inverted padded small sortable stackable table">
+        <div class="ui compact inverted stacked segment">
+            <table class="ui very basic celled inverted padded small sortable table">
                 <thead>
                 <tr>
                     {{#each element stages}}
-                        <th>{{type}}</th>
+                        <th class="sorted">{{type}}</th>
                     {{/each}}
                 </tr>
                 </thead>
 
                 <tbody>
-                {{#each element stages}}
-                    <td class="selectable">
-                        <div class="ui mini inverted list">
-                            {{#each properties this}}
-                                {{#if $neq key 'type'}}
-                                    <a class="item">
-                                        <div class="content">
-                                            <div class="header">{{text key}}</div>
-                                            <div class="description">{{string value}}</div>
-                                        </div>
-                                    </a>
-                                {{/if}}
-                            {{/each}}
-                        </div>
-                    </td>
-                {{/each}}
+                <tr>
+                    {{#each element stages}}
+                        <td class="selectable">
+                            <div class="ui celled inverted mini relaxed list">
+                                {{#each properties this}}
+                                    {{#if $neq key 'type'}}
+                                        <a class="item">
+                                            <div class="content">
+                                                <div class="header">{{text key}}</div>
+                                                <div class="description">{{string value}}</div>
+                                            </div>
+                                        </a>
+                                    {{/if}}
+                                {{/each}}
+                            </div>
+                        </td>
+                    {{/each}}
+                </tr>
                 </tbody>
             </table>
         </div>
@@ -146,56 +165,67 @@
 </template>
 
 <template name="trialList">
-    <table class="ui very basic celled center aligned definition inverted sortable table">
+    <table class="ui very basic celled center aligned definition inverted small sortable table">
         <thead class="full-width">
         {{#each unique}}
             <tr>
                 <th></th>
-                <th colspan="{{span}}">Trial Type {{number}}</th>
+                <th colspan="{{add 2 (getLength this)}}">Trial Type {{add 1 @index}}</th>
             </tr>
 
             <tr>
                 <th></th>
-                {{#each stages}}
-                    <th colspan="{{span}}">Stage {{number}}</th>
-                {{/each}}
+                <th colspan="{{add 2 (getLength this)}}">Stage {{add 1 @index}}</th>
             </tr>
 
             <tr>
                 <th></th>
-                {{#each stages}}
-                    {{#each stage}}
-                        <th>{{type}}</th>
-                    {{/each}}
+                <th class="sorted">start</th>
+                {{#each this}}
+                    <th class="sorted">{{type}}</th>
                 {{/each}}
+                <th class="sorted">end</th>
             </tr>
         {{/each}}
         </thead>
 
         <tbody>
-        {{#each trials}}
+        {{#each trial trials}}
             <tr>
-                {{#with trial this}}
-                    <td class="selectable">{{number}}</td>
+                <td class="selectable">{{add 1 @index}}</td>
 
-                    {{#each events data}}
-                        <td class="left aligned selectable">
-                            <div class="ui inverted relaxed divided list">
-                                {{#each group this}}
-                                    <div class="item">
-                                        <div class="right floated content">
-                                            {{timeStamp}}
-                                        </div>
+                {{#each events unique data}}
+                    <td class="center aligned selectable">
+                        <div class="ui inverted mini relaxed list">
+                            {{#each this}}
+                                {{#if $gt @index 0}}
+                                    <span class="ui black disabled mini label">
+                                        <i class="clock icon"></i>
+                                        {{delay @index this}}
+                                        <span class="detail">ms</span>
+                                    </span>
+                                {{/if}}
 
-                                        <div class="content">
-                                            {{type}}
+                                <div class="item">
+                                    <label class="ui black label">
+                                        {{#with icon type}}
+                                            <i class="large icons">
+                                                <i class="{{main}} icon"></i>
+                                                <i class="corner inverted {{corner}} icon"></i>
+                                            </i>
+                                        {{/with}}
+
+                                        {{formatDecimal timeStamp 3}}
+
+                                        <div class="detail">
+                                            {{replace type '[\\.]' ' '}}
                                         </div>
-                                    </div>
-                                {{/each}}
-                            </div>
-                        </td>
-                    {{/each}}
-                {{/with}}
+                                    </label>
+                                </div>
+                            {{/each}}
+                        </div>
+                    </td>
+                {{/each}}
             </tr>
         {{/each}}
         </tbody>

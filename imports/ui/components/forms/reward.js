@@ -8,7 +8,7 @@ Template.rewardForm.events({
             value = parseFloat($('#' + target.form.id).form('get value', target.name));
 
         if (!_.isNaN(value)) {
-            const session = template.parent(2),
+            const session = template.parent(5),
                 page = session.page.get(),
                 property = target.name.split('.')[1],
                 stages = session.stages.get();

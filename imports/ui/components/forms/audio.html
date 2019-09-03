@@ -1,61 +1,98 @@
 <template name="audioForm">
-    <form id="audio-form" class="ui inverted form">
-        <div class="field">
-            <label>
-                Audio Type
-                <select class="audio-type ui dropdown">
-                    <option value="file">File</option>
-                    <option value="noise">Noise</option>
-                    <option value="wave">Waveform</option>
-                </select>
-            </label>
-        </div>
+    <form id="audio-form-{{i}}" class="ui inverted form">
+        {{#with element}}
+            <div class="field">
 
-        <div class="two fields">
-            <div class="field">
-                <label>
-                    Delay
-                    <span class="ui mini horizontal label">ms</span>
-                </label>
-                <input type="number" name="audio.delay"
-                       placeholder="#" value="{{delay}}">
+                <div class="audio-type ui black circular labeled icon dropdown button">
+                    <input type="hidden" name="type" value="{{audioType}}">
+                    <i class="large {{icon audioType}} icon"></i>
+                    <span class="text"></span>
+
+                    <div class="menu">
+                        <div class="item" data-text="File" data-value="file">
+                            <i class="large {{icon 'file'}} icon"></i> File
+                        </div>
+                        <div class="item" data-text="Noise" data-value="noise">
+                            <i class="large {{icon 'noise'}} icon"></i> Noise
+                        </div>
+                        <div class="item" data-text="Wave" data-value="wave">
+                            <i class="large {{icon 'wave'}} icon"></i> Waveform
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="field">
-                <label>
-                    Duration
-                    <span class="ui mini horizontal label">ms</span>
-                </label>
-                <input type="number" name="audio.duration"
-                       placeholder="#" value="{{duration}}">
-            </div>
-            <div class="field">
+
+            <div class="equal width fields">
                 {{#if $eq audioType 'file'}}
-                    <label class="">
-                        <i class="music icon"></i>
-                        {{file.name}}
-                        <span class="ui mini horizontal label">
-                        .{{file.type}}
-                    </span>
-                    </label>
-
-                    <!--                <canvas class="canvas"></canvas>-->
-                    <audio class="audio" controls>
-                        <source src="{{file.source}}" type="audio/{{file.type}}">
-                    </audio>
+                    <div class="field">
+                        {{> audioFile}}
+                    </div>
                 {{/if}}
 
                 {{#if $eq audioType 'noise'}}
+                    <div class="four wide field">
+                        {{> audioNoise}}
+                    </div>
                 {{/if}}
 
                 {{#if $eq audioType 'wave'}}
-                    <label>
-                        Frequency
-                        <span class="ui mini horizontal label">hz</span>
-                    </label>
-                    <input type="number" name="wave.frequency"
-                           placeholder="#" value="{{wave.frequency}}">
+                    <div class="field">
+                        {{> audioWave}}
+                    </div>
                 {{/if}}
+
+                <div class="field">
+                    <label>Delay <span class="ui mini horizontal label">ms</span></label>
+                    <input type="number" name="audio.delay" placeholder="# ms" value="{{delay}}">
+                </div>
+
+                <div class="field">
+                    <label>Duration <span class="ui mini horizontal label">ms</span></label>
+                    <input type="number" name="audio.duration" placeholder="# ms" value="{{duration}}">
+                </div>
+            </div>
+        {{/with}}
+    </form>
+</template>
+
+<template name="audioFile">
+    <label>
+        <i class="ui large icons">
+            <i class="blue file icon"></i>
+            <i class="corner inverted music icon"></i>
+        </i> {{file.name}}
+        <span class="ui mini horizontal label">.{{file.type}}</span>
+    </label>
+
+    <!--                <canvas class="canvas"></canvas>-->
+    <audio controls>
+        <source src="{{file.source}}" type="audio/{{file.type}}">
+    </audio>
+</template>
+
+<template name="audioNoise">
+    <label>Type</label>
+
+    <div class="noise ui black fluid labeled icon dropdown button">
+        <input type="hidden" name="noise.type" value="{{noise.type}}">
+        <i class="{{noise.type}} barcode icon"></i>
+        <span class="text"></span>
+
+        <div class="menu">
+            <div class="item" data-text="Brown" data-value="brown">
+                <i class="{{noise.type}} barcode icon"></i> Brown
+            </div>
+            <div class="item" data-text="Pink" data-value="pink">
+                <i class="{{noise.type}} barcode icon"></i> Pink
+            </div>
+            <div class="item" data-text="White" data-value="white">
+                <i class="{{noise.type}} barcode icon"></i> White
             </div>
         </div>
-    </form>
+    </div>
+</template>
+
+<template name="audioWave">
+    <label><i class="green industry icon"></i> Frequency <span class="ui mini horizontal label">Hz</span></label>
+    <input type="number" name="wave.frequency" placeholder="Hz" value="{{wave.frequency}}">
 </template>

@@ -1,40 +1,84 @@
-<template name="conditionsDropdown">
-    <div id="conditions" class="conditions ui black button dropdown">
-        <input type="hidden" name="input">
-        <div class="default text">{ condition }</div>
-        <i class="dropdown icon"></i>
+<template name="comparisonsDropdown">
+    <div id="comparisons" class="conditions ui black button compact search dropdown">
+        <input type="hidden" name="comparison">
+        <div class="default text">{ comparison }</div>
 
         <div class="menu">
-            {{#each condition}}
-                {{#each objects}}
-                    <div class="item" data-value="{{name}}">
-                        <span class="text">{{name}}</span>
-                        <div class="menu">
-                            <div class="item" data-value="{{name}}.{{property}}">
-                                {{property}}
-                            </div>
-                        </div>
-                    </div>
-                {{/each}}
-
-                {{comparison}}
-
-                {{#each subjects}}
-                    <span class="text">{{name}}</span>
-                    <div class="menu">
-                        <div class="item">{{property}}</div>
-                    </div>
-                {{/each}}
+            {{#each comparison}}
+                <div class="item" data-value="{{name}}">
+                    {{name}}
+                </div>
             {{/each}}
         </div>
     </div>
 </template>
 
+<template name="conditionsDropdown">
+    <div class="conditions ui black button fluid dropdown">
+        <input type="hidden" name="{{name}}s">
+        <div class="default text ui {{#if $eq name 'object'}}blue{{else}}orange{{/if}} tiny header">
+            { {{name}} }
+        </div>
+
+        <div class="menu">
+            {{#each condition}}
+                <div class="item" data-value="{{name}}">
+                    {{name}}
+                    {{#if values}}<i class="dropdown icon"></i>{{/if}}
+
+                    <div class="menu">
+                        {{#each property in values}}
+                            <div class="item" data-text="{{name}}.{{property}}" data-value="{{name}},{{property}}">
+                                {{property}}
+                            </div>
+                        {{/each}}
+                    </div>
+                </div>
+            {{/each}}
+        </div>
+    </div>
+</template>
+
+<template name="conditionsItem">
+    {{#with conditions}}
+        <div class="condition item">
+            <a class="right floated content">
+                <i class="close icon"></i>
+            </a>
+
+            <div class="content">
+                {{#each objects}}
+                    <a class="ui mini blue image label">
+                        {{name}}
+                        {{#if property}}<span class="detail">{{property}}</span>{{/if}}
+                    </a>
+                {{/each}}
+
+                <a class="ui mini black image label">{{comparison}}</a>
+
+                {{#each subjects}}
+                    <a class="ui mini orange image label">
+                        {{name}}
+                        {{#if property}}<span class="detail">{{property}}</span>{{/if}}
+                    </a>
+                {{/each}}
+            </div>
+        </div>
+    {{/with}}
+</template>
+
+<template name="conditionsList">
+    <div class="ui list">
+        {{#each conditions}}
+            {{> conditionsItem conditions=this item=@index}}
+        {{/each}}
+    </div>
+</template>
+
 <template name="correctDropdown">
-    <div id="correct" class="ui black button search dropdown">
+    <div id="correct" class="ui black button compact search dropdown">
         <input type="hidden" name="input">
         <div class="default text">{ correct }</div>
-        <i class="dropdown icon"></i>
 
         <div class="menu">
             {{#each correct}}
@@ -48,12 +92,12 @@
 </template>
 
 <template name="eventDropdown">
-    <div id="events" class="ui black button labels multiple search dropdown">
-        <input type="hidden" name="input">
+    <div class="events ui black button labels multiple search dropdown">
+        <input type="hidden" name="input" value="{{event}}">
         <div class="default text">{event}</div>
 
         <div class="menu">
-            {{#each event}}
+            {{#each events}}
                 <div class="item" data-value="{{name}}">
                     <i class="{{icon}} icon"></i>
                     {{name}}
@@ -67,7 +111,6 @@
     <div id="incorrect" class="ui black button search dropdown">
         <input type="hidden" name="input">
         <div class="default text">{ incorrect }</div>
-        <i class="dropdown icon"></i>
 
         <div class="menu">
             {{#each incorrect}}
@@ -101,5 +144,47 @@
                 </div>
             {{/each}}
         </div>
+    </div>
+</template>
+
+<template name="inputItem">
+    <div class="input item">
+        <div class="right floated content">
+            <i class="grey link close icon"></i>
+        </div>
+
+        <div class="content">
+            <span class="ui black inverted label">If </span>
+
+            {{> eventDropdown (input)}}
+
+            <div class="ui breadcrumb form">
+                <h6 class="ui dividing inverted header">Conditions</h6>
+
+                <a class="section">
+                    {{> conditionsDropdown name="object"}}
+                </a>
+
+                <a class="section">
+                    {{> comparisonsDropdown}}
+                </a>
+
+                <a class="section">
+                    {{> conditionsDropdown name="subject"}}
+                </a>
+
+                {{> conditionsList (input)}}
+            </div>
+
+            <a class="add-condition ui black inverted label"><i class="fitted right arrow icon"></i></a>
+        </div>
+    </div>
+</template>
+
+<template name="inputList">
+    <div class="ui middle aligned divided inverted list">
+        {{#each input page inputs}}
+            {{> inputItem index=@index input=this stage=../page}}
+        {{/each}}
     </div>
 </template>

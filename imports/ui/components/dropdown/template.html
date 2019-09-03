@@ -1,17 +1,14 @@
 <template name="templateDropdown">
-    <div id="templates" class="ui search selection dropdown">
-        <input type="hidden" name="template" value="{{encrypt template}}">
-        <i class="dropdown icon"></i>
-        <div class="default text">
+    <select id="templates" class="ui search dropdown" name="template">
+        <div class="default text"></div>
+        <option class="item" value="">
             <i class="asterisk loading icon"></i> Custom Template
-        </div>
+        </option>
 
-        <div class="menu">
-            {{#each templates}}
-                <div class="item" data-value="{{encrypt _id}}">
-                    {{> profileAvatar author}} {{name}}
-                </div>
-            {{/each}}
-        </div>
-    </div>
+        {{#each templates}}
+            <option class="item" value="{{encrypt _id}}">
+                {{> profileAvatar author}} {{name}}
+            </option>
+        {{/each}}
+    </select>
 </template>

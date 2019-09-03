@@ -7,18 +7,17 @@ import {Templates} from '../../../api/collections';
 Template.templateDropdown.helpers({
     encrypt(id) {
         const cipher = Template.instance().parent(2).cipher;
+
         if (cipher) {
             const stored = _.find(_.invert(cipher), (value, key) => key === id),
                 encrypted = stored || _.uniqueId('template_');
 
-            console.log('this', this, Template.instance());
-            console.log(cipher, encrypted, stored);
             cipher[encrypted] = id;
             return encrypted;
         }
     },
     templates() {
-        return Templates.find();
+        return Templates.find({}, {sort: {name: 1}});
     }
 });
 
@@ -30,15 +29,19 @@ Template.templateDropdown.onCreated(function () {
 });
 
 Template.templateDropdown.onRendered(function () {
-    const form = Template.instance().parent(2);
+    const form = Template.instance().parent(2),
+        template = form.templateId.get(),
+        stored = _.find(_.invert(form.cipher), (value, key) => key === template);
 
-    $('#templates').dropdown({
-        action: 'activate',
-        onChange: (value) => {
-            const id = form.cipher[value];
+    $('#templates')
+        .dropdown({
+            action: 'activate',
+            onChange: (value) => {
+                const id = form.cipher[value];
 
-            if (form.page) form.page.set(0);
-            form.templateId.set(id);
-        }
-    });
+                if (form.page) form.page.set(0);
+                form.templateId.set(id);
+            }
+        })
+        .dropdown('set selected', stored);
 });

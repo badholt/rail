@@ -1,47 +1,43 @@
 <template name="trial">
     {{#with session}}
-        {{#with trial}}
-            <svg width="100%" height="100%">
-                {{#each stage stages}}
-                    {{#if $eq type 'cross'}}
-                        {{> cross}}
-                    {{/if}}
-                    {{#if $eq type 'stimuli'}}
-                        {{#if timer delay duration type}}
-                            {{> bars center=center data=this}}
-                        {{/if}}
-                    {{/if}}
-                    {{#if $eq type 'audio'}}
-                        {{audio this}}
-                    {{/if}}
-                    {{#if $eq type 'light'}}
-                        {{command this}}
-                    {{/if}}
-                    {{#if $eq type 'reward'}}
-                        {{command this}}
-                    {{/if}}
-                {{/each}}
-
-                {{#each responses}}
-                    {{#if $eq type 'cross'}}
-                        {{> cross}}
-                    {{/if}}
-                    {{#if $eq type 'stimuli'}}
-                        {{#if timer delay duration type}}
-                            {{> bars center=center data=this}}
-                        {{/if}}
-                    {{/if}}
-                    {{#if $eq type 'audio'}}
-                        {{audio this}}
-                    {{/if}}
-                    {{#if $eq type 'light'}}
-                        {{command this}}
-                    {{/if}}
-                    {{#if $eq type 'reward'}}
-                        {{command this}}
-                    {{/if}}
-                {{/each}}
-            </svg>
-        {{/with}}
+        {{> trialSVG stage=stage trial=(trial settings stage trials)}}
     {{/with}}
+</template>
+
+<template name="trialElements">
+    {{#each element}}
+        {{> trialElement}}
+    {{/each}}
+
+    {{#each responses}}
+        {{> trialElement}}
+    {{/each}}
+</template>
+
+<template name="trialSVG">
+    <svg width="100%" height="100%">
+        {{#with elements trial stage}}
+            {{> trialElements element=this stage=stage trial=trial}}
+        {{/with}}
+    </svg>
+</template>
+
+<template name="trialElement">
+    {{#if $eq type 'cross'}}
+        {{> cross}}
+    {{/if}}
+    {{#if $eq type 'stimuli'}}
+        {{#if timer delay duration type}}
+            {{> bars center=center data=this}}
+        {{/if}}
+    {{/if}}
+    {{#if $eq type 'audio'}}
+        {{audio stage trial}}
+    {{/if}}
+    {{#if $eq type 'lights'}}
+        {{command stage trial}}
+    {{/if}}
+    {{#if $eq type 'reward'}}
+        {{command stage trial}}
+    {{/if}}
 </template>

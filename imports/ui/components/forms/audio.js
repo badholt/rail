@@ -4,19 +4,13 @@ import _ from "underscore";
 
 import {Template} from "meteor/templating";
 
-Template.audioForm.helpers({
-    audioType() {
-        return Template.instance().audioType.get();
-    }
-});
-
 Template.audioForm.events({
     'input input'(event, template) {
         const target = event.target || event.srcElement,
             value = parseFloat($('#' + target.form.id).form('get value', target.name));
 
         if (!_.isNaN(value)) {
-            const session = template.parent(3),
+            const session = template.parent(5),
                 page = session.page.get(),
                 split = target.name.split('.'),
                 property = split[1],
@@ -26,53 +20,93 @@ Template.audioForm.events({
             switch (property) {
                 case 'delay':
                 case 'duration':
-                    stages[page][this.index][property] = value;
+                    stages[page][template.data.i][property] = value;
                     session.stages.set(stages);
                     break;
                 case 'frequency':
-                    stages[page][this.index][type][property] = value;
+                    stages[page][template.data.i][type][property] = value;
                     session.stages.set(stages);
                     break;
             }
-            console.log(stages, page, this.index, value);
+            console.log(stages, page, template, this, value);
         }
     }
 });
 
+Template.audioForm.helpers({
+    audioType() {
+        return Template.instance().audioType.get();
+    },
+    icon(type) {
+        const icons = {
+            file: 'blue file audio',
+            noise: 'pink barcode',
+            wave: 'green industry'
+        };
+
+        return icons[type];
+    }
+});
+
 Template.audioForm.onCreated(function () {
-    const properties = _.pick(this.data, 'file', 'noise', 'wave'),
-        type = _.keys(properties)[0];
+    const types = ['file', 'noise', 'wave'],
+        type = _.find(_.keys(this.data.element), (v) => _.contains(types, v));
 
     this.audioType = new ReactiveVar(type);
-    this.defaults = _.defaults(properties, {
+    this.defaults = _.defaults(this.data.element, {
         file: {
             name: 'Beep',
             source: '/audio/beep.wav',
             type: 'wav'
         },
+        noise: {
+            type: 'white'
+        },
         wave: {
-            frequency: 600
+            frequency: 600,
+            type: 'sine'
         }
     });
-    console.log(properties, type);
 });
 
 Template.audioForm.onRendered(function () {
-    const form = Template.instance();
-    console.log(form, form.parent(3));
+    const form = Template.instance(),
+        element = form.parent(3),
+        session = element.parent(2);
+    console.log('AUDIO FORM:\t', form);
+    console.log('SESSION:\t', session);
+    console.log('DEFAULTS:\t', form.defaults);
 
     $('.audio-type.ui.dropdown').dropdown({
         action: 'activate',
         onChange: (value) => {
-            const session = form.parent(3),
-                page = session.page.get(),
+            const page = session.page.get(),
                 stages = session.stages.get();
+            let audio = stages[page][element.data.i];
 
-            stages[page][form.data.index][value] = form.defaults[value];
-            form.defaults = _.defaults(_.pick(stages[page][form.data.index], value), form.defaults);
+            form.defaults = _.defaults(audio, form.defaults);
+            audio = _.omit(audio, 'file', 'noise', 'wave');
+            audio[value] = form.defaults[value];
+            console.log(3, audio, form.defaults);
             form.audioType.set(value);
             session.stages.set(stages);
-            console.log(stages, session.stages.get(), form, value);
+        }
+    });
+});
+
+Template.audioNoise.onRendered(function () {
+    const form = Template.instance(),
+        element = form.parent(4),
+        session = element.parent(2);
+
+    this.$('.noise.dropdown').dropdown({
+        onChange: (value) => {
+            const page = session.page.get(),
+                stages = session.stages.get();
+            let n = stages[page][element.data.i]['noise.type'];
+            console.log(n, value);
+            n = value;
+            console.log(n, value);
         }
     });
 });

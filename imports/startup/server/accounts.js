@@ -27,6 +27,7 @@ Accounts.onCreateUser(function (profile, user) {
     } else {
         user.profile = {
             address: '127.0.0.1',
+            components: [],
             device: true,
             name: profile.profile.name,
             username: profile.username || type.google.email

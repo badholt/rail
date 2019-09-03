@@ -46,7 +46,7 @@ AccountsTemplates.configure({
     lowercaseUsername: true,
     focusFirstInput: true,
     sendVerificationEmail: true,
-    socialLoginStyle: "redirect",
+    socialLoginStyle: "popup",
 
     // Appearance
     showAddRemoveServices: true,
