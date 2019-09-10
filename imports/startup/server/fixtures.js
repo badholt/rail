@@ -4,6 +4,8 @@ import {Meteor} from 'meteor/meteor';
 import {Templates} from '/imports/api/collections';
 
 Meteor.startup(() => {
+    process.env.ROOT_URL = 'http://redirect.railpage.org';
+
     if (Templates.find().count() === 0) {
         const templates = [
             {
