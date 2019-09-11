@@ -351,10 +351,9 @@ Meteor.startup(() => {
                             type: 'audio',
                             delay: 20000,
                             duration: 1000,
-                            file: {
-                                name: 'Beep',
-                                source: '/audio/beep.wav',
-                                type: 'wav'
+                            wave: {
+                                frequency: 600,
+                                type: 'sine'
                             },
                             loop: 'loop'
                         },
@@ -362,6 +361,142 @@ Meteor.startup(() => {
                             type: 'lights',
                             commands: [
                                 {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                                     command: 'dim',
                                     delay: 0,
                                     dim: 10,
