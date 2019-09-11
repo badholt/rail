@@ -130,13 +130,13 @@ Template.sessionTemplate.events({
     'click button'() {
         const template = Template.instance().parent();
         console.log(template, Template.currentData());
-        // template.submitForm(template.inputs.get(), template.session.get(), template.stages.get());
+        template.submitForm(template.inputs.get(), template.session.get(), template.stages.get());
     },
     'submit .form'(event) {
         event.preventDefault();
 
         const template = Template.instance().parent();
-        // template.submitForm(template.inputs.get(), template.session.get(), template.stages.get());
+        template.submitForm(template.inputs.get(), template.session.get(), template.stages.get());
     }
 });
 

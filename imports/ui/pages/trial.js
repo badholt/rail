@@ -152,7 +152,7 @@ Template.trial.onCreated(function () {
         const n = this.trial.get() + 1,
             session = this.session.get();
 
-        // this.clearTimers(this.timers, number);
+        this.clearTimers(this.timers, n);
         // TODO: Shutdown sequence, reset state of lights, etc.
         this.recordEvent({timeStamp: performance.now(), type: 'trial.' + n + '.end'});
         console.log('NEXT:\t', n);
@@ -195,18 +195,22 @@ Template.trial.onCreated(function () {
             this.recordEvent({timeStamp: performance.now(), type: start});
         }, delay, (error, response) => console.log(error, response));
     };
+    const id = this.getSession();
+
     this.timedCommand = (device, topic, message, delay) => {
         const stage = this.stage.get(),
             timer = topic + '.' + message.command,
             trial = this.trial.get() + 1;
         console.log(message, stage, trial, timer, this.timers);
 
-        return this.timers[trial][stage][timer] = Meteor.setTimeout(() =>
-            Meteor.call('mqttSend', device, topic, message,
-                () => this.recordEvent({timeStamp: performance.now(), type: timer + '.fired'})), delay);
+        return this.timers[trial][stage][timer] = Meteor.setTimeout(() => {
+            const timeStamp = performance.now();
+            return Meteor.call('mqttSend', device, topic, _.extend(message, {
+                context: {session: id, stage: stage, time: timeStamp, trial: trial}
+            }), () => this.recordEvent({timeStamp: timeStamp, type: timer + '.fired'}));
+        }, delay);
     };
 
-    const id = this.getSession();
     this.autorun(() => {
         this.getTrial = (number) => Trials.findOne({number: number, session: id});
 

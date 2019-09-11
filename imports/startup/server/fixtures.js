@@ -351,10 +351,9 @@ Meteor.startup(() => {
                             type: 'audio',
                             delay: 20000,
                             duration: 1000,
-                            file: {
-                                name: 'Beep',
-                                source: '/audio/beep.wav',
-                                type: 'wav'
+                            wave: {
+                                frequency: 600,
+                                type: 'sine'
                             },
                             loop: 'loop'
                         },
@@ -365,17 +364,17 @@ Meteor.startup(() => {
                                     command: 'dim',
                                     delay: 0,
                                     dim: 10,
-                                    pins: 'LED1'
+                                    pins: 'LED2'
                                 },
                                 {
                                     command: 'on',
                                     delay: 20000,
-                                    pins: 'LED1'
+                                    pins: 'LED2'
                                 },
                                 {
                                     command: 'off',
                                     delay: 30000,
-                                    pins: 'LED1'
+                                    pins: 'LED2'
                                 }
                             ],
                             delay: 0,
