@@ -319,7 +319,7 @@ Meteor.startup(() => {
                                         {
                                             command: 'off',
                                             delay: 0,
-                                            pins: 'LED1'
+                                            pins: [1]
                                         }
                                     ],
                                     delay: 0,
@@ -364,17 +364,17 @@ Meteor.startup(() => {
                                     command: 'dim',
                                     delay: 0,
                                     dim: 10,
-                                    pins: 'LED2'
+                                    pins: [2]
                                 },
                                 {
                                     command: 'on',
                                     delay: 20000,
-                                    pins: 'LED2'
+                                    pins: [2]
                                 },
                                 {
                                     command: 'off',
                                     delay: 30000,
-                                    pins: 'LED2'
+                                    pins: [2]
                                 }
                             ],
                             delay: 0,
