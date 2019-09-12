@@ -37,7 +37,6 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
         if (settings) {
             const pre = 'trial.' + n;
             if (template.timers[n] && !template.timers[n][pre + '.iti']) {
-                console.log(stage, n, 'TRIAL TIMERS', template.timers);
 
                 /** Sets timer for maximum trial duration: */
                 template.timers[n][pre + '.iti'] = Meteor.setTimeout(() => {
@@ -111,13 +110,11 @@ Template.trial.helpers({
             trial = Trials.findOne(id);
 
         if (trial) {
-            console.log(n, template.timers.toString(), trial);
             if (!template.timers[n]) template.timers[n] = {[stage]: {}};
             if (!template.timers[n]['trial.' + n + '.iti']) {
                 trialTimers(settings, stage, n, template);
                 console.log('new trial', n, template.timers);
             }
-            console.log('trial ' + n + ':\n', this, '\n', id, settings, '\ntimers:\n', template.timers);
             return trial;
         }
     }
@@ -133,7 +130,6 @@ Template.trial.onCreated(function () {
     this.toggles = {};
 
     this.clearTimers = (timers, type) => {
-        console.log(timers, type);
         _.each(timers[type], (value) => Meteor.clearTimeout(value));
         // this.timers = {};
     };
@@ -180,13 +176,12 @@ Template.trial.onCreated(function () {
     this.timedAudio = (audio, delay, duration, name) => {
         const stage = this.stage.get(),
             trial = this.trial.get() + 1;
-        console.log('initial audio:\n', stage, trial);
+
         return Meteor.setTimeout(() => {
             const start = name + '.start',
                 stop = name + '.stop';
 
-            this.timers[trial][stage][start] = audio.start();
-            console.log(trial, stage, start);
+            this.timers[trial][stage][start] = audio.toMaster().start();
             this.timers[trial][stage][stop] = Meteor.setTimeout(() => {
                 audio.stop();
                 this.recordEvent({timeStamp: performance.now(), type: stop});
@@ -201,7 +196,6 @@ Template.trial.onCreated(function () {
         const stage = this.stage.get(),
             timer = topic + '.' + message.command,
             trial = this.trial.get() + 1;
-        console.log(message, stage, trial, timer, this.timers);
 
         return this.timers[trial][stage][timer] = Meteor.setTimeout(() => {
             const timeStamp = performance.now();
@@ -226,30 +220,33 @@ Template.trial.onCreated(function () {
 });
 
 Template.trialElement.helpers({
-    audio(stage, trial) {
-        if (stage && trial) {
-            switch (this['file'] || this['noise'] || this['wave']) {
-                case 'file':
-                    break;
-                case 'noise':
-                    break;
-                case 'wave':
-                    break;
-            }
+    audio(element, stage, trial) {
+        if (element && stage && trial) {
             const template = Template.instance().parent(3),
                 timers = (template.timers[trial] || {})[stage],
-                name = 'audio.' + (this['file.name'] || 'sine');
+                name = 'audio.' + ((element.file || {})['name'] || (element.noise || element.wave)['type']) + '.' + trial;
 
-            console.log('AUDIO CALLED', stage, trial, timers);
             if (timers && !timers[name + '.start']) {
-                console.log('NO MATCHING AUDIO', trial, name);
-                // const audio = new Tone.Player(element.file.source, () => {
-                //     audio.loop = true;
-                //     template.timedAudio(audio, element.delay, element.duration, name);
-                // }).toMaster();
-                const osc = new Tone.Oscillator(600, "sine").toMaster();
+                const types = ['file', 'noise', 'wave'],
+                    type = _.find(_.keys(element), (v) => _.contains(types, v));
 
-                template.timedAudio(osc, this['delay'], this['duration'], name);
+                let audio;
+                switch (type) {
+                    case 'file':
+                        audio = new Tone.Player(element.file.source, () => {
+                            audio.loop = true;
+                            template.timedAudio(audio, element.delay, element.duration, name);
+                        });
+                        break;
+                    case 'noise':
+                        audio = new Tone.Noise(element.noise.type);
+                        template.timedAudio(audio, element.delay, element.duration, name);
+                        break;
+                    case 'wave':
+                        audio = new Tone.OmniOscillator(element.wave.frequency, element.wave.type);
+                        template.timedAudio(audio, element.delay, element.duration, name);
+                        break;
+                }
             }
         }
     },
@@ -261,8 +258,7 @@ Template.trialElement.helpers({
             const template = Template.instance().parent(3),
                 session = template.session.get(),
                 timers = (template.timers[trial] || {})[stage];
-            console.log(this);
-            console.log('stage:\t', stage, '\ntrial:\t', trial, '\ntimers:\t', timers, template.timers);
+
             if (timers) _.each(this['commands'], async (command) => {
                 const event = this['type'] + '.' + command.command;
 
@@ -300,16 +296,11 @@ Template.trialElement.helpers({
             }, delay + duration);
         }
 
-        // console.log(performance.now(), template.toggles[type]);
         return template.toggles[type];
     },
     trial() {
         return Template.instance().parent(3).trial.get() + 1;
     }
-});
-
-Template.trialElement.onRendered(function () {
-    console.log('element rendered:\t', this.data);
 });
 
 Template.trialElements.helpers({
@@ -328,7 +319,6 @@ Template.trialSVG.onRendered(function () {
     const template = this.parent(),
         session = template.session.get(),
         trial = template.trial.get();
-    console.log(trial, 'TRIAL SVG RENDERED');
 
     /** Sets Session-level timers: */
     if (session.settings) {

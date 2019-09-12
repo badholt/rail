@@ -128,12 +128,13 @@ if (Meteor.isServer) Meteor.methods({
                             Meteor.call('updateUser', id, 'status.board.pins', 'set', pins);
                             break;
                         case 'lights':
-                            break;
                         case 'reward':
-                            console.log(message.context);
-                            console.log(id, message.context.session, message.context.stage);
-                            Meteor.call('updateTrial', id, 'data.' + message.context.stage, 'push',
-                                message);
+                            console.log(id, message.context, message.request, message.pins);
+                            if (message.context.device) Meteor.call('updateUser', message.context.device,
+                                'status.message', 'set', message);
+                            else if (message.context.trial) {
+                                Meteor.call('updateTrial', id, 'data.' + message.context.stage, 'push', message);
+                            }
                     }
                 } else if (topic === 'client') {
                     /** Messages for modifying this mqtt client: */

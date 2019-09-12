@@ -88,6 +88,7 @@ Template.audioForm.onRendered(function () {
             audio = _.omit(audio, 'file', 'noise', 'wave');
             audio[value] = form.defaults[value];
             console.log(3, audio, form.defaults);
+            stages[page][element.data.i] = audio;
             form.audioType.set(value);
             session.stages.set(stages);
         }

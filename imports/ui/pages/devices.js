@@ -29,20 +29,39 @@ Template.deviceCard.events({
         });
     },
     'click #toggle-lights'(event, template) {
-        const message = (template.lights)
-            ? {command: "off", numbers: "LED_IR"}
-            : {command: "on", numbers: "LED_IR"};
+        const messages = [
+            {command: "on", pins: [2]},
+            {command: "on", pins: [3]},
+            {command: "on", pins: [4]},
+            {command: "off", pins: [2, 3, 4]},
+            {command: "on", pins: [2, 3, 4]},
+            {command: "off", pins: [2, 3, 4]},
+        ];
 
-        console.log(event, template);
-        Meteor.call('mqttSend', template.data._id, 'light', message);
+        Meteor.call('mqttSend', template.data._id, 'lights',
+            _.extend(messages[template.lights], template.getContext()));
+        template.lights = (template.lights < messages.length) ? ++template.lights : 0;
+    },
+    'click #toggle-reward'(event, template) {
+        const messages = (template.reward)
+            ? {command: "off"}
+            : {command: "on"};
 
-        template.lights = !template.lights;
+        Meteor.call('mqttSend', template.data._id, 'reward', _.extend(messages, template.getContext()));
+        template.reward = !template.reward;
     }
 });
 
 Template.deviceCard.onCreated(function () {
+    this.getContext = () => ({
+        context: {
+            device: this.data._id,
+            time: performance.now()
+        }
+    });
     this.edit = new ReactiveVar('');
-    this.lights = true;
+    this.lights = 0;
+    this.reward = false;
 
     Meteor.call('mqttConnect', this.data._id, (error) => {
         if (!error) Meteor.call('mqttSend', this.data._id, 'board', {command: 'status'});
@@ -61,6 +80,15 @@ Template.deviceCard.helpers({
 
 Template.deviceCard.onDestroyed(function () {
     Meteor.call('mqttSend', this.data._id, 'client', {command: 'disconnect'});
+});
+
+Template.deviceCardMessage.onRendered(function () {
+    const device = Template.instance().parent();
+
+    $('.message .close').on('click', function () {
+        $(this).closest('.message').transition('fade');
+        Meteor.call('updateUser', device.data._id, 'status.message', 'unset', '');
+    });
 });
 
 Template.deviceModal.onRendered(function () {
