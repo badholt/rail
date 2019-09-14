@@ -25,19 +25,19 @@
             <div class="equal width fields">
                 {{#if $eq audioType 'file'}}
                     <div class="field">
-                        {{> audioFile}}
+                        {{> audioFile (source)}}
                     </div>
                 {{/if}}
 
                 {{#if $eq audioType 'noise'}}
                     <div class="four wide field">
-                        {{> audioNoise}}
+                        {{> audioNoise (source)}}
                     </div>
                 {{/if}}
 
                 {{#if $eq audioType 'wave'}}
                     <div class="field">
-                        {{> audioWave}}
+                        {{> audioWave (source)}}
                     </div>
                 {{/if}}
 

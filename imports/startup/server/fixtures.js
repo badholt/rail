@@ -46,10 +46,13 @@ Meteor.startup(() => {
                                             type: 'audio',
                                             delay: 0,
                                             duration: 1000,
-                                            file: {
-                                                name: 'Beep',
-                                                source: '/audio/beep.wav',
-                                                type: 'wav'
+                                            source: {
+                                                file: {
+                                                    name: 'Beep',
+                                                    source: '/audio/beep.wav',
+                                                    type: 'wav'
+                                                },
+                                                type: 'file'
                                             },
                                             loop: 'loop'
                                         },
@@ -138,10 +141,13 @@ Meteor.startup(() => {
                                             type: 'audio',
                                             delay: 0,
                                             duration: 1000,
-                                            file: {
-                                                name: 'Beep',
-                                                source: '/audio/beep.wav',
-                                                type: 'wav'
+                                            source: {
+                                                file: {
+                                                    name: 'Beep',
+                                                    source: '/audio/beep.wav',
+                                                    type: 'wav'
+                                                },
+                                                type: 'file'
                                             },
                                             loop: 'loop'
                                         },
@@ -351,9 +357,12 @@ Meteor.startup(() => {
                             type: 'audio',
                             delay: 20000,
                             duration: 1000,
-                            wave: {
-                                frequency: 600,
-                                type: 'sine'
+                            source: {
+                                wave: {
+                                    frequency: 600,
+                                    type: 'sine'
+                                },
+                                type: 'wave'
                             },
                             loop: 'loop'
                         },

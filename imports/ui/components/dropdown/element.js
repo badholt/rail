@@ -15,17 +15,17 @@ Template.elementDropdown.helpers({
 });
 
 Template.elementDropdown.onRendered(function () {
-    const parent = this.parent(2);
+    const session = this.parent(2);
+    console.log(this);
 
     $('#elements').dropdown({
         on: 'hover',
         onChange: (value) => {
-            const stages = parent.stages.get(),
-            page = parent.page.get();
-            console.log(stages, page);
+            const stages = session.stages.get(),
+                page = session.page.get();
 
             stages[page].push({type: value});
-            parent.stages.set(stages);
+            session.stages.set(stages);
         }
     });
 });

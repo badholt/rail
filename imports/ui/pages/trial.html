@@ -1,6 +1,8 @@
 <template name="trial">
     {{#with session}}
-        {{> trialSVG stage=stage trial=(trial settings stage trials)}}
+        {{#with data settings stage trials}}
+            {{> trialSVG stage=stage trial=this}}
+        {{/with}}
     {{/with}}
 </template>
 
@@ -23,6 +25,9 @@
 </template>
 
 <template name="trialElement">
+    {{#if $eq type 'audio'}}
+        {{audio stage trial}}
+    {{/if}}
     {{#if $eq type 'cross'}}
         {{> cross}}
     {{/if}}
@@ -30,9 +35,6 @@
         {{#if timer delay duration type}}
             {{> bars center=center data=this}}
         {{/if}}
-    {{/if}}
-    {{#if $eq type 'audio'}}
-        {{audio stage trial}}
     {{/if}}
     {{#if $eq type 'lights'}}
         {{command stage trial}}

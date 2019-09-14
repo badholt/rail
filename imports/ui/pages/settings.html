@@ -1,14 +1,16 @@
 <template name="settingsForm">
     <form id="settings-form" class="ui inverted form">
-        <div class="field">
-            <label>Authorized Users</label>
-            {{> authorizedDropdown}}
+        <div class="ui equal width fields">
+            <div class="field">
+                <label>Authorized Users</label>
+                {{> authorizedDropdown}}
+            </div>
+            <div class="field">
+                <label>Current Template</label>
+                {{> templateDropdown}}
+            </div>
+            <div class="ui divider"></div>
         </div>
-        <div class="field">
-            <label>Current Template</label>
-            {{> templateDropdown}}
-        </div>
-        <div class="ui divider"></div>
         <button class="ui black fluid button" type="submit">Save</button>
     </form>
 </template>

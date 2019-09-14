@@ -12,6 +12,8 @@
 
 <template name="deviceCard">
     <div class="ui {{color status}} card">
+        {{#if status.message}}{{>deviceCardMessage (status.message)}}{{/if}}
+
         <div class="content">
             <i class="{{color status}} large right floated circle icon"></i>
 
@@ -23,7 +25,8 @@
                 <i class="large black link right floated sliders icon"></i>
             </a>
 
-            <!--            <a id="toggle-lights"><i class="large black link right floated lightbulb icon"></i></a>-->
+            <a id="toggle-lights"><i class="large black link right floated lightbulb icon"></i></a>
+            <a id="toggle-reward"><i class="large black link right floated trophy icon"></i></a>
 
             <h1 class="editable header" title="name">
                 {{> editField name='name' placeholder=profile.name value=profile.name}}
@@ -72,6 +75,19 @@
     </div>
 
     {{> deviceModal}}
+</template>
+
+<template name="deviceCardMessage">
+    <div class="ui mini success message">
+        <i class="close icon"></i>
+        <div class="header">
+            <i class="icons">
+                <i class="{{#if $eq sender reward}}trophy{{else}}lightbulb{{/if}} icon"></i>
+                <i class="corner check icon"></i>
+            </i>
+            {{sender}} (pin {{pins}}) turned {{#if status}}on{{else}}off as requested.{{/if}}
+        </div>
+    </div>
 </template>
 
 <template name="deviceModal">

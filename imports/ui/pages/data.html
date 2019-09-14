@@ -62,40 +62,44 @@
 
         <tbody>
         {{#each session _id}}
-            <tr>
-                <td class="selectable">
-                    <div class="ui black labels">
-                        {{#each subject subjects}}
-                            <a class="ui label">
-                                <i class="fitted {{#if $eq sex 'm'}}blue mars{{else}}pink venus{{/if}} icon"></i>
-                                {{identifier}}
-                            </a>
-                        {{/each}}
-                    </div>
-                </td>
-                <td class="collapsible selectable">
-                    <a>
-                        <i class="calendar icon"></i>{{formatDate date 'MMMM Do'}}
-                        <i class="stopwatch icon"></i>{{formatDate date 'HH:mm'}} - {{formatDate lastModified 'HH:mm'}}
-                    </a>
-                </td>
-                <td class="selectable">
-                    <a>
-                        {{#with box device}}
-                            <i class='{{#if status.online}}green{{else}}red{{/if}} cube icon'></i>
-                            {{profile.name}}
-                        {{/with}}
-                    </a>
-                </td>
-                <td class="selectable">
-                    <a>
-                        {{> profileAvatar user}}
-                    </a>
-                </td>
-            </tr>
+            {{> sessionRow}}
         {{/each}}
         </tbody>
     </table>
+</template>
+
+<template name="sessionRow">
+    <tr>
+        <td class="selectable">
+            <div class="ui black labels">
+                {{#each subject subjects}}
+                    <a class="ui label">
+                        <i class="fitted {{#if $eq sex 'm'}}blue mars{{else}}pink venus{{/if}} icon"></i>
+                        {{identifier}}
+                    </a>
+                {{/each}}
+            </div>
+        </td>
+        <td class="collapsible selectable" data-sort-value="-{{formatDate date 'MDHHmm'}}">
+            <a>
+                <i class="calendar icon"></i>{{formatDate date 'MMMM Do'}}
+                <i class="stopwatch icon"></i>{{formatDate date 'HH:mm'}} - {{formatDate lastModified 'HH:mm'}}
+            </a>
+        </td>
+        <td class="selectable">
+            <a>
+                {{#with box device}}
+                    <i class='{{#if status.online}}green{{else}}red{{/if}} cube icon'></i>
+                    {{profile.name}}
+                {{/with}}
+            </a>
+        </td>
+        <td class="selectable">
+            <a>
+                {{> profileAvatar user}}
+            </a>
+        </td>
+    </tr>
 </template>
 
 <template name="settingsAccordion">
@@ -179,12 +183,12 @@
             </tr>
 
             <tr>
-                <th></th>
-                <th class="sorted">start</th>
+                <th class="sorted"></th>
+                <th class="">start</th>
                 {{#each this}}
-                    <th class="sorted">{{type}}</th>
+                    <th class="">{{type}}</th>
                 {{/each}}
-                <th class="sorted">end</th>
+                <th class="">end</th>
             </tr>
         {{/each}}
         </thead>
@@ -192,7 +196,7 @@
         <tbody>
         {{#each trial trials}}
             <tr>
-                <td class="selectable">{{add 1 @index}}</td>
+                <td class="selectable" data-sort-value="-{{add 1 @index}}">{{add 1 @index}}</td>
 
                 {{#each events unique data}}
                     <td class="center aligned selectable">

@@ -49,11 +49,10 @@ Template.audioForm.helpers({
 });
 
 Template.audioForm.onCreated(function () {
-    const types = ['file', 'noise', 'wave'],
-        type = _.find(_.keys(this.data.element), (v) => _.contains(types, v));
+    const audio = _.clone(this.data.element.source);
 
-    this.audioType = new ReactiveVar(type);
-    this.defaults = _.defaults(this.data.element, {
+    this.audioType = new ReactiveVar(audio.type);
+    this.defaults = _.defaults(audio, {
         file: {
             name: 'Beep',
             source: '/audio/beep.wav',
@@ -71,8 +70,7 @@ Template.audioForm.onCreated(function () {
 
 Template.audioForm.onRendered(function () {
     const form = Template.instance(),
-        element = form.parent(3),
-        session = element.parent(2);
+        session = form.parent(5);
     console.log('AUDIO FORM:\t', form);
     console.log('SESSION:\t', session);
     console.log('DEFAULTS:\t', form.defaults);
@@ -80,14 +78,16 @@ Template.audioForm.onRendered(function () {
     $('.audio-type.ui.dropdown').dropdown({
         action: 'activate',
         onChange: (value) => {
-            const page = session.page.get(),
-                stages = session.stages.get();
-            let audio = stages[page][element.data.i];
+            const stages = session.stages.get();
 
-            form.defaults = _.defaults(audio, form.defaults);
-            audio = _.omit(audio, 'file', 'noise', 'wave');
-            audio[value] = form.defaults[value];
-            console.log(3, audio, form.defaults);
+            /** Fill new audio form with saved settings: */
+            stages[form.data.page][form.data.i].source = {
+                [value]: form.defaults[value],
+                type: value
+            };
+
+            /** Update defaults with user configured settings: **/
+            // form.defaults = _.defaults(audio, form.defaults);
             form.audioType.set(value);
             session.stages.set(stages);
         }
@@ -95,18 +95,13 @@ Template.audioForm.onRendered(function () {
 });
 
 Template.audioNoise.onRendered(function () {
-    const form = Template.instance(),
-        element = form.parent(4),
-        session = element.parent(2);
+    const element = Template.parentData(2),
+        session = Template.instance().parent(6);
 
     this.$('.noise.dropdown').dropdown({
         onChange: (value) => {
-            const page = session.page.get(),
-                stages = session.stages.get();
-            let n = stages[page][element.data.i]['noise.type'];
-            console.log(n, value);
-            n = value;
-            console.log(n, value);
+            const stages = session.stages.get();
+            stages[element.page][element.i].source.noise.type = value;
         }
     });
 });

@@ -122,19 +122,22 @@ Template.dataMenu.events({
 });
 
 Template.sessionList.helpers({
-    box(id) {
-        return Meteor.users.findOne(id);
-    },
     session(id) {
         return Sessions.find({experiment: id});
+    }
+});
+
+Template.sessionRow.helpers({
+    box(id) {
+        return Meteor.users.findOne(id);
     },
     subject(subjects) {
         return Subjects.find({_id: {$in: subjects}});
     },
 });
 
-Template.sessionList.onRendered(function () {
-    $('table').tablesort();
+Template.sessionRow.onRendered(function () {
+    Template.instance().parent().$('table').tablesort().data('tablesort').sort($("thead th:nth-child(2)"));
 });
 
 Template.settingsList.helpers({
@@ -302,5 +305,5 @@ Template.trialList.onCreated(function () {
 });
 
 Template.trialList.onRendered(function () {
-    $('table').tablesort();
+    Template.instance().$('table').tablesort().data('tablesort').sort($("th.sorted:first-child"));
 });

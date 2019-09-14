@@ -7,7 +7,7 @@ import {Template} from 'meteor/templating';
 import {Meteor} from 'meteor/meteor';
 
 Template.settingsForm.events({
-    'submit .form'(event) {
+    'submit .form'(event, template) {
         event.preventDefault();
         const target = event.target || event.srcElement,
             values = $('#' + target.getAttribute('id')).form('get values');

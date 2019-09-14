@@ -78,6 +78,7 @@ Template.sessionSetup.onCreated(function () {
         const form = $('#device-form').form('get values'),
             devices = form.devices.split(','),
             experiment = this.parent().getExperiment()._id;
+        console.log(stages);
 
         if (devices) _.each(devices, (id) => {
             const device = this.cipher[id],

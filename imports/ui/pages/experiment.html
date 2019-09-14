@@ -23,15 +23,15 @@
 </template>
 
 <template name="experimentMenu">
-    <div class="ui inverted vertical fluid tabular menu">
+    <div class="ui inverted vertical fluid tabular icon menu">
         <a id="run" class="{{isActivePath regex='/run'}} item" href="{{link}}/run">
-            Run Trial
+            <i class="play icon"></i>
         </a>
         <a id="data" class="{{isActivePath regex='/data'}} item" href="{{link}}/data">
-            View Data
+            <i class="bar chart outline icon"></i>
         </a>
         <a id="settings" class="{{isActivePath regex='/settings'}} item" href="{{link}}/settings">
-            Settings
+            <i class="settings icon"></i>
         </a>
     </div>
 </template>
