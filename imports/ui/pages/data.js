@@ -335,6 +335,9 @@ Template.trialList.onCreated(function () {
 });
 
 Template.trialList.onRendered(function () {
-    this.autorun(() => this.subscribe('trials.experiment', this.data.experiment));
+    this.autorun(() => {
+        this.subscribe('sessions.experiment', this.data.experiment);
+        this.subscribe('trials.session', this.data._id);
+    });
     Template.instance().$('table').tablesort().data('tablesort').sort($("th.sorted:first-child"));
 });
