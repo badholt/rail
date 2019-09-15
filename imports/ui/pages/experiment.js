@@ -28,7 +28,6 @@ Template.experiment.onCreated(function () {
         if (experiment) {
             this.subscribe('sessions.experiment', experiment._id);
             this.subscribe('templates.experiment', experiment._id, Meteor.userId());
-            this.subscribe('trials.experiment', experiment._id);
         }
     });
 });

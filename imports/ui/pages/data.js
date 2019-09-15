@@ -31,7 +31,6 @@ const fs = require('fs'),
                 if (prev) _.each(time, (key) => d[key] = (prev[key])
                     ? moment(e[key]).diff(moment(prev[key]))
                     : moment(e[key]));
-                console.log(prev, e);
 
                 if (_.size(d) > 2) analyses[i].push(d);
                 prev = e;
@@ -58,9 +57,6 @@ Template.data.helpers({
     selected() {
         const id = Template.instance().session.get();
         return (id) ? Sessions.findOne(id) : '';
-    },
-    trials() {
-        return Trials.find();
     }
 });
 
@@ -71,12 +67,13 @@ Template.data.onCreated(function () {
     });
     this.autorun(() => this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': {$ne: false}}]}));
 
+    this.items = new ReactiveVar(5);
     this.session = new ReactiveVar('');
+    this.page = new ReactiveVar(0);
 });
 
 Template.dataMenu.events({
     'click #download'(event, template) {
-        console.log(template);
         const date = moment(template.data.date),
             experiment = Experiments.findOne(template.data.experiment),
             device = Meteor.users.findOne(template.data.device),
@@ -95,8 +92,6 @@ Template.dataMenu.events({
                 'Experimenter\t' + user.profile.name + '\n',
                 headers
             ];
-
-        console.log(content, filename, template);
 
         _.each(template.data.trials, (id) => {
             const trial = Trials.findOne(id);
@@ -121,9 +116,45 @@ Template.dataMenu.events({
     }
 });
 
+Template.paginationMenu.events({
+    'click #back'(event, template) {
+        const data = template.parent();
+        let page = data.page.get();
+        data.page.set(--page);
+    },
+    'click #next'(event, template) {
+        const data = template.parent();
+        let page = data.page.get();
+        data.page.set(++page);
+    }
+});
+
+Template.paginationMenu.helpers({
+    page() {
+        return Template.instance().parent().page.get();
+    },
+    more(id, page) {
+        const items = 5,
+            skips = (page + 1) * items,
+            count = Sessions.find({experiment: id}).count();
+
+        return (skips < count);
+    }
+});
+
 Template.sessionList.helpers({
-    session(id) {
-        return Sessions.find({experiment: id});
+    items() {
+        return Template.instance().parent().items.get();
+    },
+    page() {
+        return Template.instance().parent().page.get();
+    }
+});
+
+Template.sessionList.helpers({
+    session(id, items, page) {
+        const skips = page * items;
+        return Sessions.find({experiment: id}, {sort: {lastModified: -1}, skip: skips, limit: items});
     }
 });
 
@@ -190,7 +221,6 @@ Template.trialList.helpers({
         _.each(cells, (cell) => {
             let click = clicks[n];
             _.each(cell, (e, j, list) => {
-                console.log(e, click);
                 if (click && click.timeStamp <= e.timeStamp) {
                     list.splice(j, 0, click);
                     click = clicks[n++];
@@ -305,5 +335,6 @@ Template.trialList.onCreated(function () {
 });
 
 Template.trialList.onRendered(function () {
+    this.autorun(() => this.subscribe('trials.experiment', this.data.experiment));
     Template.instance().$('table').tablesort().data('tablesort').sort($("th.sorted:first-child"));
 });

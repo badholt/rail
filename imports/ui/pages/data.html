@@ -28,6 +28,8 @@
             </div>
         </div>
     {{else}}
+        {{> paginationMenu}}
+
         <h2 class="ui inverted breadcrumb header">
             <i class="inverted grey right chevron icon divider"></i>
 
@@ -49,19 +51,35 @@
     </div>
 </template>
 
+<template name="paginationMenu">
+    <div class="ui compact inverted right floated stackable menu">
+        {{#if $gt page 0}}
+            <a id="back" class="item">
+                <i class="fitted backward icon"></i>
+            </a>
+        {{/if}}
+
+        {{# if more _id page}}
+            <a id="next" class="item">
+                <i class="fitted forward icon"></i>
+            </a>
+        {{/if}}
+    </div>
+</template>
+
 <template name="sessionList">
     <table id="session-list" class="ui very basic celled center aligned inverted small sortable table">
         <thead>
         <tr>
-            <th class="sorted">Subject(s)</th>
+            <th class="">Subject(s)</th>
             <th class="sorted">Date & Time</th>
-            <th class="sorted">Device</th>
-            <th class="sorted">User</th>
+            <th class="">Device</th>
+            <th class="">User</th>
         </tr>
         </thead>
 
         <tbody>
-        {{#each session _id}}
+        {{#each session _id items page}}
             {{> sessionRow}}
         {{/each}}
         </tbody>

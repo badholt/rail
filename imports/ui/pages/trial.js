@@ -233,7 +233,7 @@ Template.trialElement.helpers({
                 name = 'audio.' + element.source.type + '.' + trial;
             console.log('audio', element, stage, trial, timers, name);
 
-            if (timers && !timers[name + '.start']) {
+            if (timers && !_.has(timers, name + '.start')) {
                 let audio;
                 switch (element.source.type) {
                     case 'file':
