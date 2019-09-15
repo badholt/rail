@@ -134,7 +134,13 @@ if (Meteor.isServer) Meteor.methods({
                                     trial = session.trials[message.context.trial - 1];
 
                                 console.log('trial:\t', trial, message);
-                                Meteor.call('updateTrial', trial, 'data.' + message.context.stage, 'push', message);
+                                Meteor.call('updateTrial', trial, 'data.' + message.context.stage - 1, 'push', {
+                                    pins: message.pins,
+                                    request: message.request,
+                                    timeStamp: message.context.time,
+                                    status: message.status,
+                                    type: message.sender
+                                });
                             }
                     }
                 } else if (topic === 'client') {

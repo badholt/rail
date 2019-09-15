@@ -24,7 +24,6 @@ Template.experiment.onCreated(function () {
 
     this.autorun(() => {
         const experiment = this.getExperiment();
-
         if (experiment) this.subscribe('templates.experiment', experiment._id, Meteor.userId());
     });
 });

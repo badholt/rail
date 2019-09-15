@@ -63,7 +63,6 @@ Template.data.helpers({
 Template.data.onCreated(function () {
     this.autorun(() => {
         this.subscribe('sessions.experiment', this.data._id);
-        this.subscribe('subjects.experiment', this.data._id);
     });
     this.autorun(() => this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': {$ne: false}}]}));
 
@@ -130,12 +129,14 @@ Template.paginationMenu.events({
 });
 
 Template.paginationMenu.helpers({
+    items() {
+        return Template.instance().parent().items.get();
+    },
     page() {
         return Template.instance().parent().page.get();
     },
-    more(id, page) {
-        const items = 5,
-            skips = (page + 1) * items,
+    more(id, items, page) {
+        const skips = (page + 1) * items,
             count = Sessions.find({experiment: id}).count();
 
         return (skips < count);
@@ -148,10 +149,7 @@ Template.sessionList.helpers({
     },
     page() {
         return Template.instance().parent().page.get();
-    }
-});
-
-Template.sessionList.helpers({
+    },
     session(id, items, page) {
         const skips = page * items;
         return Sessions.find({experiment: id}, {sort: {lastModified: -1}, skip: skips, limit: items});
@@ -201,18 +199,26 @@ Template.trialList.helpers({
 
         if (index > 0) {
             const previous = events[index - 1],
-                delay = event.timeStamp - previous.timeStamp;
+                delay = (event.timeStamp || event.context.time) - (previous.timeStamp || previous.context.time);
 
             return delay.toFixed(3);
         }
     },
+    event(request) {
+        return _.map(_.pairs(request), (property) => ({
+            key: property[0],
+            value: (parseFloat(property[1])) ? parseFloat(property[1]).toFixed(3) : property[1]
+        }));
+    },
     events(unique, data) {
         const groups = _.map(data, (stage) =>
-                _.groupBy(stage, (element) => element.type.split('.')[0])),
+                _.groupBy(stage, (element) => (element.type) ? element.type.split('.')[0] : element.sender)),
             session = _.flatten([groups[0]['session'], groups[0]['trial']]),
             time = _.groupBy(_.compact(session), (e) => _.last(e.type.split('.'))),
-            types = _.map(unique, (stage, i) => _.map(stage, (e) => (groups[i][e.type] || []))),
+            types = _.map(unique, (stage, i) => _.map(stage, (e) =>
+                (groups[i][e.type || e.sender] || []))),
             cells = _.flatten([[time['start']], ...types, [time['end']]], true);
+        console.log(groups, session, time, unique, types, cells);
 
         /** Distribute clicks by timestamp rather than event: */
         const clicks = _.flatten([groups[0]['click']]);
@@ -230,8 +236,8 @@ Template.trialList.helpers({
 
         return cells;
     },
-    icon(type) {
-        if (type) {
+    icon(request, sender, type) {
+        if (sender || type) {
             const icons = {
                     audio: {
                         start: {
@@ -243,6 +249,14 @@ Template.trialList.helpers({
                     },
                     click: {
                         main: 'mouse pointer'
+                    },
+                    ir: {
+                        entry: {
+                            main: 'sign in'
+                        },
+                        exit: {
+                            main: 'sign out'
+                        }
                     },
                     light: {
                         dim: {
@@ -310,14 +324,18 @@ Template.trialList.helpers({
                         }
                     }
                 },
-                properties = type.split(/(?:\.[\d]?\.?)+/ig),
+                properties = _.pairs(request)[0] || type.split(/(?:\.[\d]?\.?)+/ig),
                 path = _.property(properties);
+            console.log(properties, path);
 
             return path(icons);
         }
     },
     length(trial) {
         return _.flatten(trial).length;
+    },
+    time(context, timeStamp) {
+        return timeStamp || context.time;
     },
     trial(ids) {
         return Trials.find({_id: {$in: ids}});

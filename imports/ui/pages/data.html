@@ -59,7 +59,7 @@
             </a>
         {{/if}}
 
-        {{# if more _id page}}
+        {{# if more _id items page}}
             <a id="next" class="item">
                 <i class="fitted forward icon"></i>
             </a>
@@ -230,17 +230,25 @@
 
                                 <div class="item">
                                     <label class="ui black label">
-                                        {{#with icon type}}
+                                        {{#with icon request sender type}}
                                             <i class="large icons">
                                                 <i class="{{main}} icon"></i>
                                                 <i class="corner inverted {{corner}} icon"></i>
                                             </i>
                                         {{/with}}
 
-                                        {{formatDecimal timeStamp 3}}
+                                        {{formatDecimal (time context timeStamp) 3}}
 
                                         <div class="detail">
-                                            {{replace type '[\\.]' ' '}}
+                                            {{#if type}}
+                                                {{replace type '[\\.]' ' '}}
+                                            {{else}}
+                                                <ul class="horizontal list">
+                                                    {{#each event request}}
+                                                        <li class="item">{{key}} {{value}}</li>
+                                                    {{/each}}
+                                                </ul>
+                                            {{/if}}
                                         </div>
                                     </label>
                                 </div>
