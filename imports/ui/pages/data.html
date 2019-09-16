@@ -1,7 +1,13 @@
 <template name="data">
     {{#with selected}}
-        <div class="ui basic segment">
-            {{> settingsAccordion}}
+        <div class="ui two column grid">
+            <div class="ui basic segment column">
+                {{> settingsAccordion}}
+            </div>
+
+            <div class="ui basic segment column">
+                {{> statisticsList clicks=clicks session=this}}
+            </div>
         </div>
 
         <div class="ui basic segment">
@@ -24,7 +30,7 @@
             </h2>
 
             <div class="ui inverted stacked segment">
-                {{> trialList}}
+                {{> trialList clicks=clicks session=this}}
             </div>
         </div>
     {{else}}
@@ -186,78 +192,111 @@
     {{/with}}
 </template>
 
+<template name="statisticsList">
+    <div class="ui small inverted statistics">
+        <div class="statistic">
+            <div class="value">
+                <i class="blue clock icon"></i> {{count session.trials}}
+            </div>
+            <div class="label">
+                Trials
+            </div>
+        </div>
+        {{#with counts}}
+            <div class="statistic">
+                <div class="value">
+                    <i class="olive mouse pointer icon"></i> {{clicks}}
+                </div>
+                <div class="label">
+                    Clicks
+                </div>
+            </div>
+            <div class="statistic">
+                <div class="value">
+                    <i class="yellow star icon"></i> {{formatDecimal dispensed 3}}
+                </div>
+                <div class="label">
+                    mL dispensed
+                </div>
+            </div>
+        {{/with}}
+    </div>
+</template>
+
 <template name="trialList">
-    <table class="ui very basic celled center aligned definition inverted small sortable table">
-        <thead class="full-width">
-        {{#each unique}}
-            <tr>
-                <th></th>
-                <th colspan="{{add 2 (getLength this)}}">Trial Type {{add 1 @index}}</th>
-            </tr>
+    {{#with table}}
+        <table class="ui very basic celled center aligned definition inverted small sortable table">
+            <thead class="full-width">
+            {{#each stages}}
+                <tr>
+                    <th></th>
+                    <th colspan="{{add 2 (getLength this)}}">Trial Type {{add 1 @index}}</th>
+                </tr>
 
-            <tr>
-                <th></th>
-                <th colspan="{{add 2 (getLength this)}}">Stage {{add 1 @index}}</th>
-            </tr>
+                <tr>
+                    <th></th>
+                    <th colspan="{{add 2 (getLength this)}}">Stage {{add 1 @index}}</th>
+                </tr>
 
-            <tr>
-                <th class="sorted"></th>
-                <th class="">start</th>
-                {{#each this}}
-                    <th class="">{{type}}</th>
-                {{/each}}
-                <th class="">end</th>
-            </tr>
-        {{/each}}
-        </thead>
+                <tr>
+                    <th class="sorted"></th>
+                    <th class="">start</th>
+                    {{#each this}}
+                        <th class="">{{type}}</th>
+                    {{/each}}
+                    <th class="">end</th>
+                </tr>
+            {{/each}}
+            </thead>
 
-        <tbody>
-        {{#each trial trials}}
-            <tr>
-                <td class="selectable" data-sort-value="-{{add 1 @index}}">{{add 1 @index}}</td>
+            <tbody>
+            {{#each cell in list}}
+                <tr>
+                    <td class="selectable" data-sort-value="-{{add 1 @index}}">{{add 1 @index}}</td>
 
-                {{#each events unique data}}
-                    <td class="center aligned selectable">
-                        <div class="ui inverted mini relaxed list">
-                            {{#each this}}
-                                {{#if $gt @index 0}}
-                                    <span class="ui black disabled mini label">
+                    {{#each cell}}
+                        <td class="center aligned selectable">
+                            <div class="ui inverted mini relaxed list">
+                                {{#each this}}
+                                    {{#if $gt @index 0}}
+                                        <span class="ui black disabled mini label">
                                         <i class="clock icon"></i>
-                                        {{delay @index this}}
-                                        <span class="detail">ms</span>
+                                            {{delay @index this}}
+                                            <span class="detail">ms</span>
                                     </span>
-                                {{/if}}
+                                    {{/if}}
 
-                                <div class="item">
-                                    <label class="ui black label">
-                                        {{#with icon request sender type}}
-                                            <i class="large icons">
-                                                <i class="{{main}} icon"></i>
-                                                <i class="corner inverted {{corner}} icon"></i>
-                                            </i>
-                                        {{/with}}
+                                    <div class="item">
+                                        <label class="ui black label">
+                                            {{#with icon request sender type}}
+                                                <i class="large icons">
+                                                    <i class="{{main}} icon"></i>
+                                                    <i class="corner inverted {{corner}} icon"></i>
+                                                </i>
+                                            {{/with}}
 
-                                        {{formatDecimal (time context timeStamp) 3}}
+                                            {{formatDecimal (time context timeStamp) 3}}
 
-                                        <div class="detail">
-                                            {{#if type}}
-                                                {{replace type '[\\.]' ' '}}
-                                            {{else}}
-                                                <ul class="horizontal list">
-                                                    {{#each event request}}
-                                                        <li class="item">{{key}} {{value}}</li>
-                                                    {{/each}}
-                                                </ul>
-                                            {{/if}}
-                                        </div>
-                                    </label>
-                                </div>
-                            {{/each}}
-                        </div>
-                    </td>
-                {{/each}}
-            </tr>
-        {{/each}}
-        </tbody>
-    </table>
+                                            <div class="detail">
+                                                {{#if type}}
+                                                    {{replace type '[\\.]' ' '}}
+                                                {{else}}
+                                                    <ul class="horizontal list">
+                                                        {{#each event request}}
+                                                            <li class="item">{{key}} {{value}}</li>
+                                                        {{/each}}
+                                                    </ul>
+                                                {{/if}}
+                                            </div>
+                                        </label>
+                                    </div>
+                                {{/each}}
+                            </div>
+                        </td>
+                    {{/each}}
+                </tr>
+            {{/each}}
+            </tbody>
+        </table>
+    {{/with}}
 </template>

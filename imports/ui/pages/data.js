@@ -66,6 +66,7 @@ Template.data.onCreated(function () {
     });
     this.autorun(() => this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': {$ne: false}}]}));
 
+    this.counts = new ReactiveVar({});
     this.items = new ReactiveVar(5);
     this.session = new ReactiveVar('');
     this.page = new ReactiveVar(0);
@@ -193,13 +194,29 @@ Template.settingsList.onRendered(function () {
     $('table').tablesort();
 });
 
+Template.statisticsList.helpers({
+    count(trials) {
+        return trials.length;
+    },
+    counts() {
+        return Template.instance().parent().counts.get();
+    }
+});
+
 Template.trialList.helpers({
+    table() {
+        return Template.instance().table.get();
+    },
     delay(index, event) {
         const events = Template.parentData(1);
 
         if (index > 0) {
             const previous = events[index - 1],
                 delay = (event.timeStamp || event.context.time) - (previous.timeStamp || previous.context.time);
+
+            if (_.has(event.request, 'dispense')) {
+                console.log(event.request, delay);
+            }
 
             return delay.toFixed(3);
         }
@@ -209,32 +226,6 @@ Template.trialList.helpers({
             key: property[0],
             value: (parseFloat(property[1])) ? parseFloat(property[1]).toFixed(3) : property[1]
         }));
-    },
-    events(unique, data) {
-        const groups = _.map(data, (stage) =>
-                _.groupBy(stage, (element) => (element.type) ? element.type.split('.')[0] : element.sender)),
-            session = _.flatten([groups[0]['session'], groups[0]['trial']]),
-            time = _.groupBy(_.compact(session), (e) => _.last(e.type.split('.'))),
-            types = _.map(unique, (stage, i) => _.map(stage, (e) =>
-                (groups[i][e.type || e.sender] || []))),
-            cells = _.flatten([[time['start']], ...types, [time['end']]], true);
-        console.log(groups, session, time, unique, types, cells);
-
-        /** Distribute clicks by timestamp rather than event: */
-        const clicks = _.flatten([groups[0]['click']]);
-
-        let n = 0;
-        _.each(cells, (cell) => {
-            let click = clicks[n];
-            _.each(cell, (e, j, list) => {
-                if (click && click.timeStamp <= e.timeStamp) {
-                    list.splice(j, 0, click);
-                    click = clicks[n++];
-                }
-            });
-        });
-
-        return cells;
     },
     icon(request, sender, type) {
         if (sender || type) {
@@ -248,7 +239,7 @@ Template.trialList.helpers({
                         }
                     },
                     click: {
-                        main: 'mouse pointer'
+                        main: 'olive mouse pointer'
                     },
                     ir: {
                         entry: {
@@ -326,7 +317,6 @@ Template.trialList.helpers({
                 },
                 properties = _.pairs(request)[0] || type.split(/(?:\.[\d]?\.?)+/ig),
                 path = _.property(properties);
-            console.log(properties, path);
 
             return path(icons);
         }
@@ -346,16 +336,68 @@ Template.trialList.helpers({
 });
 
 Template.trialList.onCreated(function () {
-    const stages = _.flatten(_.unique(this.data.settings.stages,
+    const stages = _.flatten(_.unique(this.data.session.settings.stages,
         (trial) => JSON.stringify(trial)), true);
 
-    this.unique = new ReactiveVar(stages);
+    this.analyzeTrials = (stages, trials) => {
+        const list = [];
+        let counts = {
+            amount: 0,
+            clicks: 0,
+            dispensed: 0
+        };
+
+        if (trials) _.each(trials, (trial) => {
+            if (trial) {
+                const s = 0,
+                    groups = _.map(trial.data, (stage) =>
+                        _.groupBy(stage, (element) => (element.type) ? element.type.split('.')[0] : element.sender)),
+                    session = _.flatten([groups[s]['session'], groups[s]['trial']]),
+                    time = _.groupBy(_.compact(session), (e) => _.last(e.type.split('.'))),
+                    types = _.map(stages, (stage, i) => _.map(stage, (e) =>
+                        (groups[i][e.type || e.sender] || []))),
+                    cells = _.flatten([[time['start']], ...types, [time['end']]], true);
+
+                /** Distribute clicks by timestamp rather than event: */
+                const clicks = _.flatten([groups[s]['click']]);
+                if (clicks) counts.clicks += _.compact(clicks).length;
+
+                let n = 0;
+                _.each(cells, (cell) => {
+                    let click = clicks[n];
+                    _.each(cell, (e, j, list) => {
+                        if (click && click.timeStamp <= e.timeStamp) {
+                            list.splice(j, 0, click);
+                            click = clicks[n++];
+                        } else if (_.has(e.request, 'dispense')) {
+                            counts.amount += e.request['amount'];
+                            counts.dispensed += e.request['dispense'];
+                        }
+                    });
+                });
+
+                list.push(cells);
+            }
+        });
+
+        return {counts: counts, list: list, stages: stages};
+    };
+
+    this.table = new ReactiveVar();
+
+    this.autorun(() => {
+        const trials = Trials.find({_id: {$in: this.data.session.trials}}).fetch(),
+            table = this.analyzeTrials(stages, trials);
+
+        this.parent().counts.set(table.counts);
+        this.table.set(table);
+    });
 });
 
 Template.trialList.onRendered(function () {
     this.autorun(() => {
-        this.subscribe('sessions.experiment', this.data.experiment);
-        this.subscribe('trials.session', this.data._id);
+        this.subscribe('sessions.experiment', this.data.session.experiment);
+        this.subscribe('trials.session', this.data.session._id);
     });
     Template.instance().$('table').tablesort().data('tablesort').sort($("th.sorted:first-child"));
 });

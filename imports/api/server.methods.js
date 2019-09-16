@@ -15,6 +15,7 @@ const bound = Meteor.bindEnvironment((callback) => callback()),
 if (Meteor.isServer) Meteor.methods({
     'addExperiment': (fields) => {
         const template = Templates.findOne(fields.template);
+        console.log(fields, template);
 
         return Experiments.insert({
             investigator: {
@@ -62,7 +63,7 @@ if (Meteor.isServer) Meteor.methods({
     'addTrial': (id, index) => {
         const session = Sessions.findOne(id),
             stages = session.settings.stages[index];
-
+        // console.log('add trial:\n', id, session, stages);
         if (stages) {
             const trial = Trials.insert({
                 data: Array.from(stages, () => []),
@@ -73,6 +74,7 @@ if (Meteor.isServer) Meteor.methods({
                 stages: stages,
                 subject: 'MouseID'
             });
+            // console.log('insert trial:\t', trial);
 
             if (trial) Meteor.call('updateSession', id, 'trials', trial);
             return trial;
@@ -127,21 +129,21 @@ if (Meteor.isServer) Meteor.methods({
                             break;
                         case 'lights':
                         case 'reward':
-                            if (message.context.device) Meteor.call('updateUser', message.context.device,
-                                'status.message', 'set', message);
-                            else if (message.context.trial) {
+                            if (message.context.trial) {
                                 const session = Sessions.findOne(message.context.session),
+                                    stage = message.context.stage - 1,
                                     trial = session.trials[message.context.trial - 1];
 
                                 console.log('trial:\t', trial, message);
-                                Meteor.call('updateTrial', trial, 'data.' + message.context.stage - 1, 'push', {
+                                Meteor.call('updateTrial', trial, 'data.' + stage, 'push', {
                                     pins: message.pins,
                                     request: message.request,
                                     timeStamp: message.context.time,
                                     status: message.status,
                                     type: message.sender
                                 });
-                            }
+                            } else if (message.context.device) Meteor.call('updateUser', message.context.device,
+                                'status.message', 'set', message);
                     }
                 } else if (topic === 'client') {
                     /** Messages for modifying this mqtt client: */
@@ -190,8 +192,14 @@ if (Meteor.isServer) Meteor.methods({
         const users = Meteor.users.find({'profile.username': {$in: values.users}}).fetch(),
             ids = _.pluck(users, '_id');
 
-        _.difference(experiment.users, ids).forEach((id) => Meteor.call('removeUser', id, experiment._id));
-        _.difference(ids, experiment.users).forEach((id) => Meteor.call('addUser', id, experiment._id));
+        _.difference(experiment.users, ids).forEach((id) => {
+            // console.log('rem: ', id);
+            Meteor.call('removeUser', id, experiment._id);
+        });
+        _.difference(ids, experiment.users).forEach((id) => {
+            // console.log('add: ', id);
+            Meteor.call('addUser', id, experiment._id);
+        });
 
         Experiments.update(experiment._id, {
             $set: {
@@ -200,6 +208,7 @@ if (Meteor.isServer) Meteor.methods({
         });
     },
     'updateSession': (session, key, value) => {
+        // console.log(session, key, value);
         if (key === 'trials') {
             Sessions.update(session, {
                 $currentDate: {
