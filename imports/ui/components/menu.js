@@ -13,7 +13,7 @@ import {Template} from 'meteor/templating';
 Template.menu.events({
     'click .ui.menu > a.item'(event, template) {
         const item = $('.tabular.menu .active.item').get(0);
-        console.log(this, event, template, item);
+
         if (item) {
             const action = item.getAttribute('id'),
                 link = '/experiments/' + FlowRouter.getParam('link'),

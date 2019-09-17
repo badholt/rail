@@ -1,38 +1,40 @@
 <template name="data">
     {{#with selected}}
-        <div class="ui two column grid">
-            <div class="ui basic segment column">
-                {{> settingsAccordion}}
+        {{#if settings}}
+            <div class="ui two column grid">
+                <div class="ui basic segment column">
+                    {{> settingsAccordion}}
+                </div>
+
+                <div class="ui basic segment column">
+                    {{> statisticsList}}
+                </div>
             </div>
 
-            <div class="ui basic segment column">
-                {{> statisticsList clicks=clicks session=this}}
-            </div>
-        </div>
+            <div class="ui basic segment">
+                {{> dataMenu}}
 
-        <div class="ui basic segment">
-            {{> dataMenu}}
+                <h2 class="ui inverted breadcrumb header">
+                    <i class="inverted grey right chevron icon divider"></i>
 
-            <h2 class="ui inverted breadcrumb header">
-                <i class="inverted grey right chevron icon divider"></i>
-
-                <a id="session" class="section">
-                    <h2 class="ui small inverted header">
-                        <i class="inverted grey calendar icon divider"></i>
-                        Session
-                        <span class="sub header">
+                    <a id="session" class="section">
+                        <h2 class="ui small inverted header">
+                            <i class="inverted grey calendar icon divider"></i>
+                            Session
+                            <span class="sub header">
                         on {{formatDate date 'dddd, MMMM Do'}} at {{formatDate date 'HH:mm'}}
                     </span>
-                    </h2>
-                </a>
-                <i class="inverted grey right chevron icon divider"></i>
-                <div class="section">Trials</div>
-            </h2>
+                        </h2>
+                    </a>
+                    <i class="inverted grey right chevron icon divider"></i>
+                    <div class="section">Trials</div>
+                </h2>
 
-            <div class="ui inverted stacked segment">
-                {{> trialList clicks=clicks session=this}}
+                <div class="ui inverted stacked segment">
+                    {{> trialList}}
+                </div>
             </div>
-        </div>
+        {{/if}}
     {{else}}
         {{> paginationMenu}}
 
@@ -193,32 +195,45 @@
 </template>
 
 <template name="statisticsList">
-    <div class="ui small inverted statistics">
+    <div class="ui tiny inverted statistics">
         <div class="statistic">
             <div class="value">
-                <i class="blue clock icon"></i> {{count session.trials}}
+                <i class="blue clock icon"></i> {{count trials}}
             </div>
             <div class="label">
                 Trials
             </div>
         </div>
         {{#with counts}}
-            <div class="statistic">
-                <div class="value">
-                    <i class="olive mouse pointer icon"></i> {{clicks}}
+            {{#if clicks}}
+                <div class="statistic">
+                    <div class="value">
+                        <i class="olive mouse pointer icon"></i> {{clicks}}
+                    </div>
+                    <div class="label">
+                        Clicks
+                    </div>
                 </div>
-                <div class="label">
-                    Clicks
+            {{/if}}
+            {{#if dispensed}}
+                <div class="statistic">
+                    <div class="value">
+                        <i class="teal tint icon"></i> {{formatDecimal amount 3}}
+                    </div>
+                    <div class="label">
+                        mL dispensed
+                    </div>
                 </div>
-            </div>
-            <div class="statistic">
-                <div class="value">
-                    <i class="yellow star icon"></i> {{formatDecimal dispensed 3}}
+
+                <div class="statistic">
+                    <div class="value">
+                        <i class="yellow star icon"></i> {{formatDecimal dispensed 3}}
+                    </div>
+                    <div class="label">
+                        ms dispensing
+                    </div>
                 </div>
-                <div class="label">
-                    mL dispensed
-                </div>
-            </div>
+            {{/if}}
         {{/with}}
     </div>
 </template>

@@ -1,6 +1,6 @@
 <template name="menu">
-    <div class="ui {{#if
-            currentUser.profile.device}}fade pink {{else}}inverted {{/if}}secondary stackable pointing menu">
+    <div class="ui {{#if currentUser.profile.device}}fade pink
+{{else}}inverted {{/if}}secondary stackable pointing menu">
         {{#if currentUser}}
             {{#unless currentUser.profile.device}}
                 <a id="create" class="ui animated button item" href="/create" tabindex="1">

@@ -20,14 +20,17 @@
             </div>
         </div>
 
-        {{> subjectModal subject}}
+        {{#if subject}}
+            {{> subjectModal subject}}
+        {{/if}}
     </div>
 </template>
 
 <template name="subjectCard">
     <div class="ui green card">
         <div class="center aligned content">
-            <i class="right floated grey link edit icon"></i>
+            <i class="left floated grey link edit icon"></i>
+            <i class="right floated grey link balance scale icon"></i>
 
             <div class="ui tiny icon header">
                 <i class="green inverted large circular paw icon"></i>
@@ -128,6 +131,7 @@
 
             <div class="field">
                 <label>Protocol</label>
+
                 <select name="protocol" class="ui compact search dropdown">
                     <option value="">ex: MO17A81</option>
                     <option value="MO17A68">MO17A68</option>
@@ -159,6 +163,7 @@
 
             <div class="field">
                 <label>Sex</label>
+
                 <select name="sex" class="ui compact dropdown">
                     <option value="">ex: Female</option>
                     <option value="f">Female</option>
@@ -168,9 +173,15 @@
 
             <div class="field">
                 <label>Strain</label>
+
                 <select name="strain" class="ui compact search dropdown">
                     <option value="">ex: c57</option>
-                    <option value="wt">c57</option>
+                    <option value="wt">BALB/c</option>
+                    <option value="wt">C3H</option>
+                    <option value="wt">C57BL/6</option>
+                    <option value="wt">DBA</option>
+                    <option value="wt">DAT-Cre</option>
+                    <option value="wt">VGAT-Cre</option>
                 </select>
             </div>
         </div>

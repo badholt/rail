@@ -4,7 +4,7 @@ import '/imports/ui/pages/data';
 import '/imports/ui/pages/run';
 import '/imports/ui/pages/settings';
 
-import {Experiments, Templates} from '../../api/collections';
+import {Experiments} from '../../api/collections';
 import {FlowRouter} from 'meteor/kadira:flow-router';
 import {Template} from 'meteor/templating';
 import {Meteor} from "meteor/meteor";

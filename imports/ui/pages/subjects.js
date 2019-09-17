@@ -6,6 +6,9 @@ import {Template} from "meteor/templating";
 import {Experiments, Subjects} from "../../api/collections";
 
 Template.subjectCard.events({
+    'click .balance.scale'(event, template) {
+        console.log(template);
+    },
     'click .edit'(event, template) {
         /** Set modal form to selected subject:  */
         template.parent().edit.set(template.data._id);

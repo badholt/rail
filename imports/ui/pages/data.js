@@ -13,36 +13,6 @@ import {Template} from 'meteor/templating';
 import {ReactiveVar} from 'meteor/reactive-var';
 import {saveAs} from 'file-saver';
 
-const fs = require('fs'),
-    analyzeData = function (comparisons, stages) {
-        let analyses = [],
-            prev;
-
-        _.each(stages, (stage, i) => {
-            analyses.push([]);
-
-            _.each(stage.data, (e, j) => {
-                const time = comparisons.time;
-                let d = {
-                    event: j,
-                    stage: i
-                };
-
-                if (prev) _.each(time, (key) => d[key] = (prev[key])
-                    ? moment(e[key]).diff(moment(prev[key]))
-                    : moment(e[key]));
-
-                if (_.size(d) > 2) analyses[i].push(d);
-                prev = e;
-            });
-
-            return stage;
-        });
-
-        return _.chain(stages).map((stage, i) => _.extend(stage, {order: i + 1}))
-            .zip(_.map(analyses, (element) => ({analysis: element}))).flatten(true).value();
-    };
-
 Template.data.events({
     'click #session'(event, template) {
         template.session.set('');
@@ -61,9 +31,6 @@ Template.data.helpers({
 });
 
 Template.data.onCreated(function () {
-    this.autorun(() => {
-        this.subscribe('sessions.experiment', this.data._id);
-    });
     this.autorun(() => this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': {$ne: false}}]}));
 
     this.counts = new ReactiveVar({});
@@ -152,9 +119,20 @@ Template.sessionList.helpers({
         return Template.instance().parent().page.get();
     },
     session(id, items, page) {
+        console.log(id, items, page);
         const skips = page * items;
-        return Sessions.find({experiment: id}, {sort: {lastModified: -1}, skip: skips, limit: items});
+        return Sessions.find({experiment: id}, {
+            fields: {settings: false},
+            sort: {lastModified: -1},
+            skip: skips,
+            limit: items
+        });
     }
+});
+
+Template.sessionList.onCreated(function () {
+    this.autorun(() => this.subscribe('sessions.experiment', this.data._id, {}));
+    this.autorun(() => this.subscribe('subjects.experiment', this.data._id));
 });
 
 Template.sessionRow.helpers({
@@ -336,7 +314,12 @@ Template.trialList.helpers({
 });
 
 Template.trialList.onCreated(function () {
-    const stages = _.flatten(_.unique(this.data.session.settings.stages,
+    this.autorun(() => {
+        this.subscribe('sessions.single', this.data._id);
+        this.subscribe('trials.session', this.data._id);
+    });
+
+    const stages = _.flatten(_.unique(this.data.settings.stages,
         (trial) => JSON.stringify(trial)), true);
 
     this.analyzeTrials = (stages, trials) => {
@@ -386,7 +369,7 @@ Template.trialList.onCreated(function () {
     this.table = new ReactiveVar();
 
     this.autorun(() => {
-        const trials = Trials.find({_id: {$in: this.data.session.trials}}).fetch(),
+        const trials = Trials.find({_id: {$in: this.data.trials}}).fetch(),
             table = this.analyzeTrials(stages, trials);
 
         this.parent().counts.set(table.counts);
@@ -395,9 +378,5 @@ Template.trialList.onCreated(function () {
 });
 
 Template.trialList.onRendered(function () {
-    this.autorun(() => {
-        this.subscribe('sessions.experiment', this.data.session.experiment);
-        this.subscribe('trials.session', this.data.session._id);
-    });
     Template.instance().$('table').tablesort().data('tablesort').sort($("th.sorted:first-child"));
 });

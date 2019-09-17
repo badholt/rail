@@ -19,8 +19,8 @@ Meteor.publish('experiments.user', function (id) {
 Meteor.publish('sessions.device', function (id) {
     return Sessions.find({device: id});
 });
-Meteor.publish('sessions.experiment', function (id) {
-    return Sessions.find({experiment: id});
+Meteor.publish('sessions.experiment', function (id, fields) {
+    return Sessions.find({experiment: id}, {fields: fields});
 });
 Meteor.publish('sessions.single', function (id) {
     return Sessions.find(id);
