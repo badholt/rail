@@ -1,40 +1,6 @@
 <template name="data">
     {{#with selected}}
-        {{#if settings}}
-            <div class="ui two column grid">
-                <div class="ui basic segment column">
-                    {{> settingsAccordion}}
-                </div>
-
-                <div class="ui basic segment column">
-                    {{> statisticsList}}
-                </div>
-            </div>
-
-            <div class="ui basic segment">
-                {{> dataMenu}}
-
-                <h2 class="ui inverted breadcrumb header">
-                    <i class="inverted grey right chevron icon divider"></i>
-
-                    <a id="session" class="section">
-                        <h2 class="ui small inverted header">
-                            <i class="inverted grey calendar icon divider"></i>
-                            Session
-                            <span class="sub header">
-                        on {{formatDate date 'dddd, MMMM Do'}} at {{formatDate date 'HH:mm'}}
-                    </span>
-                        </h2>
-                    </a>
-                    <i class="inverted grey right chevron icon divider"></i>
-                    <div class="section">Trials</div>
-                </h2>
-
-                <div class="ui inverted stacked segment">
-                    {{> trialList}}
-                </div>
-            </div>
-        {{/if}}
+        {{> trialsView}}
     {{else}}
         {{> paginationMenu}}
 
@@ -67,7 +33,7 @@
             </a>
         {{/if}}
 
-        {{# if more _id items page}}
+        {{# if more}}
             <a id="next" class="item">
                 <i class="fitted forward icon"></i>
             </a>
@@ -87,7 +53,7 @@
         </thead>
 
         <tbody>
-        {{#each session _id items page}}
+        {{#each session _id}}
             {{> sessionRow}}
         {{/each}}
         </tbody>
@@ -314,4 +280,42 @@
             </tbody>
         </table>
     {{/with}}
+</template>
+
+<template name="trialsView">
+    {{#if settings}}
+        <div class="ui two column grid">
+            <div class="ui basic segment column">
+                {{> settingsAccordion}}
+            </div>
+
+            <div class="ui basic segment column">
+                {{> statisticsList}}
+            </div>
+        </div>
+
+        <div class="ui basic segment">
+            {{> dataMenu}}
+
+            <h2 class="ui inverted breadcrumb header">
+                <i class="inverted grey right chevron icon divider"></i>
+
+                <a id="session" class="section">
+                    <h2 class="ui small inverted header">
+                        <i class="inverted grey calendar icon divider"></i>
+                        Session
+                        <span class="sub header">
+                        on {{formatDate date 'dddd, MMMM Do'}} at {{formatDate date 'HH:mm'}}
+                    </span>
+                    </h2>
+                </a>
+                <i class="inverted grey right chevron icon divider"></i>
+                <div class="section">Trials</div>
+            </h2>
+
+            <div class="ui inverted stacked segment">
+                {{> trialList}}
+            </div>
+        </div>
+    {{/if}}
 </template>

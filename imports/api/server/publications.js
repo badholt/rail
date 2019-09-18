@@ -19,8 +19,13 @@ Meteor.publish('experiments.user', function (id) {
 Meteor.publish('sessions.device', function (id) {
     return Sessions.find({device: id});
 });
-Meteor.publish('sessions.experiment', function (id, fields) {
-    return Sessions.find({experiment: id}, {fields: fields});
+Meteor.publish('sessions.experiment', function (id, fields, limit, skip) {
+    return Sessions.find({experiment: id}, {
+        fields: fields,
+        sort: {lastModified: -1},
+        skip: skip,
+        limit: limit
+    });
 });
 Meteor.publish('sessions.single', function (id) {
     return Sessions.find(id);
@@ -51,7 +56,7 @@ Meteor.publish('trials.experiment', function (id) {
     return Trials.find({experiment: id});
 });
 Meteor.publish('trials.session', function (id) {
-    return Trials.find({session: id});
+    return Trials.find({session: id}, {sort: {number: -1}});
 });
 
 Meteor.publish('users', function (params) {

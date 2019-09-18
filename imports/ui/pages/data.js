@@ -19,14 +19,22 @@ Template.data.events({
     },
     'click #session-list tr'(event, template) {
         const prev = template.session.get();
-        template.session.set((prev !== this._id) ? this._id : '');
+
+        if ((prev !== this._id)) {
+            template.subscribe('sessions.single', this._id);
+            template.subscribe('trials.session', this._id);
+
+            template.session.set(this._id);
+        }
     }
 });
 
 Template.data.helpers({
     selected() {
-        const id = Template.instance().session.get();
-        return (id) ? Sessions.findOne(id) : '';
+        const id = Template.instance().session.get(),
+            session = Sessions.findOne(id);
+
+        if (session) return session;
     }
 });
 
@@ -34,9 +42,10 @@ Template.data.onCreated(function () {
     this.autorun(() => this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': {$ne: false}}]}));
 
     this.counts = new ReactiveVar({});
-    this.items = new ReactiveVar(5);
-    this.session = new ReactiveVar('');
+    this.limit = new ReactiveVar(5);
+    this.more = new ReactiveVar(false);
     this.page = new ReactiveVar(0);
+    this.session = new ReactiveVar('');
 });
 
 Template.dataMenu.events({
@@ -87,52 +96,50 @@ Template.paginationMenu.events({
     'click #back'(event, template) {
         const data = template.parent();
         let page = data.page.get();
+
         data.page.set(--page);
+        template.updateMenu(data.limit.get(), page);
     },
     'click #next'(event, template) {
         const data = template.parent();
         let page = data.page.get();
+
         data.page.set(++page);
+        template.updateMenu(data.limit.get(), page);
     }
 });
 
 Template.paginationMenu.helpers({
-    items() {
-        return Template.instance().parent().items.get();
+    limit() {
+        return Template.instance().parent().limit.get();
+    },
+    more() {
+        return Template.instance().parent().more.get();
     },
     page() {
         return Template.instance().parent().page.get();
-    },
-    more(id, items, page) {
-        const skips = (page + 1) * items,
-            count = Sessions.find({experiment: id}).count();
-
-        return (skips < count);
     }
 });
 
 Template.sessionList.helpers({
-    items() {
-        return Template.instance().parent().items.get();
-    },
-    page() {
-        return Template.instance().parent().page.get();
-    },
-    session(id, items, page) {
-        console.log(id, items, page);
-        const skips = page * items;
-        return Sessions.find({experiment: id}, {
-            fields: {settings: false},
-            sort: {lastModified: -1},
-            skip: skips,
-            limit: items
-        });
+    session(id) {
+        return Sessions.find({experiment: id}, {fields: {settings: false}});
     }
 });
 
 Template.sessionList.onCreated(function () {
-    this.autorun(() => this.subscribe('sessions.experiment', this.data._id, {}));
+    const data = this.parent(),
+        limit = data.limit.get(),
+        page = data.page.get();
+
+    this.autorun(() => this.subscribe('sessions.experiment', this.data._id, {settings: false}, limit, page * limit));
     this.autorun(() => this.subscribe('subjects.experiment', this.data._id));
+
+    this.updateMenu = (limit, page) => Meteor.call('countCollection', 'Sessions', (error, count) => {
+        const skips = (page + 1) * limit;
+        if (!error && skips < count) data.more.set(true);
+    });
+    this.updateMenu(limit, page);
 });
 
 Template.sessionRow.helpers({
@@ -177,14 +184,11 @@ Template.statisticsList.helpers({
         return trials.length;
     },
     counts() {
-        return Template.instance().parent().counts.get();
+        return Template.instance().parent(2).counts.get();
     }
 });
 
 Template.trialList.helpers({
-    table() {
-        return Template.instance().table.get();
-    },
     delay(index, event) {
         const events = Template.parentData(1);
 
@@ -208,12 +212,35 @@ Template.trialList.helpers({
     icon(request, sender, type) {
         if (sender || type) {
             const icons = {
+                    amount: {
+                        dispense: {
+                            main: 'teal tint'
+                        }
+                    },
                     audio: {
-                        start: {
-                            main: 'green volume up'
+                        file: {
+                            start: {
+                                main: 'green volume up'
+                            },
+                            stop: {
+                                main: 'green volume off'
+                            }
                         },
-                        stop: {
-                            main: 'green volume off'
+                        noise: {
+                            start: {
+                                main: 'green volume up'
+                            },
+                            stop: {
+                                main: 'green volume off'
+                            }
+                        },
+                        wave: {
+                            start: {
+                                main: 'green volume up'
+                            },
+                            stop: {
+                                main: 'green volume off'
+                            }
                         }
                     },
                     click: {
@@ -293,8 +320,8 @@ Template.trialList.helpers({
                         }
                     }
                 },
-                properties = _.pairs(request)[0] || type.split(/(?:\.[\d]?\.?)+/ig),
-                path = _.property(properties);
+                properties = (!request) ? type.split(/(?:\.[\d]?\.?)+/ig) : _.flatten(_.pairs(request)),
+                path = _.property(_.filter(properties, _.isString));
 
             return path(icons);
         }
@@ -302,33 +329,28 @@ Template.trialList.helpers({
     length(trial) {
         return _.flatten(trial).length;
     },
+    table() {
+        return Template.instance().table.get();
+    },
     time(context, timeStamp) {
         return timeStamp || context.time;
     },
     trial(ids) {
         return Trials.find({_id: {$in: ids}});
-    },
-    unique() {
-        return Template.instance().unique.get();
     }
 });
 
 Template.trialList.onCreated(function () {
-    this.autorun(() => {
-        this.subscribe('sessions.single', this.data._id);
-        this.subscribe('trials.session', this.data._id);
-    });
-
     const stages = _.flatten(_.unique(this.data.settings.stages,
         (trial) => JSON.stringify(trial)), true);
 
     this.analyzeTrials = (stages, trials) => {
-        const list = [];
-        let counts = {
-            amount: 0,
-            clicks: 0,
-            dispensed: 0
-        };
+        const list = [],
+            counts = {
+                amount: 0,
+                clicks: 0,
+                dispensed: 0
+            };
 
         if (trials) _.each(trials, (trial) => {
             if (trial) {
@@ -372,7 +394,7 @@ Template.trialList.onCreated(function () {
         const trials = Trials.find({_id: {$in: this.data.trials}}).fetch(),
             table = this.analyzeTrials(stages, trials);
 
-        this.parent().counts.set(table.counts);
+        this.parent(2).counts.set(table.counts);
         this.table.set(table);
     });
 });

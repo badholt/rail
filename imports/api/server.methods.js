@@ -4,7 +4,7 @@ import _ from 'underscore';
 import moment from 'moment/moment';
 
 import {Experiments, Sessions, Subjects, Templates, Trials} from './collections';
-import {Meteor} from 'meteor/meteor';
+import {Meteor} from 'meteor/meteor'
 
 import NanoTimer from 'NanoTimer';
 // TODO: Use mqtt imports instead of require?
@@ -83,6 +83,7 @@ if (Meteor.isServer) Meteor.methods({
     'addUser': (username, id) => Meteor.users.update({'profile.username': username}, {
         $push: {'profile.experiments': id}
     }),
+    'countCollection': (collection) => Sessions.find().count(),
     'mqttConnect': (id) => {
         /** If client already exists, reconnect: */
         if (clients.has(id)) {
