@@ -4,7 +4,7 @@ import _ from 'underscore';
 import moment from 'moment/moment';
 
 import {Experiments, Sessions, Subjects, Templates, Trials} from './collections';
-import {Meteor} from 'meteor/meteor'
+import {Meteor} from 'meteor/meteor';
 
 import NanoTimer from 'NanoTimer';
 // TODO: Use mqtt imports instead of require?
@@ -101,8 +101,8 @@ if (Meteor.isServer) Meteor.methods({
                 if (topic === 'response') {
                     /** Messages concerning device information & status: */
                     /** Buffer must be encoded as UTF-8 before JSON can parse: */
-                    const timeStamp = performance.now(),
-                        message = JSON.parse(payload.toString('utf8'));
+                        // const timeStamp = performance.now();
+                    const message = JSON.parse(payload.toString('utf8'));
 
                     /** Sort message by the mqtt service/channel responding: */
                     if (message.sender) switch (message.sender) {

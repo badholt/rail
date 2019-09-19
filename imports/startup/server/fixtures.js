@@ -353,6 +353,15 @@ Meteor.startup(() => {
                 }, // TODO Might need Stage settings (i.e. individual duration/iti for each stage)
                 stages: [
                     [
+                        [
+                            {
+                                delay: 0,
+                                duration: 1000,
+                                type: 'cross',
+                                span: 75,
+                                weight: 5
+                            }
+                        ],
                         {
                             type: 'audio',
                             delay: 20000,

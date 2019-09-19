@@ -1,7 +1,7 @@
 <template name="crossForm">
     <form id="cross-form" class="ui inverted form">
         {{#if visible}}
-            <svg id="cross-preview" width="100%">{{> cross}}</svg>
+            <svg id="cross-preview" width="100%">{{> cross preview=true span=element.span weight=element.weight}}</svg>
         {{/if}}
 
         <div class="two fields">
@@ -11,7 +11,7 @@
                     <span class="ui mini horizontal label">pixels</span>
                 </label>
                 <input type="number" name="span"
-                       placeholder="#" value="{{span}}">
+                       placeholder="#" value="{{element.span}}">
             </div>
             <div class="field">
                 <label>
@@ -19,7 +19,7 @@
                     <span class="ui mini horizontal label">pixels</span>
                 </label>
                 <input type="number" name="weight"
-                       placeholder="#" value="{{weight}}">
+                       placeholder="#" value="{{element.weight}}">
             </div>
         </div>
     </form>

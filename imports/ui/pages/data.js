@@ -115,10 +115,13 @@ Template.sessionRow.helpers({
     },
 });
 
-// Template.sessionRow.onRendered(function () {
-//     const list = Template.instance().parent();
-//     list.$('table').tablesort().data('tablesort').sort($("thead th:nth-child(2)"));
-// });
+Template.sessionList.onRendered(function () {
+    const list = Template.instance(),
+        table = list.$('table thead');
+
+    table.find('th.number').data('sortBy', (th, td) => parseInt(td.text()));
+    table.find('th.date').data('sortBy', (th, td) => new Date(td.text())).sort(table.find('th.default'));
+});
 
 Template.sessionsView.helpers({
     limit() {
@@ -156,7 +159,7 @@ Template.sessionsView.onCreated(function () {
         if (!error) {
             const limit = this.limit.get(),
                 skip = (page + 1) * limit;
-            
+
             this.more.set(skip < count);
             this.page.set(page);
         }
@@ -386,6 +389,7 @@ Template.trialList.onCreated(function () {
                     });
                 });
 
+                console.log(cells);
                 list.push(cells);
             }
         });

@@ -16,7 +16,6 @@ Template.elementDropdown.helpers({
 
 Template.elementDropdown.onRendered(function () {
     const session = this.parent(2);
-    console.log(this);
 
     $('#elements').dropdown({
         on: 'hover',
@@ -24,7 +23,7 @@ Template.elementDropdown.onRendered(function () {
             const stages = session.stages.get(),
                 page = session.page.get();
 
-            stages[page].push({type: value});
+            stages[page].push({delay: 0, duration: 1000, type: value});
             session.stages.set(stages);
         }
     });

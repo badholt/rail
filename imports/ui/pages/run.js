@@ -201,7 +201,7 @@ Template.stagePage.helpers({
 
 // TODO: Allow for multiple crosses??
 Template.stagePage.events({
-    'click #cross-section'(event, template) {
+    'click [id^=cross]'(event, template) {
         const opened = template.opened.get();
         if (!opened) template.opened.set(true);
     }

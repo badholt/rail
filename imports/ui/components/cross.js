@@ -3,14 +3,12 @@ import './cross.html';
 import {calculateCenter} from '../../api/client.methods';
 import * as d3 from 'd3';
 import {Template} from 'meteor/templating';
-import {Meteor} from "meteor/meteor";
 
-export const renderCross = (settings, preview) => {
+export const renderCross = (context, settings) => {
     const template = Template.instance(),
-        container = (preview) ? template.getContainer('#cross-preview')
-            : template.getContainer(document),
+        container = template.getContainer(context),
         center = template.center(container.height, container.width);
-    console.log(container, center);
+    console.log(container, center, settings);
     let group = d3.select('#fixation-cross'),
         cross = group.selectAll('.cross'),
         region = group.select('.region');
@@ -37,32 +35,16 @@ Template.cross.onCreated(function () {
     this.autorun(() => {
         this.center = (height, width) => calculateCenter(height, width);
         this.getContainer = (selector) => {
-            const container = $(selector);
-            if (selector !== document) {
-                const position = container.position();
-                return {height: container.height(), width: container.width(), x: position.x, y: position.y};
-            } else {
-                return {height: container.height(), width: container.width()};
-            }
+            const container = $(selector),
+                dimensions = {height: container.height(), width: container.width()};
+
+            return (selector !== document) ? _.extend(dimensions, container.position()) : dimensions;
         };
     });
 });
 
 Template.cross.onRendered(function () {
-    const parent = this.parent(),
-        session = parent.session.get();
+    console.log(this, Template.instance().parent(4));
 
-    if (session && parent.trial) {
-        const number = parent.trial.get();
-
-        if (number) {
-            const stage = 0;
-            // Meteor.call('updateTrial', number, {type: 'cross', timeStamp: Date.now()}, session._id, stage);
-            // Meteor.call('updateTrial', trial._id, 'data.' + stage, 'push', data);
-        }
-
-        renderCross(this.data, false);
-    } else {
-        renderCross(this.data, true);
-    }
+    renderCross(!(this.data.preview) ? document : '#cross-preview', this.data);
 });

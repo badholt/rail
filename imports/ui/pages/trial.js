@@ -84,7 +84,6 @@ Template.trial.helpers({
                 i = template.trial.get(),
                 n = i + 1;
 
-            console.log(i, settings, template);
             if (n > 0) {
                 const id = trials[i],
                     trial = Trials.findOne(id);
@@ -93,7 +92,7 @@ Template.trial.helpers({
                     if (!template.timers[n]) template.timers[n] = {[stage]: {}};
                     if (!template.timers[n]['trial.' + n + '.iti']) {
                         trialTimers(settings, stage, n, template);
-                        console.log('new trial', n, trial);
+                        console.log('\nNEW TRIAL:\t', n, trial);
                     }
 
                     return trial;
@@ -137,6 +136,7 @@ Template.trial.onCreated(function () {
         const stage = this.stage.get() + increment,
             trial = this.trial.get() + 1;
 
+        console.log(stage, trial.stages.length);
         if (stage < trial.stages.length) {
             return this.timers[trial][stage]['stage.' + stage + '.start'] = Meteor.setTimeout(() => {
                 this.recordEvent({timeStamp: performance.now(), type: 'stage.' + stage + '.start'});
@@ -149,6 +149,7 @@ Template.trial.onCreated(function () {
         const next = this.trial.get() + 1,
             session = this.session.get();
 
+        console.log(next, session.trials.length);
         if (next <= session.trials.length) {
             this.clearTimers(this.timers, next);
             // TODO: Shutdown sequence, reset state of lights, etc.
@@ -359,7 +360,6 @@ Template.trialElements.helpers({
 
 Template.trialSVG.helpers({
     elements(trial, stage) {
-        console.log(trial, stage);
         if (trial && stage) return trial.stages[stage - 1];
     }
 });
