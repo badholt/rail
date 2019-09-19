@@ -33,13 +33,13 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
             });
         })),
     sessionTimers = (settings, template) => {
-        console.log('SESSION RENDER:\t', template.trial.get(), performance.now());
+        console.log('\nSESSION RENDERS:\t', template.trial.get(), performance.now());
         /** Sets Session-level timers: */
         if (settings) {
-            console.log('...running session start...', performance.now());
+            console.log('\n...running session...', performance.now());
             /** Delays onset of first trial: */
             Meteor.setTimeout(() => {
-                console.log('SESSION START:\t', template.trial.get(), performance.now());
+                console.log('SESSION STARTS:\t', template.trial.get(), performance.now());
                 template.trial.set(0);
                 template.recordEvent({timeStamp: performance.now(), type: 'session.start'});
             }, settings.session.delay);
@@ -79,7 +79,6 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
 
 Template.trial.helpers({
     data(settings, stage, trials) {
-        console.log(settings, stage, trials, this);
         if (settings) {
             const template = Template.instance(),
                 i = template.trial.get(),
@@ -105,11 +104,9 @@ Template.trial.helpers({
     session() {
         const template = Template.instance(),
             session = template.session.get();
-        console.log(session);
 
         if (session) {
-            const started = template.started.get();
-            if (!started) sessionTimers(session.settings, template);
+            if (!template.started.get()) sessionTimers(session.settings, template);
             return session;
         }
     },
@@ -140,30 +137,34 @@ Template.trial.onCreated(function () {
         const stage = this.stage.get() + increment,
             trial = this.trial.get() + 1;
 
-        return this.timers[trial][stage]['stage.' + stage + '.start'] = Meteor.setTimeout(() => {
-            this.recordEvent({timeStamp: performance.now(), type: 'stage.' + stage + '.start'});
-            this.stage.set(stage);
-        }, delay);
+        if (stage < trial.stages.length) {
+            return this.timers[trial][stage]['stage.' + stage + '.start'] = Meteor.setTimeout(() => {
+                this.recordEvent({timeStamp: performance.now(), type: 'stage.' + stage + '.start'});
+                this.stage.set(stage);
+            }, delay);
+        }
     };
     this.nextTrial = (delay) => Meteor.setTimeout(() => {
         /** Proceed to next trial or exit: */
-        const n = this.trial.get() + 1,
+        const next = this.trial.get() + 1,
             session = this.session.get();
 
-        this.clearTimers(this.timers, n);
-        // TODO: Shutdown sequence, reset state of lights, etc.
-        this.recordEvent({timeStamp: performance.now(), type: 'trial.' + n + '.end'});
-        console.log('NEXT:\t', n);
+        if (next <= session.trials.length) {
+            this.clearTimers(this.timers, next);
+            // TODO: Shutdown sequence, reset state of lights, etc.
+            this.recordEvent({timeStamp: performance.now(), type: 'trial.' + next + '.end'});
+            console.log('\nNEXT TRIAL:\t', next);
 
-        if (session.settings.session.duration || n < session.settings.stages.length) {
-            Meteor.call('addTrial', session._id, n);
+            if (session.settings.session.duration || next < session.settings.stages.length) {
+                Meteor.call('addTrial', session._id, next);
 
-            this.responses.set([]);
-            this.stage.set(1);
-            this.trial.set(n);
-        } else {
-            this.recordEvent({timeStamp: performance.now(), type: 'session.end'});
-            FlowRouter.go('/');
+                this.responses.set([]);
+                this.stage.set(1);
+                this.trial.set(next);
+            } else {
+                this.recordEvent({timeStamp: performance.now(), type: 'session.end'});
+                FlowRouter.go('/');
+            }
         }
     }, delay);
     this.recordEvent = (event) => {
@@ -173,8 +174,6 @@ Template.trial.onCreated(function () {
 
         if (trial) Meteor.call('updateTrial', trial._id, 'data.' + stage, 'push', event);
     };
-    this.sessionData = () => Sessions.findOne(id);
-    // TODO: Add data updates to each trial for firing events
     this.timedAudio = (audio, delay, duration, name) => {
         const stage = this.stage.get(),
             trial = this.trial.get() + 1;
@@ -192,8 +191,13 @@ Template.trial.onCreated(function () {
             this.recordEvent({timeStamp: performance.now(), type: start});
         }, delay, (error, response) => console.log(error, response));
     };
-    const id = this.getSession();
 
+    const id = this.getSession();
+    this.sessionData = () => Sessions.findOne(id);
+    this.subscribe('sessions.single', id);
+    this.subscribe('trials.session', id);
+
+    this.getTrial = (number) => Trials.findOne({number: number, session: id});
     this.timedCommand = (device, topic, message, delay) => {
         const stage = this.stage.get(),
             timer = topic + '.' + message.command,
@@ -208,18 +212,11 @@ Template.trial.onCreated(function () {
     };
 
     this.autorun(() => {
-        this.getTrial = (number) => Trials.findOne({number: number, session: id});
-
-        this.subscribe('sessions.single', id);
-        this.subscribe('trials.session', id);
-    });
-
-    this.autorun(() => {
         const session = this.sessionData();
 
         if (session) {
-            this.session.set(session);
             this.subscribe('experiments.single', session.experiment);
+            this.session.set(session);
         }
     });
 });
@@ -231,7 +228,7 @@ Template.trialElement.helpers({
                 element = Template.currentData(),
                 timers = (template.timers[trial] || {})[stage],
                 name = 'audio.' + element.source.type + '.' + trial;
-            console.log('audio', element, stage, trial, timers, name);
+            console.log('\nAUDIO RENDERS:\t', element, stage, trial, timers, name);
 
             if (timers && !_.has(timers, name + '.start')) {
                 let audio;
@@ -251,7 +248,6 @@ Template.trialElement.helpers({
                         template.timedAudio(audio, element.delay, element.duration, name);
                         break;
                 }
-                console.log(audio);
             }
         }
     },
@@ -321,7 +317,7 @@ Template.trialSVG.events({
                 'insert': (d, s, t) => {
                     const responses = template.responses.get();
                     responses.push(t);
-                    console.log('RESPONSES:\n', d, s, t, responses);
+                    console.log('\nRESPONSES:\t', d, s, t, responses);
                     template.responses.set(responses);
                 },
                 'number': (n) => (parseFloat(n)),
@@ -370,10 +366,10 @@ Template.trialSVG.helpers({
 
 Template.trialElements.onRendered(function () {
     const trial = Template.instance().parent(2).trial.get();
-    console.log('TRIAL SVG RENDERED', trial);
+    console.log('\nTRIAL ELEMENTS RENDER:\t', trial);
 });
 
 Template.trialSVG.onRendered(function () {
     const trial = Template.instance().parent().trial.get();
-    console.log('TRIAL SVG RENDERED', trial);
+    console.log('\nTRIAL SVG RENDERS:\t', trial);
 });

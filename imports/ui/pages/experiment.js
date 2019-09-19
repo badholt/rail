@@ -1,6 +1,7 @@
 import './experiment.html';
 
 import '/imports/ui/pages/data';
+import '/imports/ui/pages/log';
 import '/imports/ui/pages/run';
 import '/imports/ui/pages/settings';
 

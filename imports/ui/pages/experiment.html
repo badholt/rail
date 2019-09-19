@@ -16,6 +16,9 @@
                     {{#if isActivePath regex='/settings'}}
                         {{> settingsForm}}
                     {{/if}}
+                    {{#if isActivePath regex='/log'}}
+                        {{> experimentLog}}
+                    {{/if}}
                 </div>
             </div>
         {{/if}}
@@ -27,9 +30,15 @@
         <a id="run" class="{{isActivePath regex='/run'}} item" href="{{link}}/run">
             <i class="play icon"></i>
         </a>
+        
         <a id="data" class="{{isActivePath regex='/data'}} item" href="{{link}}/data">
             <i class="bar chart outline icon"></i>
         </a>
+
+        <a id="log" class="{{isActivePath regex='/log'}} item" href="{{link}}/log">
+            <i class="balance scale icon"></i>
+        </a>
+
         <a id="settings" class="{{isActivePath regex='/settings'}} item" href="{{link}}/settings">
             <i class="settings icon"></i>
         </a>
