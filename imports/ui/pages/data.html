@@ -42,7 +42,7 @@
         </thead>
 
         <tbody>
-        {{#each this}}
+        {{#each sessions id limit}}
             {{> sessionRow}}
         {{/each}}
         </tbody>
@@ -318,8 +318,8 @@
     </h2>
 
     <div class="ui inverted segment">
-        {{#with sessions _id limit page}}
-            {{> sessionList}}
-        {{/with}}
+        {{#if $gte page 0}}
+            {{> sessionList id=_id limit=limit page=page}}
+        {{/if}}
     </div>
 </template>

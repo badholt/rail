@@ -39,8 +39,6 @@ Template.data.helpers({
 });
 
 Template.data.onCreated(function () {
-    this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': {$ne: false}}]});
-
     this.counts = new ReactiveVar({});
     this.session = new ReactiveVar('');
 });
@@ -91,18 +89,20 @@ Template.dataMenu.events({
 
 Template.paginationMenu.events({
     'click #back'(event, template) {
-        const data = Template.currentData(),
+        const page = Template.currentData().page - 1,
             sessions = template.parent();
 
-        sessions.page.set(--data.page);
-        sessions.updateMenu();
+        /** Must force recreation of sessionList: */
+        sessions.page.set(-1);
+        sessions.updateMenu(page);
     },
     'click #next'(event, template) {
-        const data = Template.currentData(),
+        const page = Template.currentData().page + 1,
             sessions = template.parent();
 
-        sessions.page.set(++data.page);
-        sessions.updateMenu();
+        /** Must force recreation of sessionList: */
+        sessions.page.set(-1);
+        sessions.updateMenu(page);
     }
 });
 
@@ -115,10 +115,10 @@ Template.sessionRow.helpers({
     },
 });
 
-Template.sessionRow.onRendered(function () {
-    const list = Template.instance().parent();
-    list.$('table').tablesort().data('tablesort').sort($("thead th:nth-child(2)"));
-});
+// Template.sessionRow.onRendered(function () {
+//     const list = Template.instance().parent();
+//     list.$('table').tablesort().data('tablesort').sort($("thead th:nth-child(2)"));
+// });
 
 Template.sessionsView.helpers({
     limit() {
@@ -129,11 +129,19 @@ Template.sessionsView.helpers({
     },
     page() {
         return Template.instance().page.get();
-    },
-    sessions(id, limit, page) {
-        Template.instance().subscribe('sessions.experiment', id, {settings: false}, limit, page * limit);
+    }
+});
+
+Template.sessionList.helpers({
+    sessions(id, limit) {
         return Sessions.find({}, {limit: limit});
     }
+});
+
+Template.sessionList.onCreated(function () {
+    console.log(this);
+    this.subscribe('sessions.experiment', this.data.id, {settings: false}, this.data.limit,
+        this.data.page * this.data.limit);
 });
 
 Template.sessionsView.onCreated(function () {
@@ -141,13 +149,19 @@ Template.sessionsView.onCreated(function () {
     this.more = new ReactiveVar(false);
     this.page = new ReactiveVar(0);
 
-    this.subscribe('subjects.experiment', this.data.id);
+    this.subscribe('subjects.experiment', this.data._id);
+    this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': {$ne: false}}]});
 
-    this.updateMenu = () => Meteor.call('countCollection', 'Sessions', (error, count) => {
-        const skips = (this.page.get() + 1) * this.limit.get();
-        if (!error) this.more.set(skips < count);
+    this.updateMenu = (page) => Meteor.call('countCollection', 'Sessions', (error, count) => {
+        if (!error) {
+            const limit = this.limit.get(),
+                skip = (page + 1) * limit;
+            
+            this.more.set(skip < count);
+            this.page.set(page);
+        }
     });
-    this.updateMenu();
+    this.updateMenu(0);
 });
 
 Template.settingsList.helpers({
