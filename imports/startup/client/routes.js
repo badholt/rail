@@ -5,6 +5,7 @@ import '/imports/ui/pages/data';
 import '/imports/ui/pages/devices';
 import '/imports/ui/pages/experiment';
 import '/imports/ui/pages/home';
+import '/imports/ui/pages/log';
 import '/imports/ui/pages/notFound';
 import '/imports/ui/pages/subjects';
 import '/imports/ui/pages/trial';
@@ -45,7 +46,7 @@ FlowRouter.route('/experiments/:link/', {
 });
 
 FlowRouter.route('/experiments/:link/:action', {
-    action(params) {
+    action() {
         BlazeLayout.render('frame', {main: 'experiment'});
     }
 });
@@ -57,7 +58,7 @@ FlowRouter.notFound = {
 };
 
 FlowRouter.route('/session/:session', {
-    action(params) {
+    action() {
         BlazeLayout.render('bare', {main: 'trial'});
     }
 });

@@ -101,7 +101,8 @@ if (Meteor.isServer) Meteor.methods({
                 if (topic === 'response') {
                     /** Messages concerning device information & status: */
                     /** Buffer must be encoded as UTF-8 before JSON can parse: */
-                    const message = JSON.parse(payload.toString('utf8'));
+                    const timeStamp = performance.now(),
+                        message = JSON.parse(payload.toString('utf8'));
 
                     /** Sort message by the mqtt service/channel responding: */
                     if (message.sender) switch (message.sender) {
@@ -139,7 +140,8 @@ if (Meteor.isServer) Meteor.methods({
                                 Meteor.call('updateTrial', trial, 'data.' + stage, 'push', {
                                     pins: message.pins,
                                     request: message.request,
-                                    timeStamp: message.context.time,
+                                    requestTime: message.context.time,
+                                    timeStamp: timeStamp,
                                     status: message.status,
                                     type: message.sender
                                 });

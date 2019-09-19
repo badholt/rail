@@ -39,12 +39,9 @@ Template.data.helpers({
 });
 
 Template.data.onCreated(function () {
-    this.autorun(() => this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': {$ne: false}}]}));
+    this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': {$ne: false}}]});
 
     this.counts = new ReactiveVar({});
-    this.limit = new ReactiveVar(5);
-    this.more = new ReactiveVar(false);
-    this.page = new ReactiveVar(0);
     this.session = new ReactiveVar('');
 });
 
@@ -94,52 +91,19 @@ Template.dataMenu.events({
 
 Template.paginationMenu.events({
     'click #back'(event, template) {
-        const data = template.parent();
-        let page = data.page.get();
+        const data = Template.currentData(),
+            sessions = template.parent();
 
-        data.page.set(--page);
-        template.updateMenu(data.limit.get(), page);
+        sessions.page.set(--data.page);
+        sessions.updateMenu();
     },
     'click #next'(event, template) {
-        const data = template.parent();
-        let page = data.page.get();
+        const data = Template.currentData(),
+            sessions = template.parent();
 
-        data.page.set(++page);
-        template.updateMenu(data.limit.get(), page);
+        sessions.page.set(++data.page);
+        sessions.updateMenu();
     }
-});
-
-Template.paginationMenu.helpers({
-    limit() {
-        return Template.instance().parent().limit.get();
-    },
-    more() {
-        return Template.instance().parent().more.get();
-    },
-    page() {
-        return Template.instance().parent().page.get();
-    }
-});
-
-Template.sessionList.helpers({
-    session(id) {
-        return Sessions.find({experiment: id}, {fields: {settings: false}});
-    }
-});
-
-Template.sessionList.onCreated(function () {
-    const data = this.parent(),
-        limit = data.limit.get(),
-        page = data.page.get();
-
-    this.autorun(() => this.subscribe('sessions.experiment', this.data._id, {settings: false}, limit, page * limit));
-    this.autorun(() => this.subscribe('subjects.experiment', this.data._id));
-
-    this.updateMenu = (limit, page) => Meteor.call('countCollection', 'Sessions', (error, count) => {
-        const skips = (page + 1) * limit;
-        if (!error && skips < count) data.more.set(true);
-    });
-    this.updateMenu(limit, page);
 });
 
 Template.sessionRow.helpers({
@@ -152,7 +116,38 @@ Template.sessionRow.helpers({
 });
 
 Template.sessionRow.onRendered(function () {
-    Template.instance().parent().$('table').tablesort().data('tablesort').sort($("thead th:nth-child(2)"));
+    const list = Template.instance().parent();
+    list.$('table').tablesort().data('tablesort').sort($("thead th:nth-child(2)"));
+});
+
+Template.sessionsView.helpers({
+    limit() {
+        return Template.instance().limit.get();
+    },
+    more() {
+        return Template.instance().more.get();
+    },
+    page() {
+        return Template.instance().page.get();
+    },
+    sessions(id, limit, page) {
+        Template.instance().subscribe('sessions.experiment', id, {settings: false}, limit, page * limit);
+        return Sessions.find({}, {limit: limit});
+    }
+});
+
+Template.sessionsView.onCreated(function () {
+    this.limit = new ReactiveVar(5);
+    this.more = new ReactiveVar(false);
+    this.page = new ReactiveVar(0);
+
+    this.subscribe('subjects.experiment', this.data.id);
+
+    this.updateMenu = () => Meteor.call('countCollection', 'Sessions', (error, count) => {
+        const skips = (this.page.get() + 1) * this.limit.get();
+        if (!error) this.more.set(skips < count);
+    });
+    this.updateMenu();
 });
 
 Template.settingsList.helpers({
