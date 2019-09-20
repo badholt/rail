@@ -336,7 +336,7 @@ Meteor.startup(() => {
                             {
                                 action: '+',
                                 specifications: {amount: 1},
-                                delay: 0,
+                                delay: 20000,
                                 targets: ['trial']
                             }],
                         event: 'click',
@@ -353,18 +353,16 @@ Meteor.startup(() => {
                 }, // TODO Might need Stage settings (i.e. individual duration/iti for each stage)
                 stages: [
                     [
-                        [
-                            {
-                                delay: 0,
-                                duration: 1000,
-                                type: 'cross',
-                                span: 75,
-                                weight: 5
-                            }
-                        ],
+                        {
+                            delay: 0,
+                            duration: 1000,
+                            type: 'cross',
+                            span: 75,
+                            weight: 10
+                        },
                         {
                             type: 'audio',
-                            delay: 20000,
+                            delay: 0,
                             duration: 1000,
                             source: {
                                 wave: {
@@ -386,18 +384,18 @@ Meteor.startup(() => {
                                 },
                                 {
                                     command: 'on',
-                                    delay: 20000,
+                                    delay: 0,
                                     pins: [2]
                                 },
                                 {
                                     command: 'off',
-                                    delay: 30000,
+                                    delay: 10000,
                                     pins: [2]
                                 }
                             ],
                             delay: 0,
                             dim: 10,
-                            duration: 50000
+                            duration: 10000
                         },
                         {
                             type: 'reward',

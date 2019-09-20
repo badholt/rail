@@ -19,7 +19,7 @@
 <template name="trialSVG">
     <svg width="100%" height="100%">
         {{#with elements trial stage}}
-            {{> trialElements element=this stage=stage trial=trial}}
+            {{> trialElements element=this stage=../stage trial=../trial.number}}
         {{/with}}
     </svg>
 </template>

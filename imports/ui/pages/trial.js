@@ -33,13 +33,13 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
             });
         })),
     sessionTimers = (settings, template) => {
-        console.log('\nSESSION RENDERS:\t', template.trial.get(), performance.now());
+        console.log('%c\nSESSION RENDERS:\t', 'color: green; font-size: 2em; font-weight: 800;', performance.now());
         /** Sets Session-level timers: */
         if (settings) {
             console.log('\n...running session...', performance.now());
             /** Delays onset of first trial: */
             Meteor.setTimeout(() => {
-                console.log('SESSION STARTS:\t', template.trial.get(), performance.now());
+                console.log('%cSESSION STARTS:\t', 'color: green; font-size: 2em; font-weight: 800;', performance.now());
                 template.trial.set(0);
                 template.recordEvent({timeStamp: performance.now(), type: 'session.start'});
             }, settings.session.delay);
@@ -51,7 +51,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
 
                     template.recordEvent({timeStamp: performance.now(), type: 'trial.' + trial + '.end'});
                     template.recordEvent({timeStamp: performance.now(), type: 'session.end'});
-                    template.clearTimers(template.timers, trial);
+                    template.clearTimers(template.timers, trial + 1);
                     FlowRouter.go('/');
                 }, settings.session.delay + settings.session.duration);
             }
@@ -67,7 +67,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
 
                 /** Sets timer for maximum trial duration: */
                 template.timers[n][pre + '.iti'] = Meteor.setTimeout(() => {
-                    console.log(pre + ' ITI just ENDED');
+                    console.log('%c' + pre + ' ITI just ENDED', 'color: blue; font-size: 2em; font-weight: 800;', performance.now());
                     return template.nextTrial(0);
                 }, settings.session.iti);
 
@@ -92,7 +92,7 @@ Template.trial.helpers({
                     if (!template.timers[n]) template.timers[n] = {[stage]: {}};
                     if (!template.timers[n]['trial.' + n + '.iti']) {
                         trialTimers(settings, stage, n, template);
-                        console.log('\nNEW TRIAL:\t', n, trial);
+                        console.log('%c\nNEW TRIAL:\t', 'color: blue; font-size: 2em; font-weight: 800;', n, performance.now());
                     }
 
                     return trial;
@@ -128,7 +128,10 @@ Template.trial.onCreated(function () {
     this.toggles = {};
 
     this.clearTimers = (timers, type) => {
-        _.each(timers[type], (value) => Meteor.clearTimeout(value));
+        const n = parseInt(type);
+        if (n) _.each(_.range(n, n - 4, -1), (i) => _.each(timers[i.toString()],
+            (value) => Meteor.clearTimeout(value))); else _.each(timers[type],
+            (value) => Meteor.clearTimeout(value));
         // this.timers = {};
     };
     this.getSession = () => FlowRouter.getParam('session');
@@ -136,7 +139,6 @@ Template.trial.onCreated(function () {
         const stage = this.stage.get() + increment,
             trial = this.trial.get() + 1;
 
-        console.log(stage, trial.stages.length);
         if (stage < trial.stages.length) {
             return this.timers[trial][stage]['stage.' + stage + '.start'] = Meteor.setTimeout(() => {
                 this.recordEvent({timeStamp: performance.now(), type: 'stage.' + stage + '.start'});
@@ -144,30 +146,32 @@ Template.trial.onCreated(function () {
             }, delay);
         }
     };
-    this.nextTrial = (delay) => Meteor.setTimeout(() => {
+    this.nextTrial = (delay) => {
         /** Proceed to next trial or exit: */
-        const next = this.trial.get() + 1,
+        const stage = this.stage.get(),
+            next = this.trial.get() + 1,
             session = this.session.get();
 
-        console.log(next, session.trials.length);
-        if (next <= session.trials.length) {
-            this.clearTimers(this.timers, next);
-            // TODO: Shutdown sequence, reset state of lights, etc.
-            this.recordEvent({timeStamp: performance.now(), type: 'trial.' + next + '.end'});
-            console.log('\nNEXT TRIAL:\t', next);
+        if (!this.timers[next][stage]['next.trial']) this.timers[next][stage]['next.trial'] = Meteor.setTimeout(() => {
+            if (next <= session.trials.length) {
+                this.clearTimers(this.timers, next);
+                // TODO: Shutdown sequence, reset state of lights, etc.
+                this.recordEvent({timeStamp: performance.now(), type: 'trial.' + next + '.end'});
+                console.log('%c\nNEXT TRIAL:\t', 'color: green; font-size: 2em; font-weight: 800;', next, performance.now());
 
-            if (session.settings.session.duration || next < session.settings.stages.length) {
-                Meteor.call('addTrial', session._id, next);
+                if (session.settings.session.duration || next < session.settings.stages.length) {
+                    Meteor.call('addTrial', session._id, next);
 
-                this.responses.set([]);
-                this.stage.set(1);
-                this.trial.set(next);
-            } else {
-                this.recordEvent({timeStamp: performance.now(), type: 'session.end'});
-                FlowRouter.go('/');
+                    this.responses.set([]);
+                    this.stage.set(1);
+                    this.trial.set(next);
+                } else {
+                    this.recordEvent({timeStamp: performance.now(), type: 'session.end'});
+                    FlowRouter.go('/');
+                }
             }
-        }
-    }, delay);
+        }, delay);
+    };
     this.recordEvent = (event) => {
         const number = this.trial.get() + 1,
             stage = this.stage.get() - 1,
@@ -187,6 +191,7 @@ Template.trial.onCreated(function () {
             this.timers[trial][stage][stop] = Meteor.setTimeout(() => {
                 audio.stop();
                 this.recordEvent({timeStamp: performance.now(), type: stop});
+                console.log('%c' + name + ' stopped', "color: red", performance.now());
             }, duration);
 
             this.recordEvent({timeStamp: performance.now(), type: start});
@@ -227,11 +232,13 @@ Template.trialElement.helpers({
         if (stage && trial) {
             const template = Template.instance().parent(3),
                 element = Template.currentData(),
-                timers = (template.timers[trial] || {})[stage],
-                name = 'audio.' + element.source.type + '.' + trial;
-            console.log('\nAUDIO RENDERS:\t', element, stage, trial, timers, name);
+                name = 'audio.' + element.source.type + '.' + trial,
+                started = Template.instance().started.get();
 
-            if (timers && !_.has(timers, name + '.start')) {
+            if (started !== trial) {
+                console.log('%c\nAUDIO RENDERS:\t', 'color: blue; font-size: 2em; font-weight: 800;', name, performance.now());
+                Template.instance().started.set(trial);
+                console.log(started);
                 let audio;
                 switch (element.source.type) {
                     case 'file':
@@ -305,56 +312,68 @@ Template.trialElement.helpers({
     }
 });
 
-Template.trialSVG.events({
-    'click'(e, svg) {
-        const event = collectClickEvent(e),
-            template = svg.parent(),
-            session = template.session.get(),
-            stage = template.stage.get() - 1,
-            trial = template.trial.get(),
-            variables = {
-                'center': (p) => (template.center[p]),
-                'event': (p) => (event[p]),
-                'insert': (d, s, t) => {
-                    const responses = template.responses.get();
-                    responses.push(t);
-                    console.log('\nRESPONSES:\t', d, s, t, responses);
-                    template.responses.set(responses);
-                },
-                'number': (n) => (parseFloat(n)),
-                'stage': (d, n) => template.nextStage(d, n),
-                'stimuli': (p) => {
-                    let elements = _.filter(session.settings.stages[trial][stage],
-                        (element) => (element.type === 'stimuli'));
-
-                    _.each(p.split('.'), (value) => {
-                        if (elements) elements = elements[value];
-                    });
-
-                    return elements;
-                },
-                'trial': (d, n) => template.nextTrial(d),
-                '<': (o, s) => (o < s),
-                '+': (d, s, t) => variables[t](d, s.amount),
-                '=': (o, s) => (o === s)
-            };
-
-        _.each(session.settings.inputs[stage], (input) => {
-            if (input.event === event.type) {
-                const correct = conditionsMet(input, variables);
-                _.each((correct) ? input.correct : input.incorrect, (action) =>
-                    _.each(action.targets, (target) =>
-                        variables[action.action](action.delay, action.specifications, target)));
-            }
-        });
-
-        template.recordEvent(event);
-    }
+Template.trialElement.onCreated(function () {
+    this.started = new ReactiveVar(0);
 });
 
 Template.trialElements.helpers({
     responses() {
         return Template.instance().parent(2).responses.get();
+    }
+});
+
+Template.trialElements.onRendered(function () {
+    console.log('%c\nTRIAL ELEMENTS RENDER:\t', 'color: green; font-size: 2em; font-weight: 800;', performance.now());
+});
+
+Template.trialSVG.events({
+    'click'(e, svg) {
+        const data = Template.currentData(),
+            event = collectClickEvent(e),
+            template = svg.parent(),
+            stage = data.stage - 1,
+            trial = data.trial.number - 1;
+
+        console.log(!_.has(template.timers[data.trial.number][data.stage], "next.trial"), performance.now());
+        if (!_.has(template.timers[data.trial.number][data.stage], "next.trial")) {
+            const session = template.session.get(),
+                variables = {
+                    'center': (p) => (template.center[p]),
+                    'event': (p) => (event[p]),
+                    'insert': (d, s, t) => {
+                        const responses = template.responses.get();
+                        responses.push(t);
+                        template.responses.set(responses);
+                    },
+                    'number': (n) => (parseFloat(n)),
+                    'stage': (d, n) => template.nextStage(d, n),
+                    'stimuli': (p) => {
+                        let elements = _.filter(session.settings.stages[trial][stage],
+                            (element) => (element.type === 'stimuli'));
+
+                        _.each(p.split('.'), (value) => {
+                            if (elements) elements = elements[value];
+                        });
+
+                        return elements;
+                    },
+                    'trial': (d, n) => template.nextTrial(d),
+                    '<': (o, s) => (o < s),
+                    '+': (d, s, t) => variables[t](d, s.amount),
+                    '=': (o, s) => (o === s)
+                };
+
+            _.each(session.settings.inputs[stage], (input) => {
+                if (input.event === event.type) {
+                    const correct = conditionsMet(input, variables);
+                    _.each((correct) ? input.correct : input.incorrect, (action) =>
+                        _.each(action.targets, (target) =>
+                            variables[action.action](action.delay, action.specifications, target)));
+                }
+            });
+        }
+
+        template.recordEvent(event);
     }
 });
 
@@ -364,12 +383,6 @@ Template.trialSVG.helpers({
     }
 });
 
-Template.trialElements.onRendered(function () {
-    const trial = Template.instance().parent(2).trial.get();
-    console.log('\nTRIAL ELEMENTS RENDER:\t', trial);
-});
-
 Template.trialSVG.onRendered(function () {
-    const trial = Template.instance().parent().trial.get();
-    console.log('\nTRIAL SVG RENDERS:\t', trial);
+    console.log('%c\nTRIAL SVG RENDERS:\t', 'color: green; font-size: 2em; font-weight: 800;', performance.now());
 });
