@@ -1,6 +1,6 @@
 <template name="data">
     {{#with selected}}
-        {{#if settings}}{{> trialsView}}{{/if}}
+        {{> trialsView}}
     {{else}}
         {{> sessionsView}}
     {{/with}}
@@ -14,73 +14,36 @@
     </div>
 </template>
 
-<template name="paginationMenu">
-    <div class="ui compact inverted right floated stackable menu">
-        {{#if $gt page 0}}
-            <a id="back" class="item">
-                <i class="fitted backward icon"></i>
-            </a>
-        {{/if}}
+<template name="dataCell">
 
-        {{# if more}}
-            <a id="next" class="item">
-                <i class="fitted forward icon"></i>
-            </a>
-        {{/if}}
+</template>
+
+<template name="dateCell">
+    <a class="ui black label">
+        <i class="calendar icon"></i>{{formatDate date 'MMMM Do'}}
+        <i class="stopwatch icon"></i>{{formatDate date 'HH:mm'}} - {{formatDate lastModified 'HH:mm'}}
+    </a>
+</template>
+
+<template name="deviceCell">
+    <a class="ui black label">
+        <i class='{{#if status.online}}green{{else}}red{{/if}} cube icon'></i>
+        {{profile.name}}
+    </a>
+</template>
+
+<template name="sessionsView">
+    <h2 class="ui inverted breadcrumb header">
+        <i class="inverted grey right chevron icon divider"></i>
+
+        <i class="inverted grey calendar icon divider"></i>
+        <span class="section">Sessions</span>
+    </h2>
+
+    <div id="sessions-panel" class="ui inverted padded stacked segment">
+        {{> tabular selector=filters table=TabularTables.Sessions
+                class="ui basic celled center aligned inverted small selectable table"}}
     </div>
-</template>
-
-<template name="sessionList">
-    <table id="session-list" class="ui very basic celled center aligned inverted small sortable table">
-        <thead>
-        <tr>
-            <th class="number">Subject(s)</th>
-            <th class="default sorted">Date & Time</th>
-            <th class="number">Device</th>
-            <th class="">User</th>
-        </tr>
-        </thead>
-
-        <tbody>
-        {{#each sessions id limit}}
-            {{> sessionRow}}
-        {{/each}}
-        </tbody>
-    </table>
-</template>
-
-<template name="sessionRow">
-    <tr>
-        <td class="selectable">
-            <div class="ui black labels">
-                {{#each subject subjects}}
-                    <a class="ui label">
-                        <i class="fitted {{#if $eq sex 'm'}}blue mars{{else}}pink venus{{/if}} icon"></i>
-                        {{identifier}}
-                    </a>
-                {{/each}}
-            </div>
-        </td>
-        <td class="collapsible selectable" data-sort-value="-{{formatDate date 'MDHHmm'}}">
-            <a>
-                <i class="calendar icon"></i>{{formatDate date 'MMMM Do'}}
-                <i class="stopwatch icon"></i>{{formatDate date 'HH:mm'}} - {{formatDate lastModified 'HH:mm'}}
-            </a>
-        </td>
-        <td class="selectable">
-            <a>
-                {{#with box device}}
-                    <i class='{{#if status.online}}green{{else}}red{{/if}} cube icon'></i>
-                    {{profile.name}}
-                {{/with}}
-            </a>
-        </td>
-        <td class="selectable">
-            <a>
-                {{> profileAvatar user}}
-            </a>
-        </td>
-    </tr>
 </template>
 
 <template name="settingsAccordion">
@@ -189,8 +152,88 @@
                     </div>
                 </div>
             {{/if}}
+            {{#with ir}}
+                <div class="statistic">
+                    <div class="value">
+                        <i class="orange sign in icon"></i> {{getLength entries}}
+                    </div>
+                    <div class="label">
+                        IR entries
+                    </div>
+                </div>
+
+                <div class="statistic">
+                    <div class="value">
+                        <i class="ui icons">
+                            <i class="corner green inverted left volume up icon"></i>
+                            <i class="corner inverted orange sign in icon"></i>
+                        </i>
+
+                        {{average delays}}
+                    </div>
+                    <div class="label">
+                        Average Tone-to-IR delay
+                    </div>
+                </div>
+            {{/with}}
         {{/with}}
     </div>
+</template>
+
+<template name="subjectsCell">
+    <div class="ui black labels">
+        {{#each subject subjects}}
+            <a class="ui label">
+                <i class="fitted {{#if $eq sex 'm'}}blue mars{{else}}pink venus{{/if}} icon"></i>
+                {{identifier}}
+            </a>
+        {{/each}}
+    </div>
+</template>
+
+<template name="trialCell">
+    <tr>
+        {{#each this}}
+            <td class="center aligned">
+                <div class="ui inverted mini relaxed list">
+                    {{#each this}}
+                        {{#if $gt @index 0}}
+                            <span class="ui black disabled mini label">
+                                        <i class="clock icon"></i>
+                                {{delay @index this}}
+                                <span class="detail">ms</span>
+                                    </span>
+                        {{/if}}
+
+                        <div class="item">
+                            <label class="ui black label">
+                                {{#with icon request sender type}}
+                                    <i class="large icons">
+                                        <i class="{{main}} icon"></i>
+                                        <i class="corner inverted {{corner}} icon"></i>
+                                    </i>
+                                {{/with}}
+
+                                {{formatDecimal timeStamp 3}}
+
+                                <div class="detail">
+                                    {{#if type}}
+                                        {{replace type '[\\.]' ' '}}
+                                    {{else}}
+                                        <ul class="horizontal list">
+                                            {{#each event request}}
+                                                <li class="item">{{key}} {{value}}</li>
+                                            {{/each}}
+                                        </ul>
+                                    {{/if}}
+                                </div>
+                            </label>
+                        </div>
+                    {{/each}}
+                </div>
+            </td>
+        {{/each}}
+    </tr>
 </template>
 
 <template name="trialList">
@@ -292,34 +335,27 @@
                 <h2 class="ui small inverted header">
                     <i class="inverted grey calendar icon divider"></i>
                     Session
-                    <span class="sub header">
-                        on {{formatDate date 'dddd, MMMM Do'}} at {{formatDate date 'HH:mm'}}
-                    </span>
+                    <span class="sub header">on {{formatDate date 'dddd, MMMM Do'}} at {{formatDate date
+                                                                                                    'HH:mm'}}</span>
                 </h2>
             </a>
             <i class="inverted grey right chevron icon divider"></i>
-            <div class="section">Trials</div>
+            <span class="section">Trials</span>
         </h2>
 
-        <div class="ui inverted stacked segment">
-            {{> trialList}}
+        <div class="ui inverted padded stacked segment">
+            <!--            {{> tabular table=TabularTables.Trials class="ui basic celled center aligned inverted small selectable table"}}-->
+
+            <div class="ui inverted stacked segment">
+                {{#if settings}}{{> trialList}}{{/if}}
+            </div>
         </div>
     </div>
 </template>
 
-<template name="sessionsView">
-    {{> paginationMenu limit=limit more=more page=page}}
-
-    <h2 class="ui inverted breadcrumb header">
-        <i class="inverted grey right chevron icon divider"></i>
-
-        <i class="inverted grey calendar icon divider"></i>
-        <span class="section">Sessions</span>
-    </h2>
-
-    <div class="ui inverted segment">
-        {{#if $gte page 0}}
-            {{> sessionList id=_id limit=limit page=page}}
-        {{/if}}
-    </div>
+<template name="userCell">
+    <a class="ui black label">
+        {{> profileAvatar user}}
+    </a>
 </template>
+

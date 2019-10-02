@@ -19,6 +19,7 @@ shell-server@0.4.0            # Server-side component of the `meteor shell` comm
 # [ LANGUAGE EXTENSION ]
 aldeed:template-extension
 dburles:mongo-collection-instances
+dburles:collection-helpers
 jquery
 raix:handlebar-helpers
 spacebars
@@ -32,6 +33,7 @@ zimme:active-route
 
 
 # [ STYLING ]
+aldeed:tabular
 #juliancwirko:postcss
 less@2.8.0
 semantic:ui

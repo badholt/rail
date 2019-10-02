@@ -7,10 +7,10 @@ import _ from 'underscore';
 import Tone from 'tone';
 
 import {calculateCenter} from '../../api/client.methods';
-import {Sessions, Trials} from '../../api/collections';
 import {FlowRouter} from 'meteor/kadira:flow-router';
 import {Meteor} from 'meteor/meteor';
 import {ReactiveVar} from 'meteor/reactive-var';
+import {Sessions, Trials} from '../../api/collections';
 import {Template} from 'meteor/templating';
 
 export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
@@ -182,20 +182,21 @@ Template.trial.onCreated(function () {
     this.timedAudio = (audio, delay, duration, name) => {
         const stage = this.stage.get(),
             trial = this.trial.get() + 1;
+        const start = name + '.start',
+            stop = name + '.stop';
 
-        return Meteor.setTimeout(() => {
-            const start = name + '.start',
-                stop = name + '.stop';
+        if (!this.timers[trial][stage][start]) {
+            return Meteor.setTimeout(() => {
+                this.timers[trial][stage][start] = audio.toMaster().start();
+                this.timers[trial][stage][stop] = Meteor.setTimeout(() => {
+                    audio.stop();
+                    this.recordEvent({timeStamp: performance.now(), type: stop});
+                    console.log('%c' + name + ' stopped', "color: red", performance.now());
+                }, duration);
 
-            this.timers[trial][stage][start] = audio.toMaster().start();
-            this.timers[trial][stage][stop] = Meteor.setTimeout(() => {
-                audio.stop();
-                this.recordEvent({timeStamp: performance.now(), type: stop});
-                console.log('%c' + name + ' stopped', "color: red", performance.now());
-            }, duration);
-
-            this.recordEvent({timeStamp: performance.now(), type: start});
-        }, delay, (error, response) => console.log(error, response));
+                this.recordEvent({timeStamp: performance.now(), type: start});
+            }, delay, (error, response) => console.log(error, response));
+        }
     };
 
     const id = this.getSession();
@@ -211,7 +212,7 @@ Template.trial.onCreated(function () {
 
         return this.timers[trial][stage][timer] = Meteor.setTimeout(() => {
             const timeStamp = performance.now();
-            return Meteor.call('mqttSend', device, topic, _.extend(message, {
+            return Meteor.call('mqttSend', device, topic, _.extend(_.omit(message, 'delay'), {
                 context: {session: id, stage: stage, time: timeStamp, trial: trial}
             }), () => this.recordEvent({timeStamp: timeStamp, type: timer + '.fired'}));
         }, delay);
@@ -234,6 +235,8 @@ Template.trialElement.helpers({
                 element = Template.currentData(),
                 name = 'audio.' + element.source.type + '.' + trial,
                 started = Template.instance().started.get();
+
+            console.log(name, started);
 
             if (started !== trial) {
                 console.log('%c\nAUDIO RENDERS:\t', 'color: blue; font-size: 2em; font-weight: 800;', name, performance.now());
@@ -335,52 +338,70 @@ Template.trialSVG.events({
             trial = data.trial.number - 1;
 
         console.log(!_.has(template.timers[data.trial.number][data.stage], "next.trial"), performance.now());
-        if (!_.has(template.timers[data.trial.number][data.stage], "next.trial")) {
-            const session = template.session.get(),
-                variables = {
-                    'center': (p) => (template.center[p]),
-                    'event': (p) => (event[p]),
-                    'insert': (d, s, t) => {
-                        const responses = template.responses.get();
-                        responses.push(t);
-                        template.responses.set(responses);
-                    },
-                    'number': (n) => (parseFloat(n)),
-                    'stage': (d, n) => template.nextStage(d, n),
-                    'stimuli': (p) => {
-                        let elements = _.filter(session.settings.stages[trial][stage],
-                            (element) => (element.type === 'stimuli'));
-
-                        _.each(p.split('.'), (value) => {
-                            if (elements) elements = elements[value];
-                        });
-
-                        return elements;
-                    },
-                    'trial': (d, n) => template.nextTrial(d),
-                    '<': (o, s) => (o < s),
-                    '+': (d, s, t) => variables[t](d, s.amount),
-                    '=': (o, s) => (o === s)
-                };
-
-            _.each(session.settings.inputs[stage], (input) => {
-                if (input.event === event.type) {
-                    const correct = conditionsMet(input, variables);
-                    _.each((correct) ? input.correct : input.incorrect, (action) =>
-                        _.each(action.targets, (target) =>
-                            variables[action.action](action.delay, action.specifications, target)));
-                }
-            });
-        }
+        // if (!_.has(template.timers[data.trial.number][data.stage], "next.trial")) {
+        //     const session = template.session.get(),
+        //         variables = {
+        //             'center': (p) => (template.center[p]),
+        //             'event': (p) => (event[p]),
+        //             'insert': (d, s, t) => {
+        //                 const responses = template.responses.get();
+        //                 responses.push(t);
+        //                 template.responses.set(responses);
+        //             },
+        //             'number': (n) => (parseFloat(n)),
+        //             'stage': (d, n) => template.nextStage(d, n),
+        //             'stimuli': (p) => {
+        //                 let elements = _.filter(session.settings.stages[trial][stage],
+        //                     (element) => (element.type === 'stimuli'));
+        //
+        //                 _.each(p.split('.'), (value) => {
+        //                     if (elements) elements = elements[value];
+        //                 });
+        //
+        //                 return elements;
+        //             },
+        //             'trial': (d, n) => template.nextTrial(d),
+        //             '<': (o, s) => (o < s),
+        //             '+': (d, s, t) => variables[t](d, s.amount),
+        //             '=': (o, s) => (o === s)
+        //         };
+        //
+        //     _.each(session.settings.inputs[stage], (input) => {
+        //         if (input.event === event.type) {
+        //             const correct = conditionsMet(input, variables);
+        //             _.each((correct) ? input.correct : input.incorrect, (action) =>
+        //                 _.each(action.targets, (target) =>
+        //                     variables[action.action](action.delay, action.specifications, target)));
+        //         }
+        //     });
+        // }
 
         template.recordEvent(event);
     }
 });
 
 Template.trialSVG.helpers({
-    elements(trial, stage) {
+    elements(stage, trial) {
         if (trial && stage) return trial.stages[stage - 1];
+    },
+    ir(stage, trial) {
+        const template = Template.instance(),
+            triggered = template.triggered.get();
+        if (!triggered) {
+            const entry = _.some(trial.data[stage - 1], (element) => (element.request && element.request.ir === 'entry'));
+            console.log('%cTrial ' + trial.number + ':\t 1st IR entry', 'color:red; font-size: 1.5em;', performance.now());
+
+            const parent = template.parent();
+            parent.clearTimers(parent.timers, trial.number);
+            parent.nextTrial(20000);
+            template.triggered.set(true);
+        }
+
     }
+});
+
+Template.trialSVG.onCreated(function () {
+    this.triggered = new ReactiveVar(false);
 });
 
 Template.trialSVG.onRendered(function () {

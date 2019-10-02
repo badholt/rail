@@ -5,3 +5,4 @@ import '/imports/api/server/publications';
 import '/imports/startup/server/accounts';
 import '/imports/startup/accounts.templates';
 import '/imports/startup/server/fixtures';
+import '/imports/startup/tables';

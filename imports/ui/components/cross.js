@@ -17,7 +17,7 @@ export const renderCross = (context, settings) => {
         weight = settings.weight,
         max = (span > weight) ? span : weight,
         x = center.x,
-        y = center.y * 2 - (max / 2);
+        y = center.y * 2 - (max * 1.5);
 
     /** Fixation Cross: */
     cross.attr('x', (d, i) => i % 2 > 0 ? x - (span / 2) : x - (weight / 2));

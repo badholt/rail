@@ -6,6 +6,9 @@ Template.registerHelpers({
     add(increment, index) {
         return index + increment;
     },
+    average(array) {
+        return _.reduce(array, (m, n) => (m + n), 0) / array.length;
+    },
     formatDate(date, format) {
         return moment(date).format(format);
     },

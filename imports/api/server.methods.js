@@ -131,21 +131,24 @@ if (Meteor.isServer) Meteor.methods({
                             break;
                         case 'lights':
                         case 'reward':
-                            if (message.context.trial) {
-                                const session = Sessions.findOne(message.context.session),
-                                    stage = message.context.stage - 1,
-                                    trial = session.trials[message.context.trial - 1];
+                            if (message.context && message.context.trial) {
+                                const session = Sessions.findOne(message.context.session);
 
-                                console.log('trial:\t', trial, message);
-                                Meteor.call('updateTrial', trial, 'data.' + stage, 'push', {
-                                    pins: message.pins,
-                                    request: message.request,
-                                    requestTime: message.context.time,
-                                    timeStamp: timeStamp,
-                                    status: message.status,
-                                    type: message.sender
-                                });
-                            } else if (message.context.device) Meteor.call('updateUser', message.context.device,
+                                if (session) {
+                                    const stage = message.context.stage - 1,
+                                        trial = session.trials[message.context.trial - 1];
+
+                                    console.log('trial:\t', trial, message);
+                                    Meteor.call('updateTrial', trial, 'data.' + stage, 'push', {
+                                        pins: message.pins,
+                                        request: message.request,
+                                        // requestTime: message.context.time,
+                                        timeStamp: message.context.time,
+                                        status: message.status,
+                                        type: message.sender
+                                    });
+                                }
+                            } else if (message.context && message.context.device) Meteor.call('updateUser', message.context.device,
                                 'status.message', 'set', message);
                     }
                 } else if (topic === 'client') {

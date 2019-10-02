@@ -3,10 +3,22 @@ import '/imports/ui/components/profile.html';
 
 import '/imports/ui/components/profile';
 import '/imports/ui/components/tablesort';
+import '/imports/startup/tables';
+
+import autofill from 'datatables.net-autofill-se';
+import buttons from 'datatables.net-buttons-se';
+import colVis from 'datatables.net-buttons/js/buttons.colVis';
+import keytable from 'datatables.net-keytable-se';
+import print from 'datatables.net-buttons/js/buttons.print';
+import responsive from 'datatables.net-responsive-se';
+import rowgroup from 'datatables.net-rowgroup-se';
+import select from 'datatables.net-select-se';
+import semantic from 'datatables.net-se';
 
 import _ from 'underscore';
 import moment from 'moment/moment';
 
+import {$} from 'meteor/jquery';
 import {Experiments, Sessions, Subjects, Trials} from '/imports/api/collections';
 import {Meteor} from 'meteor/meteor';
 import {Template} from 'meteor/templating';
@@ -16,16 +28,6 @@ import {saveAs} from 'file-saver';
 Template.data.events({
     'click #session'(event, template) {
         template.session.set('');
-    },
-    'click #session-list tr'(event, template) {
-        const prev = template.session.get();
-
-        if ((prev !== this._id)) {
-            template.subscribe('sessions.single', this._id);
-            template.subscribe('trials.session', this._id);
-
-            template.session.set(this._id);
-        }
     }
 });
 
@@ -34,6 +36,7 @@ Template.data.helpers({
         const id = Template.instance().session.get(),
             session = Sessions.findOne(id);
 
+        console.log(id, session);
         if (session) return session;
     }
 });
@@ -87,84 +90,45 @@ Template.dataMenu.events({
     }
 });
 
-Template.paginationMenu.events({
-    'click #back'(event, template) {
-        const page = Template.currentData().page - 1,
-            sessions = template.parent();
-
-        /** Must force recreation of sessionList: */
-        sessions.page.set(-1);
-        sessions.updateMenu(page);
-    },
-    'click #next'(event, template) {
-        const page = Template.currentData().page + 1,
-            sessions = template.parent();
-
-        /** Must force recreation of sessionList: */
-        sessions.page.set(-1);
-        sessions.updateMenu(page);
+Template.deviceCell.helpers({
+    box(id) {
+        return Meteor.users.findOne(id);
     }
 });
 
-Template.sessionRow.helpers({
-    box(id) {
-        return Meteor.users.findOne(id);
-    },
-    subject(subjects) {
-        return Subjects.find({_id: {$in: subjects}});
-    },
-});
-
-Template.sessionList.onRendered(function () {
-    const list = Template.instance(),
-        table = list.$('table thead');
-
-    table.find('th.number').data('sortBy', (th, td) => parseInt(td.text()));
-    table.find('th.date').data('sortBy', (th, td) => new Date(td.text())).sort(table.find('th.default'));
+Template.sessionsView.events({
+    'click tbody > tr'(event, template) {
+        const prev = template.parent().session.get(),
+            table = template.$('table').DataTable(),
+            session = table.row(event.currentTarget).data();
+        console.log(table, session);
+        if (prev !== session._id) template.parent().session.set(session._id);
+    }
 });
 
 Template.sessionsView.helpers({
-    limit() {
-        return Template.instance().limit.get();
-    },
-    more() {
-        return Template.instance().more.get();
-    },
-    page() {
-        return Template.instance().page.get();
+    filters() {
+        const filters = {
+            subjects: {subjects: {$all: [""]}}
+        };
+        console.log('filter');
+        return {};
     }
-});
-
-Template.sessionList.helpers({
-    sessions(id, limit) {
-        return Sessions.find({}, {limit: limit});
-    }
-});
-
-Template.sessionList.onCreated(function () {
-    console.log(this);
-    this.subscribe('sessions.experiment', this.data.id, {settings: false}, this.data.limit,
-        this.data.page * this.data.limit);
 });
 
 Template.sessionsView.onCreated(function () {
-    this.limit = new ReactiveVar(5);
-    this.more = new ReactiveVar(false);
-    this.page = new ReactiveVar(0);
-
     this.subscribe('subjects.experiment', this.data._id);
     this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': {$ne: false}}]});
 
-    this.updateMenu = (page) => Meteor.call('countCollection', 'Sessions', (error, count) => {
-        if (!error) {
-            const limit = this.limit.get(),
-                skip = (page + 1) * limit;
-
-            this.more.set(skip < count);
-            this.page.set(page);
-        }
-    });
-    this.updateMenu(0);
+    autofill(window, $);
+    buttons(window, $);
+    colVis(window, $);
+    keytable(window, $);
+    print(window, $);
+    responsive(window, $);
+    rowgroup(window, $);
+    select(window, $);
+    semantic(window, $);
 });
 
 Template.settingsList.helpers({
@@ -193,10 +157,161 @@ Template.settingsList.onRendered(function () {
 
 Template.statisticsList.helpers({
     count(trials) {
-        return trials.length;
+        if (trials) return trials.length;
     },
     counts() {
         return Template.instance().parent(2).counts.get();
+    }
+});
+
+Template.subjectsCell.helpers({
+    subject(subjects) {
+        return Subjects.find({_id: {$in: subjects}});
+    },
+});
+
+Template.trialCell.helpers({
+    delay(index, event) {
+        const events = Template.parentData(1);
+
+        if (index > 0) {
+            const previous = events[index - 1],
+                delay = event.timeStamp - previous.timeStamp;
+
+            return delay.toFixed(3);
+        }
+    },
+    event(request) {
+        return _.map(_.pairs(request), (property) => ({
+            key: property[0],
+            value: (parseFloat(property[1])) ? parseFloat(property[1]).toFixed(3) : property[1]
+        }));
+    },
+    icon(request, sender, type) {
+        if (sender || type) {
+            const icons = {
+                    amount: {
+                        dispense: {
+                            main: 'teal tint'
+                        }
+                    },
+                    audio: {
+                        file: {
+                            start: {
+                                main: 'green volume up'
+                            },
+                            stop: {
+                                main: 'green volume off'
+                            }
+                        },
+                        noise: {
+                            start: {
+                                main: 'green volume up'
+                            },
+                            stop: {
+                                main: 'green volume off'
+                            }
+                        },
+                        wave: {
+                            start: {
+                                main: 'green volume up'
+                            },
+                            stop: {
+                                main: 'green volume off'
+                            }
+                        }
+                    },
+                    click: {
+                        main: 'olive mouse pointer'
+                    },
+                    ir: {
+                        entry: {
+                            main: 'sign in'
+                        },
+                        exit: {
+                            main: 'sign out'
+                        }
+                    },
+                    lights: {
+                        dim: {
+                            fired: {
+                                main: 'yellow moon'
+                            },
+                            sent: {
+                                corner: 'yellow moon',
+                                main: 'envelope'
+                            }
+                        },
+                        off: {
+                            fired: {
+                                main: 'yellow lightbulb outline'
+                            },
+                            sent: {
+                                corner: 'yellow lightbulb outline',
+                                main: 'envelope'
+                            }
+                        },
+                        on: {
+                            fired: {
+                                main: 'yellow lightbulb'
+                            },
+                            sent: {
+                                corner: 'yellow lightbulb',
+                                main: 'envelope'
+                            }
+                        }
+                    },
+                    reward: {
+                        dispense: {
+                            fired: {
+                                main: 'yellow star outline'
+                            },
+                            sent: {
+                                corner: 'yellow star outline',
+                                main: 'envelope'
+                            }
+                        },
+                        off: {
+                            fired: {
+                                main: 'yellow star outline'
+                            },
+                            sent: {
+                                corner: 'yellow star outline',
+                                main: 'envelope'
+                            }
+                        },
+                        on: {
+                            fired: {
+                                main: 'yellow star'
+                            },
+                            sent: {
+                                corner: 'yellow star',
+                                main: 'envelope'
+                            }
+                        }
+                    },
+                    session: {
+                        end: {
+                            main: 'orange hourglass end'
+                        },
+                        start: {
+                            main: 'orange hourglass start'
+                        }
+                    },
+                    trial: {
+                        end: {
+                            main: 'blue clock'
+                        },
+                        start: {
+                            main: 'blue clock outline'
+                        }
+                    }
+                },
+                properties = (!request) ? type.split(/(?:\.[\d]?\.?)+/ig) : _.flatten(_.pairs(request)),
+                path = _.property(_.filter(properties, _.isString));
+
+            return path(icons);
+        }
     }
 });
 
@@ -357,7 +472,13 @@ Template.trialList.onCreated(function () {
             counts = {
                 amount: 0,
                 clicks: 0,
-                dispensed: 0
+                dispensed: 0,
+                ir: {
+                    delays: [],
+                    entries: [],
+                    exits: [],
+                },
+                tones: []
             };
 
         if (trials) _.each(trials, (trial) => {
@@ -375,21 +496,51 @@ Template.trialList.onCreated(function () {
                 const clicks = _.flatten([groups[s]['click']]);
                 if (clicks) counts.clicks += _.compact(clicks).length;
 
-                let n = 0;
+                let n = 0,
+                    firstEntry = 0,
+                    lastTone = 0;
+
                 _.each(cells, (cell) => {
                     let click = clicks[n];
+
                     _.each(cell, (e, j, list) => {
                         if (click && click.timeStamp <= e.timeStamp) {
                             list.splice(j, 0, click);
                             click = clicks[n++];
-                        } else if (_.has(e.request, 'dispense')) {
-                            counts.amount += e.request['amount'];
-                            counts.dispensed += e.request['dispense'];
+                        } else if (e.type.startsWith('audio')) {
+                            if (!lastTone) {
+                                if (e.type.endsWith('start')) {
+                                    counts.tones.push(e.timeStamp);
+                                    lastTone = e.timeStamp;
+                                    console.log('%caudio:\t', 'color: blue;', e, lastTone);
+                                }
+                                if (e.type.endsWith('stop')) {
+                                    console.log('%caudio:\t', 'color: red;', e, lastTone);
+                                }
+                            }
+                        } else if (e.type === 'reward') {
+                            if (_.has(e.request, 'ir')) {
+                                if (!firstEntry) {
+                                    if (e.request.ir === 'entry') {
+                                        console.log('%cIR:\t', 'color: purple;', e);
+                                        counts.ir.entries.push(e.timeStamp);
+                                        firstEntry = e.timeStamp;
+                                    } else {
+                                        console.log('%cIR:\t', 'color: violet;', e);
+                                        counts.ir.exits.push(e.timeStamp);
+                                    }
+                                }
+                            } else if (_.has(e.request, 'dispense')) {
+                                counts.amount += e.request['amount'];
+                                counts.dispensed += e.request['dispense'];
+                            }
                         }
                     });
                 });
 
-                console.log(cells);
+                if (firstEntry && lastTone && firstEntry - lastTone > 0) counts.ir.delays.push(firstEntry - lastTone);
+                console.log(firstEntry, lastTone);
+                console.log(cells, counts);
                 list.push(cells);
             }
         });
@@ -410,4 +561,11 @@ Template.trialList.onCreated(function () {
 
 Template.trialList.onRendered(function () {
     Template.instance().$('table').tablesort().data('tablesort').sort($("th.sorted:first-child"));
+});
+
+Template.trialsView.onCreated(function () {
+    const session = this.parent().session.get();
+    console.log(this, session);
+    this.subscribe('sessions.single', this.data._id);
+    this.subscribe('trials.session', this.data._id);
 });

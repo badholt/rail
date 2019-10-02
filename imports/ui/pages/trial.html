@@ -12,15 +12,16 @@
     {{/each}}
 
     {{#each responses}}
-        {{> trialElement}}
+        {{> trialElement element=this i='r'}}
     {{/each}}
 </template>
 
 <template name="trialSVG">
     <svg width="100%" height="100%">
-        {{#with elements trial stage}}
+        {{#with elements stage trial}}
             {{> trialElements element=this stage=../stage trial=../trial.number}}
         {{/with}}
+        {{ir stage trial}}
     </svg>
 </template>
 
