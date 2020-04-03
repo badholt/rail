@@ -1,4 +1,5 @@
 import {Meteor} from 'meteor/meteor';
+import {UserStatus} from 'meteor/mizzao:user-status';
 
 const services = Meteor.settings.private.oAuth,
     configureServices = () => {

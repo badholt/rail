@@ -5,10 +5,10 @@
     "start": "meteor run"
   },
   "dependencies": {
-    "@babel/runtime": "^7.4.3",
-    "bcrypt": "^2.0.1",
+    "@babel/runtime": "^7.9.2",
+    "bcrypt": "^4.0.1",
     "bson": "^4.0.2",
-    "bufferutil": "^3.0.5",
+    "bufferutil": "^4.0.1",
     "d3": "^5.9.2",
     "datatables.net-autofill-se": "^2.3.3",
     "datatables.net-buttons": "^1.5.6",
