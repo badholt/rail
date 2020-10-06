@@ -213,12 +213,18 @@ td, th {
 
 #subtitle strong {
   color: #fff;
+  transition: 0.5s ease all;
+}
+
+#subtitle strong:hover {
+  color: #111;
 }
 
 #title {
   font-size: 6em;
   border: none;
   color: #f0f8ff;
+  padding: 0;
 }
 
 #title:active, #title:hover {
