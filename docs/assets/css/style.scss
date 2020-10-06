@@ -239,6 +239,11 @@ td, th {
   border-color: rgba(255, 255, 255, 0.3);
 }
 
+.path {
+  transition: 0.5s ease-in all;
+}
+
 .path:hover {
-  opacity: 0.9
+  opacity: 0.9;
+  transform: scale(1.5);
 }
