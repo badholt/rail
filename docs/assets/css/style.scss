@@ -190,9 +190,14 @@ td, th {
 
 
 /** IDS: */
+@media only screen and (min-width: 600px) {
+  #box, #pc {
+    padding-left: 2em;
+  }
+}
+
 #box, #pc {
   height: 6em;
-  padding-left: 2em;
 }
 
 #mouse {
