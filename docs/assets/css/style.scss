@@ -47,12 +47,12 @@ audio:not([controls]) {
 
 a {
   background-color: transparent;
-  color: #1e6bb8;
-  text-decoration: none;
+  color: #f0f8ff;
 }
 
 a:active, a:hover {
-  outline: 0;
+  color: #fff;
+  text-decoration: none;
 }
 
 abbr[title] {
@@ -68,8 +68,8 @@ dfn {
 }
 
 h1 {
-  font-size: 2em;
-  margin: 0.67em 0;
+  font-size: 6em !important;
+  border: none !important;
 }
 
 mark {
@@ -97,7 +97,7 @@ sub {
 }
 
 img {
-  border: 0;
+  background: none !important;
 }
 
 svg:not(:root) {
@@ -202,7 +202,13 @@ td, th {
 
 
 /** IDS: */
+#box, #pc {
+  height: 10em;
+}
 
+#mouse {
+  height: 5em;
+}
 
 /** CLASSES: */
 .button {
@@ -224,3 +230,6 @@ td, th {
   border-color: rgba(255, 255, 255, 0.3);
 }
 
+.path {
+
+}

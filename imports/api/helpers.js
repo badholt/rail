@@ -1,8 +1,18 @@
+/**
+ * api/helpers.js
+ *
+ * Description:
+ *  Defines general helper tasks for use throughout application
+ *
+ * Imports:
+ *  MomentJS - enables easier time & date conversions and reporting */
+
 import {Template} from "meteor/templating";
+
 import moment from "moment/moment";
-import {unitOfTime} from "moment";
 
 Template.registerHelpers({
+    /** */
     add(increment, index) {
         return index + increment;
     },

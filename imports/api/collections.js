@@ -1,3 +1,10 @@
+/**
+ * api/collections.js
+ *
+ * Description:
+ *  Creates data collections for database organization
+ * * * * * * * */
+
 import {Mongo} from 'meteor/mongo';
 
 export const Experiments = new Mongo.Collection('experiments');

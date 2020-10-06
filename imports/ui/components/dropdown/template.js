@@ -1,3 +1,6 @@
+/** components/template.js
+ *  Dropdown menu for available experiment templates
+ * * * * * * * */
 import './template.html';
 
 import {Meteor} from "meteor/meteor";
@@ -22,10 +25,9 @@ Template.templateDropdown.helpers({
 });
 
 Template.templateDropdown.onCreated(function () {
-    this.autorun(() => {
-        /** Subscribe only to shared templates: */
-        this.subscribe('templates.user', Meteor.userId());
-    });
+    /** Subscribes to all experiments accessible with user permissions,
+     *  recomputes when user ID changes (i.e. login/logout) */
+    this.autorun(() => this.subscribe('templates.user', Meteor.userId()));
 });
 
 Template.templateDropdown.onRendered(function () {

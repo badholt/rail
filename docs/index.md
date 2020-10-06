@@ -1,3 +1,3 @@
-![](./docs/images/paths/mouse.svg "Mouse")
-![](./docs/images/paths/PC.svg "PC")
-![](./docs/images/paths/box.svg "Box")
+![](./images/paths/mouse.svg){:#mouse}{:.path}
+![](./images/paths/PC.svg){:#pc}{:.path}
+![](./images/paths/box.svg){:#box}{:.path}
