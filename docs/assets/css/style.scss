@@ -9,6 +9,10 @@
   box-sizing: border-box;
 }
 
+html {
+  height: 100%;
+}
+
 body {
   background-color: #159957;
   background-image: linear-gradient(120deg, #155799, #159957);
@@ -16,8 +20,7 @@ body {
   font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 1.5;
-  margin: 0;
-  padding: 0;
+  padding: 6em 1em;
   text-align: center;
 }
 
@@ -45,16 +48,6 @@ audio:not([controls]) {
   display: none;
 }
 
-a {
-  background-color: transparent;
-  color: #f0f8ff;
-}
-
-a:active, a:hover {
-  color: #fff;
-  text-decoration: none;
-}
-
 abbr[title] {
   border-bottom: 1px dotted;
 }
@@ -65,11 +58,6 @@ b, strong {
 
 dfn {
   font-style: italic;
-}
-
-h1 {
-  font-size: 6em !important;
-  border: none !important;
 }
 
 mark {
@@ -203,11 +191,23 @@ td, th {
 
 /** IDS: */
 #box, #pc {
-  height: 10em;
+  height: 6em;
+  padding-left: 2em;
 }
 
 #mouse {
-  height: 5em;
+  height: 2em;
+}
+
+#title {
+  font-size: 6em;
+  border: none;
+  color: #f0f8ff;
+}
+
+#title:active, #title:hover {
+  color: #fff;
+  text-decoration: none;
 }
 
 /** CLASSES: */
@@ -220,6 +220,7 @@ td, th {
   border-style: solid;
   border-width: 1px;
   border-radius: 0.3rem;
+  padding: 0.5em;
   transition: color 0.2s, background-color 0.2s, border-color 0.2s;
 }
 
@@ -230,6 +231,6 @@ td, th {
   border-color: rgba(255, 255, 255, 0.3);
 }
 
-.path {
-
+.path:hover {
+  opacity: 0.9
 }
