@@ -33,37 +33,37 @@
     </g>
     <g id="pi">
         <path d="M568.8,417.39l-14.74,1c.29,0,.5-1.19.53-3l14.73-1C569.3,416.2,569.08,417.37,568.8,417.39Z"
-              transform="translate(-199.5 -264.59)" fill="#a7a9ac" fill-opacity="0.4"
+              transform="translate(-199.5 -264.59)" fill="#a7a9ac" fill-opacity="0.5"
               stroke="#fff" stroke-linecap="square" stroke-linejoin="round" stroke-opacity="0.5"/>
         <polygon points="370.16 72.06 355.43 73.08 334.31 38.6 348.05 38.58 370.16 72.06"
-                 fill="#a7a9ac" fill-opacity="0.4"
+                 fill="#a7a9ac" fill-opacity="0.5"
                  stroke="#fff" stroke-linecap="square" stroke-linejoin="round" stroke-opacity="0.5"/>
         <polygon points="369.82 149.83 355.09 150.85 356.07 78.48 370.8 77.46 369.82 149.83"
-                 fill="#a7a9ac" fill-opacity="0.4"
+                 fill="#a7a9ac" fill-opacity="0.5"
                  stroke="#fff" stroke-linecap="square" stroke-linejoin="round" stroke-opacity="0.5"/>
         <path d="M570.3,342.05l-14.73,1a16.07,16.07,0,0,0-.64-5.4l14.73-1A16,16,0,0,1,570.3,342.05Z"
-              transform="translate(-199.5 -264.59)" fill="#a7a9ac" fill-opacity="0.4"
+              transform="translate(-199.5 -264.59)" fill="#a7a9ac" fill-opacity="0.5"
               stroke="#fff" stroke-linecap="square" stroke-linejoin="round" stroke-opacity="0.5"/>
         <path d="M533.81 303.18 554.93 337.66A16.07 16.07 0 0 1 555.57 343.06L554.57 415.43C554.57 418.66 553.21 418.93 553.82 418.19L536.7 383.71A16.29 16.29 0 0 1 535.07 378.32L533.07 306.95C533.1 303.73 533.43 302.46 533.81 303.18Z"
               transform="translate(-199.5 -264.59)"
-              fill="#a7a9ac" fill-opacity="0.4"
+              fill="#a7a9ac" fill-opacity="0.5"
               stroke="#fff" stroke-linecap="square" stroke-linejoin="round" stroke-opacity="0.5"/>
     </g>
     <g id="walls">
         <polygon points="37.06 242.1 70.86 142.61 355.15 142.61 399.73 242.1 37.06 242.1"
-                 fill="#e6e7e8" fill-opacity="0.2"/>
-        <rect x="37.22" y="241.24" width="362.42" height="13.79" fill="#e6e7e8" fill-opacity="0.2"/>
+                 fill="#e6e7e8" fill-opacity="0.5"/>
+        <rect x="37.22" y="241.24" width="362.42" height="13.79" fill="#e6e7e8" fill-opacity="0.5"/>
         <polygon id="right-2"
                  points="326.68 1.96 359.34 55.34 359.34 229.02 326.68 141.94 326.68 1.96"
-                 fill="#e6e7e8" fill-opacity="0.2"
+                 fill="#e6e7e8" fill-opacity="0.5"
                  stroke="#fff" stroke-linecap="square" stroke-linejoin="round" stroke-opacity="0"/>
-        <rect id="back" x="98.36" y="1" width="228.65" height="141.11" fill="#e6e7e8" fill-opacity="0.1"
+        <rect id="back" x="98.36" y="1" width="228.65" height="141.11" fill="#e6e7e8" fill-opacity="0.5"
               stroke="#fff" stroke-opacity="0"/>
         <polygon id="left-2" points="98.74 1.96 64.08 55.32 64.08 230.71 98.74 141.94 98.74 1.96"
-                 fill="#e6e7e8" fill-opacity="0.2"
+                 fill="#e6e7e8" fill-opacity="0.5"
                  stroke="#fff" stroke-linecap="square" stroke-linejoin="round" stroke-opacity="0"/>
         <polygon id="port_shadow" points="89.98 15.95 89.98 159.38 80.47 184.62 80.47 31.45 89.98 15.95"
-                 fill="#e6e7e8" fill-opacity="0.2"
+                 fill="#e6e7e8" fill-opacity="0.5"
                  stroke="#fff" stroke-linecap="square" stroke-linejoin="round" stroke-opacity="0"/>
     </g>
     <g id="display">
@@ -92,18 +92,18 @@
         <path id="cylinder"
               d="M291.64,389.73h236c1.88,5.28-2.71,18.16-2.87,28.83-.14,9.63,4.67,13,2.87,18.08h-236a79.44,79.44,0,0,1,0-46.91Z"
               transform="translate(-199.5 -264.59)"
-              fill="#f1f2f2" fill-opacity="0.2"
+              fill="#f1f2f2" fill-opacity="0.5"
               stroke="#fff" stroke-linecap="square" stroke-linejoin="round" stroke-opacity="0.5"/>
-        <ellipse id="right_end" cx="328.06" cy="148.39" rx="2.74" ry="23.24" fill="#f1f2f2" fill-opacity="0.4"
+        <ellipse id="right_end" cx="328.06" cy="148.39" rx="2.74" ry="23.24" fill="#f1f2f2" fill-opacity="0.5"
                  stroke="#fff" stroke-linecap="square" stroke-linejoin="round" stroke-opacity="0.5"/>
-        <ellipse id="left_end" cx="91.79" cy="148.39" rx="2.82" ry="23.24" fill="#f1f2f2" fill-opacity="0.4"
+        <ellipse id="left_end" cx="91.79" cy="148.39" rx="2.82" ry="23.24" fill="#f1f2f2" fill-opacity="0.5"
                  stroke="#fff" stroke-linecap="square" stroke-linejoin="round" stroke-opacity="0.5"/>
     </g>
     <g id="slides">
         <g id="right-3">
             <path id="SVGID-3"
                   d="M541.3,499.82V425h27.36v74.79l-9.8.07s-4.69-6.39-5-5.71l-3,5.71S541.46,500.21,541.3,499.82Z"
-                  transform="translate(-199.5 -264.59)" fill="#a7a9ac" fill-opacity="0.2"/>
+                  transform="translate(-199.5 -264.59)" fill="#a7a9ac" fill-opacity="0.5"/>
             <g clip-path="url(#clip-path-4)">
                 <g id="girder">
                     <path d="M543.84,499.87c-1.17,0-1.75,0-2-.06v-74h26.36v73.8l-9,.06c-4.24-5.76-5-5.76-5.2-5.76a.68.68,0,0,0-.53.33l-2.86,5.45C549.53,499.75,546.2,499.87,543.84,499.87Z"
@@ -126,21 +126,21 @@
             <g clip-path="url(#clip-path-5)">
                 <g id="girder-2">
                     <path d="M295.94,499.19c-2.29,0-6.69-.09-7.8-.11-2.85-4.22-3-4.24-3.22-4.28h0c-.29,0-1,.16-6.22,3.77l-8.66.06-9.6.05c-2-1.82-4.4-3.92-5.14-3.92a.75.75,0,0,0-.49.23c-.53.7-2.32,3-2.84,3.69-.92,0-4.34.11-6.74.11-1.14,0-1.73,0-2,0v-50h53.71v50.42Z"
-                          transform="translate(-199.5 -264.59)" fill="#a7a9ac" fill-opacity="0.2"/>
+                          transform="translate(-199.5 -264.59)" fill="#a7a9ac" fill-opacity="0.5"/>
                     <path d="M270,449.26h26.35v49.43h-.42c-2.13,0-6.11-.08-7.53-.11-2.83-4.18-2.92-4.19-3.41-4.27l-.18,0h0c-.32,0-.88,0-6.31,3.79l-8.5.05-9.4,0c-4.26-3.91-5-3.91-5.34-3.91a1.09,1.09,0,0,0-.89.43l-2.69,3.5c-1.17,0-4.27.1-6.49.1h-1.54v-49H270m0-1H242.65v50.92a12.21,12.21,0,0,0,2.54.11c2.83,0,7-.11,7-.11s2.36-3.06,3-3.89a.12.12,0,0,1,.09,0c.72,0,4.95,3.92,4.95,3.92l9.8-.05,8.81-.06s5.45-3.78,6-3.78h0c.17,0,3,4.28,3,4.28s5.42.12,8.07.12a8,8,0,0,0,1.42-.05V448.26H270Z"
-                          transform="translate(-199.5 -264.59)" fill="#fff" fill-opacity="0.2"/>
+                          transform="translate(-199.5 -264.59)" fill="#fff" fill-opacity="0.5"/>
                 </g>
                 <g id="right_groove">
                     <path d="M279.52,448.76H287v48.79L285.25,495a.52.52,0,0,0-.42-.22.46.46,0,0,0-.27.09l-5,3.36Z"
-                          transform="translate(-199.5 -264.59)" fill="#a7a9ac" fill-opacity="0.2"/>
+                          transform="translate(-199.5 -264.59)" fill="#a7a9ac" fill-opacity="0.5"/>
                     <path d="M286.47,449.26v46.67l-.81-1.2a1,1,0,0,0-1.38-.27L280,497.31V449.26h6.45m1-1H279v50.92l5.81-3.89,2.64,3.89V448.26Z"
-                          transform="translate(-199.5 -264.59)" fill="#fff" fill-opacity="0.2"/>
+                          transform="translate(-199.5 -264.59)" fill="#fff" fill-opacity="0.5"/>
                 </g>
                 <g id="left_groove-2">
                     <path d="M255.46,494.89a.46.46,0,0,0-.29-.1.51.51,0,0,0-.4.2l-2.09,2.72V448.76h7.45v49.45Z"
-                          transform="translate(-199.5 -264.59)" fill="#a7a9ac" fill-opacity="0.2"/>
+                          transform="translate(-199.5 -264.59)" fill="#a7a9ac" fill-opacity="0.5"/>
                     <path d="M259.63,449.26v48l-3.88-2.76a1,1,0,0,0-.58-.19,1,1,0,0,0-.79.39l-1.2,1.56v-47h6.45m1-1h-8.45v50.92l3-3.89,5.46,3.89V448.26Z"
-                          transform="translate(-199.5 -264.59)" fill="#fff" fill-opacity="0.2"/>
+                          transform="translate(-199.5 -264.59)" fill="#fff" fill-opacity="0.5"/>
                 </g>
             </g>
         </g>
@@ -159,29 +159,29 @@
     <g id="solenoid">
         <path id="tube-2"
               d="M211.82,464c-9.56,5.14-13.57,14.2-11.12,19.94,1.88,4.4,7.46,6.67,11.62,7.12,6.23.67,8.8-2.81,15-3.56,4.3-.52,10.45.26,18.45,6.09"
-              transform="translate(-199.5 -264.59)" fill="none" fill-opacity="0.2"
+              transform="translate(-199.5 -264.59)" fill="none" fill-opacity="0.5"
               stroke="#fff" stroke-linecap="square" stroke-linejoin="round" stroke-opacity="0.5"/>
         <path id="body"
               d="M13.73,151.69H36.84a1.39,1.39,0,0,1,1.39,1.39v48.65a2.41,2.41,0,0,1-2.41,2.41H14.73a2.41,2.41,0,0,1-2.41-2.41V153.1A1.4,1.4,0,0,1,13.73,151.69Z"
-              fill="#e6e7e8" fill-opacity="0.2"
+              fill="#e6e7e8" fill-opacity="0.5"
               stroke="#fff" stroke-linecap="square" stroke-linejoin="round" stroke-opacity="0.5"/>
         <g id="holder">
             <path d="M224.59,451.52a35.79,35.79,0,0,1-13.71-2.73V425a67.91,67.91,0,0,0,13.7,1.4h1.26A68.6,68.6,0,0,0,238.29,425v23.78a35.83,35.83,0,0,1-12.47,2.71Z"
-                  transform="translate(-199.5 -264.59)" fill="#d1d3d4" fill-opacity="0.2"/>
+                  transform="translate(-199.5 -264.59)" fill="#d1d3d4" fill-opacity="0.5"/>
             <path d="M211.38,425.62a68.23,68.23,0,0,0,13.21,1.29h1.26a69.44,69.44,0,0,0,11.94-1.28v22.84a35.58,35.58,0,0,1-12,2.54l-1.21,0a35.29,35.29,0,0,1-13.21-2.56V425.62m27.41-1.22a68.63,68.63,0,0,1-13,1.5h-1.24a68.09,68.09,0,0,1-14.21-1.51v24.73A36.69,36.69,0,0,0,224.59,452l1.24,0a36.45,36.45,0,0,0,13-2.86V424.4Z"
-                  transform="translate(-199.5 -264.59)" fill="#fff" fill-opacity="0.2"/>
+                  transform="translate(-199.5 -264.59)" fill="#fff" fill-opacity="0.5"/>
         </g>
         <path id="cap-2"
               d="M13.6,151.69H37.19a1,1,0,0,1,1,1v5.33a0,0,0,0,1,0,0H12.32a0,0,0,0,1,0,0V153A1.28,1.28,0,0,1,13.6,151.69Z"
-              fill="#d1d3d4" fill-opacity="0.2"
+              fill="#d1d3d4" fill-opacity="0.5"
               stroke="#fff" stroke-linecap="square" stroke-linejoin="round" stroke-opacity="0.5"/>
-        <line id="groove" x1="12.32" y1="198.15" x2="38.23" y2="198.15" fill="#e6e7e8" fill-opacity="0.2"
+        <line id="groove" x1="12.32" y1="198.15" x2="38.23" y2="198.15" fill="#e6e7e8" fill-opacity="0.5"
               stroke="#fff" stroke-linecap="square" stroke-linejoin="round" stroke-opacity="0.5"/>
     </g>
     <g id="water">
         <path id="stand"
               d="M281.06,413.53s-5.25,2.25-4.31,5.62,4.31,5.81,4.31,5.81H259s3.38-2.44,4.31-5.81-4.31-5.62-4.31-5.62m25.95-13.66H255.11v13.66H284.9Z"
-              transform="translate(-199.5 -264.59)" fill="#d1d3d4" fill-opacity="0.2"
+              transform="translate(-199.5 -264.59)" fill="#d1d3d4" fill-opacity="0.5"
               stroke="#fff" stroke-linecap="square" stroke-linejoin="round" stroke-opacity="0.5"/>
         <g id="stopper">
             <path d="M270,342.32c-3,0-11.13-.28-13.2-.36V331.49l-1.92-13.55h30.23l-1.91,13.48V342C281.13,342,273,342.32,270,342.32Z"
@@ -191,15 +191,15 @@
         </g>
         <g id="glass" opacity="0.5">
             <path d="M270,401.41c-3.26,0-12.22-.3-14.4-.37V334c2.24.07,11.17.33,14.4.33s12.15-.26,14.39-.33v67C282.22,401.11,273.26,401.41,270,401.41Z"
-                  transform="translate(-199.5 -264.59)" fill="#e6e7e8" fill-opacity="0.2"/>
+                  transform="translate(-199.5 -264.59)" fill="#e6e7e8" fill-opacity="0.5"/>
             <path d="M256.11,334.55c2.86.09,10.87.32,13.9.32s11-.23,13.89-.32v66c-2.79.1-10.85.35-13.89.35s-11.11-.25-13.9-.35v-66m28.79-1s-11.17.35-14.89.35-14.9-.35-14.9-.35v68s11.15.38,14.9.38,14.89-.38,14.89-.38v-68Z"
-                  transform="translate(-199.5 -264.59)" fill="#fff" fill-opacity="0.2"/>
+                  transform="translate(-199.5 -264.59)" fill="#fff" fill-opacity="0.5"/>
         </g>
         <g id="glass-2">
             <path d="M270,401.41c-3.26,0-12.22-.3-14.4-.37V334c2.24.07,11.17.33,14.4.33s12.15-.26,14.39-.33v67C282.22,401.11,273.26,401.41,270,401.41Z"
-                  transform="translate(-199.5 -264.59)" fill="#fff" fill-opacity="0.2"/>
+                  transform="translate(-199.5 -264.59)" fill="#fff" fill-opacity="0.5"/>
             <path d="M256.11,334.55c2.86.09,10.87.32,13.9.32s11-.23,13.89-.32v66c-2.79.1-10.85.35-13.89.35s-11.11-.25-13.9-.35v-66m28.79-1s-11.17.35-14.89.35-14.9-.35-14.9-.35v68s11.15.38,14.9.38,14.89-.38,14.89-.38v-68Z"
-                  transform="translate(-199.5 -264.59)" fill="#fff" fill-opacity="0.2"/>
+                  transform="translate(-199.5 -264.59)" fill="#fff" fill-opacity="0.5"/>
         </g>
     </g>
 </svg>
