@@ -253,6 +253,12 @@ td, th {
   border-color: rgba(255, 255, 255, 0.3);
 }
 
+.icon {
+  height: 2em;
+  vertical-align: middle;
+  padding-right: 0.5em;
+}
+
 .path {
   transition: 0.5s ease-in all;
 }
