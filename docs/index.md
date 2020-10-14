@@ -1,3 +1,4 @@
+<!--
 ![](./images/paths/mouse.svg){:#mouse}{:.path}
 ![](./images/paths/box.svg){:#box}{:.path}
 ![](./images/paths/PC.svg){:#pc}{:.path}
@@ -16,3 +17,4 @@ View on GitHub
 Mysore Lab
 </a>
 </p>
+-->
