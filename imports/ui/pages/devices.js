@@ -42,6 +42,14 @@ Template.deviceCard.events({
             _.extend(messages[template.lights], template.getContext()));
         template.lights = (template.lights < messages.length) ? ++template.lights : 0;
     },
+    'click #toggle-ir'(event, template) {
+        const messages = (template.ir)
+            ? {command: "detect", detect: "off"}
+            : {command: "detect", detect: "on"};
+
+        Meteor.call('mqttSend', template.data._id, 'reward', _.extend(messages, template.getContext()));
+        template.ir = !template.ir;
+    },
     'click #toggle-reward'(event, template) {
         const messages = (template.reward)
             ? {command: "off"}
