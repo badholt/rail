@@ -13,12 +13,13 @@ Template.crossForm.events({
             const session = template.parent(5),
                 page = session.page.get(),
                 stages = session.stages.get();
-            console.log(this, session, page, stages, stages[page]);
 
             switch (target.name) {
+                case 'delay':
+                case 'duration':
                 case 'span':
                 case 'weight':
-                    stages[page][this.i][target.name] = value;
+                    stages[page][template.data.i][target.name] = value;
                     session.stages.set(stages);
                     break;
             }

@@ -8,11 +8,11 @@
 
 <template name="trialElements">
     {{#each element}}
-        {{> trialElement}}
+        {{> trialElement e=this i=@index pre=''}}
     {{/each}}
 
     {{#each responses}}
-        {{> trialElement}}
+        {{> trialElement e=this i=@index pre='_'}}
     {{/each}}
 </template>
 
@@ -26,21 +26,25 @@
 </template>
 
 <template name="trialElement">
-    {{#if $eq type 'audio'}}
-        {{audio stage trial}}
-    {{/if}}
-    {{#if $eq type 'cross'}}
-        {{> cross}}
-    {{/if}}
-    {{#if $eq type 'stimuli'}}
-        {{#if timer delay duration type}}
-            {{> bars center=center data=this}}
+    {{#with e}}
+        {{#if $eq type 'audio'}}
+            {{audio stage trial ../i ../pre}}
         {{/if}}
-    {{/if}}
-    {{#if $eq type 'lights'}}
-        {{command stage trial}}
-    {{/if}}
-    {{#if $eq type 'reward'}}
-        {{command stage trial}}
-    {{/if}}
+        {{#if $eq type 'cross'}}
+            {{#if timer delay duration type ../i}}
+                {{> cross}}
+            {{/if}}
+        {{/if}}
+        {{#if $eq type 'stimuli'}}
+            {{#if timer delay duration type ../i}}
+                {{> bars center=center data=this}}
+            {{/if}}
+        {{/if}}
+        {{#if $eq type 'lights'}}
+            {{command stage trial ../i}}
+        {{/if}}
+        {{#if $eq type 'reward'}}
+            {{command stage trial ../i}}
+        {{/if}}
+    {{/with}}
 </template>
