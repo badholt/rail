@@ -1,30 +1,32 @@
 <template name="lightForm">
-    <form id="light-form" class="ui inverted form">
-        <div class="three fields">
-            <div class="field">
-                <label>
-                    Delay
-                    <span class="ui mini horizontal label">ms</span>
-                </label>
-                <input type="number" name="light.delay"
-                       placeholder="#" value="{{delay}}">
+    {{#with element}}
+        <form id="light-form" class="ui inverted form">
+            <div class="three fields">
+                <div class="field">
+                    <label>
+                        Delay
+                        <span class="ui mini horizontal label">ms</span>
+                    </label>
+                    <input type="number" name="light.delay"
+                           placeholder="#" value="{{delay}}">
+                </div>
+                <div class="field">
+                    <label>
+                        Dim
+                        <span class="ui mini horizontal label">ms</span>
+                    </label>
+                    <input type="number" name="light.dim"
+                           placeholder="#" value="{{dim}}">
+                </div>
+                <div class="field">
+                    <label>
+                        Duration
+                        <span class="ui mini horizontal label">ms</span>
+                    </label>
+                    <input type="number" name="light.duration"
+                           placeholder="#" value="{{duration}}">
+                </div>
             </div>
-            <div class="field">
-                <label>
-                    Dim
-                    <span class="ui mini horizontal label">ms</span>
-                </label>
-                <input type="number" name="light.dim"
-                       placeholder="#" value="{{dim}}">
-            </div>
-            <div class="field">
-                <label>
-                    Duration
-                    <span class="ui mini horizontal label">ms</span>
-                </label>
-                <input type="number" name="light.duration"
-                       placeholder="#" value="{{duration}}">
-            </div>
-        </div>
-    </form>
+        </form>
+    {{/with}}
 </template>

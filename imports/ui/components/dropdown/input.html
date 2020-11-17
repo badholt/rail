@@ -1,7 +1,7 @@
 <template name="comparisonsDropdown">
-    <div id="comparisons" class="conditions ui black button compact search dropdown">
+    <div id="comparisons" class="conditions ui black button search dropdown">
         <input type="hidden" name="comparison">
-        <div class="default text">{ comparison }</div>
+        <div class="default text ui tiny header">{ comparison }</div>
 
         <div class="menu">
             {{#each comparison}}
@@ -14,11 +14,9 @@
 </template>
 
 <template name="conditionsDropdown">
-    <div class="conditions ui black button fluid dropdown">
+    <div class="conditions ui black button dropdown">
         <input type="hidden" name="{{name}}s">
-        <div class="default text ui {{#if $eq name 'object'}}blue{{else}}orange{{/if}} tiny header">
-            { {{name}} }
-        </div>
+        <div class="default text ui {{#if $eq name 'object'}}blue{{else}}orange{{/if}} tiny header">{ {{name}} }</div>
 
         <div class="menu">
             {{#each condition}}
@@ -42,22 +40,20 @@
 <template name="conditionsItem">
     {{#with conditions}}
         <div class="condition item">
-            <a class="right floated content">
-                <i class="close icon"></i>
-            </a>
+            <div class="left floated content">
+                <i class="grey link close icon"></i>
 
-            <div class="content">
                 {{#each objects}}
-                    <a class="ui mini blue image label">
+                    <a class="ui blue image label">
                         {{name}}
                         {{#if property}}<span class="detail">{{property}}</span>{{/if}}
                     </a>
                 {{/each}}
 
-                <a class="ui mini black image label">{{comparison}}</a>
+                <a class="ui black image label">{{comparison}}</a>
 
                 {{#each subjects}}
-                    <a class="ui mini orange image label">
+                    <a class="ui orange image label">
                         {{name}}
                         {{#if property}}<span class="detail">{{property}}</span>{{/if}}
                     </a>
@@ -68,23 +64,57 @@
 </template>
 
 <template name="conditionsList">
-    <div class="ui list">
+    <div class="ui small list">
         {{#each conditions}}
             {{> conditionsItem conditions=this item=@index}}
         {{/each}}
     </div>
 </template>
 
+<template name="correctItem">
+    {{#with correct}}
+        <div class="correct item">
+            <div class="left floated content">
+                <i class="grey link close icon"></i>
+
+                <div class="ui mini labeled button" tabindex="0">
+                    <div class="ui mini green button">
+                        {{action}}{{#if specifications}}{{specifications.amount}}{{/if}}
+                    </div>
+
+                    {{#each targets}}
+                        <a class="ui basic green left pointing label">
+                            {{#if type}}{{type}}{{else}}{{this}}{{/if}}
+                            {{#each commands}}
+                                ({{command}})
+                            {{/each}}
+                            {{#if property}}<span class="detail">{{property}}</span>{{/if}}
+                        </a>
+                    {{/each}}
+                </div>
+
+            </div>
+        </div>
+    {{/with}}
+</template>
+
+<template name="correctList">
+    <div class="ui small list">
+        {{#each correct}}
+            {{> correctItem correct=this item=@index}}
+        {{/each}}
+    </div>
+</template>
+
 <template name="correctDropdown">
-    <div id="correct" class="ui black button compact search dropdown">
+    <div id="correct" class="ui black button search dropdown">
         <input type="hidden" name="input">
-        <div class="default text">{ correct }</div>
+        <div class="default text ui green tiny header">{ true }</div>
 
         <div class="menu">
             {{#each correct}}
-                <div class="item" data-value="{{name}}">
-                    <i class="{{icon}} icon"></i>
-                    {{name}}
+                <div class="item" data-value="{{action}}">
+                    {{action}}
                 </div>
             {{/each}}
         </div>
@@ -110,7 +140,7 @@
 <template name="incorrectDropdown">
     <div id="incorrect" class="ui black button search dropdown">
         <input type="hidden" name="input">
-        <div class="default text">{ incorrect }</div>
+        <div class="default text ui red tiny header">{ false }</div>
 
         <div class="menu">
             {{#each incorrect}}
@@ -120,6 +150,38 @@
                 </div>
             {{/each}}
         </div>
+    </div>
+</template>
+
+<template name="incorrectItem">
+    {{#with incorrect}}
+        <div class="incorrect item">
+            <div class="left floated content">
+                <i class="grey link close icon"></i>
+
+                <div class="ui mini labeled button" tabindex="0">
+                    <div class="ui mini red button">
+                        {{action}}{{#if specifications}}{{specifications.amount}}{{/if}}
+                    </div>
+
+                    {{#each targets}}
+                        <a class="ui basic red left pointing label">
+                            {{#if type}}{{type}}{{else}}{{this}}{{/if}}
+                            {{#if property}}<span class="detail">{{property}}</span>{{/if}}
+                        </a>
+                    {{/each}}
+                </div>
+
+            </div>
+        </div>
+    {{/with}}
+</template>
+
+<template name="incorrectList">
+    <div class="ui small list">
+        {{#each incorrect}}
+            {{> incorrectItem incorrect=this item=@index}}
+        {{/each}}
     </div>
 </template>
 
@@ -150,39 +212,79 @@
 <template name="inputItem">
     <div class="input item">
         <div class="right floated content">
-            <i class="grey link close icon"></i>
+            <i class="grey link trash icon"></i>
         </div>
 
         <div class="content">
-            <span class="ui black inverted label">If </span>
+            <div class="ui equal width divided padded stackable grid">
+                <div class="ui vertical segments column">
+                    <div class="ui basic segment">
+                        <span class="ui black inverted horizontal label">When...</span>
+                        {{> eventDropdown (input)}}
 
-            {{> eventDropdown (input)}}
+                        <div class="ui horizontal divider"></div>
+                    </div>
+                    <div class="ui basic segment">
+                        <div class="ui form">
+                            <span class="ui black inverted horizontal label">If...</span>
+                            <div class="ui small compact buttons">
+                                {{> conditionsDropdown name="object"}}
+                                {{> comparisonsDropdown}}
+                                {{> conditionsDropdown name="subject"}}
+                            </div>
 
-            <div class="ui breadcrumb form">
-                <h6 class="ui dividing inverted header">Conditions</h6>
+                            <div class="add-condition ui small inverted black icon button"><i
+                                    class="fitted plus icon"></i></div>
+                            {{> conditionsList (input)}}
+                        </div>
+                    </div>
+                </div>
 
-                <a class="section">
-                    {{> conditionsDropdown name="object"}}
-                </a>
+                <div class="ui one wide middle aligned column">
+                    <i class="ui big right arrow icon"></i>
+                </div>
 
-                <a class="section">
-                    {{> comparisonsDropdown}}
-                </a>
+                <div class="ui vertical segments column">
+                    <div class="ui basic green segment">
+                        <div class="ui form">
+                            <label class="ui top left attached green horizontal label">
+                                <i class="check icon"></i>
+                                True
+                            </label>
 
-                <a class="section">
-                    {{> conditionsDropdown name="subject"}}
-                </a>
+                            <div class="ui small buttons">
+                                {{> correctDropdown (input)}}
+                            </div>
 
-                {{> conditionsList (input)}}
+                            <div class="add-correct ui small inverted black icon button"><i
+                                    class="fitted plus icon"></i></div>
+                            {{> correctList (input)}}
+                        </div>
+                    </div>
+                    <div class="ui basic red segment">
+                        <div class="ui form">
+                            <label class="ui top left attached red horizontal label">
+                                <i class="dont icon"></i>
+                                False
+                            </label>
+
+                            <div class="ui small buttons">
+                                {{> incorrectDropdown (input)}}
+                            </div>
+
+                            <div class="add-incorrect ui small inverted black icon button"><i
+                                    class="fitted plus icon"></i></div>
+                            {{> incorrectList (input)}}
+                        </div>
+                    </div>
+                </div>
             </div>
-
-            <a class="add-condition ui black inverted label"><i class="fitted right arrow icon"></i></a>
         </div>
     </div>
 </template>
 
 <template name="inputList">
-    <div class="ui middle aligned divided inverted list">
+    <div class="ui mini middle aligned divided inverted list">
         {{#each input page inputs}}
             {{> inputItem index=@index input=this stage=../page}}
         {{/each}}

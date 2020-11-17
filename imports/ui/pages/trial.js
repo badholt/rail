@@ -132,14 +132,15 @@ Template.trial.onCreated(function () {
         if (n) _.each(_.range(n, n - 4, -1), (i) => _.each(timers[i.toString()],
             (value) => Meteor.clearTimeout(value))); else _.each(timers[type],
             (value) => Meteor.clearTimeout(value));
-        // this.timers = {};
+        //this.timers = {};
     };
     this.getSession = () => FlowRouter.getParam('session');
     this.nextStage = (delay, increment) => {
         const stage = this.stage.get() + increment,
-            trial = this.trial.get() + 1;
+            trial = this.trial.get(),
+            session = this.session.get();
 
-        if (stage < trial.stages.length) {
+        if (stage < session.settings.stages[trial].length) {
             return this.timers[trial][stage]['stage.' + stage + '.start'] = Meteor.setTimeout(() => {
                 this.recordEvent({timeStamp: performance.now(), type: 'stage.' + stage + '.start'});
                 this.stage.set(stage);
@@ -152,6 +153,7 @@ Template.trial.onCreated(function () {
             next = this.trial.get() + 1,
             session = this.session.get();
 
+        console.log("next trial", this.timers);
         if (!this.timers[next][stage]['next.trial']) this.timers[next][stage]['next.trial'] = Meteor.setTimeout(() => {
             if (next <= session.trials.length) {
                 this.clearTimers(this.timers, next);
@@ -184,6 +186,7 @@ Template.trial.onCreated(function () {
             trial = this.trial.get() + 1;
         const start = name + '.start',
             stop = name + '.stop';
+        console.log(stage, trial, name);
 
         if (!this.timers[trial][stage][start]) {
             return Meteor.setTimeout(() => {
@@ -230,13 +233,12 @@ Template.trial.onCreated(function () {
 
 Template.trialElement.helpers({
     audio(stage, trial) {
+        console.log("audio", this);
         if (stage && trial) {
             const template = Template.instance().parent(3),
                 element = Template.currentData(),
-                name = 'audio.' + element.source.type + '.' + trial,
+                name = 'audio.' + element.source.type + '.' + element.duration + '.' + trial,
                 started = Template.instance().started.get();
-
-            console.log(name, started);
 
             if (started !== trial) {
                 console.log('%c\nAUDIO RENDERS:\t', 'color: blue; font-size: 2em; font-weight: 800;', name, performance.now());
@@ -259,6 +261,8 @@ Template.trialElement.helpers({
                         template.timedAudio(audio, element.delay, element.duration, name);
                         break;
                 }
+            } else {
+                console.log(name);
             }
         }
     },
@@ -321,6 +325,7 @@ Template.trialElement.onCreated(function () {
 
 Template.trialElements.helpers({
     responses() {
+        console.log(Template.instance().parent(2).responses.get());
         return Template.instance().parent(2).responses.get();
     }
 });
@@ -337,43 +342,45 @@ Template.trialSVG.events({
             stage = data.stage - 1,
             trial = data.trial.number - 1;
 
+        console.log("TEST", template.timers, data.trial.number, data.stage, event);
         console.log(!_.has(template.timers[data.trial.number][data.stage], "next.trial"), performance.now());
         // if (!_.has(template.timers[data.trial.number][data.stage], "next.trial")) {
-        //     const session = template.session.get(),
-        //         variables = {
-        //             'center': (p) => (template.center[p]),
-        //             'event': (p) => (event[p]),
-        //             'insert': (d, s, t) => {
-        //                 const responses = template.responses.get();
-        //                 responses.push(t);
-        //                 template.responses.set(responses);
-        //             },
-        //             'number': (n) => (parseFloat(n)),
-        //             'stage': (d, n) => template.nextStage(d, n),
-        //             'stimuli': (p) => {
-        //                 let elements = _.filter(session.settings.stages[trial][stage],
-        //                     (element) => (element.type === 'stimuli'));
-        //
-        //                 _.each(p.split('.'), (value) => {
-        //                     if (elements) elements = elements[value];
-        //                 });
-        //
-        //                 return elements;
-        //             },
-        //             'trial': (d, n) => template.nextTrial(d),
-        //             '<': (o, s) => (o < s),
-        //             '+': (d, s, t) => variables[t](d, s.amount),
-        //             '=': (o, s) => (o === s)
-        //         };
-        //
-        //     _.each(session.settings.inputs[stage], (input) => {
-        //         if (input.event === event.type) {
-        //             const correct = conditionsMet(input, variables);
-        //             _.each((correct) ? input.correct : input.incorrect, (action) =>
-        //                 _.each(action.targets, (target) =>
-        //                     variables[action.action](action.delay, action.specifications, target)));
-        //         }
-        //     });
+        const session = template.session.get(),
+            variables = {
+                'center': (p) => (template.center[p]),
+                'event': (p) => (event[p]),
+                'insert': (d, s, t) => {
+                    const responses = template.responses.get();
+                    if (!_.has(responses, t)) responses.push(t); // May conflict w/later experiment types
+                    console.log(t, responses);
+                    template.responses.set(responses);
+                },
+                'number': (n) => (parseFloat(n)),
+                'stage': (d, n) => template.nextStage(d, n),
+                'stimuli': (p) => {
+                    let elements = _.filter(session.settings.stages[trial][stage],
+                        (element) => (element.type === 'stimuli'));
+
+                    _.each(p.split('.'), (value) => {
+                        if (elements) elements = elements[value];
+                    });
+
+                    return elements;
+                },
+                'trial': (d, n) => template.nextTrial(d),
+                '<': (o, s) => (o < s),
+                '+': (d, s, t) => variables[t](d, s.amount),
+                '=': (o, s) => (o === s)
+            };
+
+        _.each(session.settings.inputs[stage], (input) => {
+            if (input.event === event.type) {
+                const correct = conditionsMet(input, variables);
+                _.each((correct) ? input.correct : input.incorrect, (action) =>
+                    _.each(action.targets, (target) =>
+                        variables[action.action](action.delay, action.specifications, target)));
+            }
+        });
         // }
 
         template.recordEvent(event);

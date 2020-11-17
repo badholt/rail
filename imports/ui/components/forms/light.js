@@ -8,7 +8,7 @@ Template.lightForm.events({
             value = parseFloat($('#' + target.form.id).form('get value', target.name));
 
         if (!_.isNaN(value)) {
-            const session = template.parent(2),
+            const session = template.parent(5),
                 page = session.page.get(),
                 property = target.name.split('.')[1],
                 stages = session.stages.get();
@@ -17,7 +17,7 @@ Template.lightForm.events({
                 case 'delay':
                 case 'dim':
                 case 'duration':
-                    stages[page][this.index][property] = value;
+                    stages[page][template.data.i][property] = value;
                     session.stages.set(stages);
                     break;
             }

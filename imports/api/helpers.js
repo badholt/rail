@@ -12,7 +12,18 @@ import {Template} from "meteor/templating";
 import moment from "moment/moment";
 
 Template.registerHelpers({
-    /** */
+    /**
+     * add
+     *
+     * Description:
+     *  Computes the sum of two integers
+     *
+     * Parameters:
+     *  increment - integer intended
+     *  index - integer
+     *
+     * Returns:
+     *  Array {} */
     add(increment, index) {
         return index + increment;
     },

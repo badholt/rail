@@ -46,7 +46,7 @@ Template.conditionsDropdown.onRendered(function () {
 });
 
 Template.conditionsItem.events({
-    'click .condition.item > .right.content > .close'(e, template) {
+    'click .condition.item > .left.content > .close'(e, template) {
         const input = template.parent(2).data,
             session = template.parent(5),
             inputs = session.inputs.get();
@@ -56,25 +56,31 @@ Template.conditionsItem.events({
     }
 });
 
+Template.conditionsItem.helpers({
+    property() {
+        return this.property.toString();
+    }
+});
+
 Template.correctDropdown.helpers({
     correct() {
-        return [
-            {
-                action: "+",
-                specifications: {
-                    amount: 1
-                },
-                delay: 0,
-                targets: [
-                    "trial"
-                ]
-            }
-        ];
+        return [{action: "+", targets: ["trial"]}, {action: "insert", targets: []}];
     }
 });
 
 Template.correctDropdown.onRendered(function () {
     $('#correct').dropdown();
+});
+
+Template.correctItem.events({
+    'click .correct.item > .left.content > .close'(e, template) {
+        const input = template.parent(2).data,
+            session = template.parent(5),
+            inputs = session.inputs.get();
+
+        session.inputs.set(update(inputs,
+            {[input.stage]: {[input.index]: {correct: {$splice: [[template.data.item, 1]]}}}}));
+    }
 });
 
 Template.eventDropdown.helpers({
@@ -143,6 +149,17 @@ Template.incorrectDropdown.onRendered(function () {
     $('#incorrect').dropdown();
 });
 
+Template.incorrectItem.events({
+    'click .incorrect.item > .left.content > .close'(e, template) {
+        const input = template.parent(2).data,
+            session = template.parent(5),
+            inputs = session.inputs.get();
+
+        session.inputs.set(update(inputs,
+            {[input.stage]: {[input.index]: {incorrect: {$splice: [[template.data.item, 1]]}}}}));
+    }
+});
+
 Template.inputDropdown.helpers({
     input() {
         return [
@@ -172,7 +189,6 @@ Template.inputDropdown.onRendered(function () {
         }
     });
 });
-
 
 Template.inputItem.events({
     'click .add-condition'(e, template) {

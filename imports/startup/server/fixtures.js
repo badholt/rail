@@ -411,6 +411,147 @@ Meteor.startup(() => {
                     ]
                 ],
                 users: 'any'
+            },
+            {
+                author: 'default bell',
+                devices: 'any',
+                inputs: [
+                    [
+                        {
+                            conditions: [
+                                {
+                                    comparison: '<',
+                                    objects: [
+                                        {
+                                            name: 'number',
+                                            property: 400
+                                        }
+                                    ],
+                                    subjects: [
+                                        {
+                                            name: 'event',
+                                            property: 'clientY'
+                                        }
+                                    ]
+                                },
+                                {
+                                    comparison: '<',
+                                    objects: [
+                                        {
+                                            name: 'event',
+                                            property: 'clientY'
+                                        }
+                                    ],
+                                    subjects: [
+                                        {
+                                            name: 'number',
+                                            property: 470
+                                        }
+                                    ]
+                                }
+                            ],
+                            correct: [
+                                {
+                                    action: 'insert',
+                                    delay: 0,
+                                    targets: [
+                                        {
+                                            type: 'audio',
+                                            delay: 0,
+                                            duration: 1000,
+                                            source: {
+                                                wave: {
+                                                    frequency: 600,
+                                                    type: 'sine'
+                                                },
+                                                type: 'wave'
+                                            },
+                                            loop: 'loop'
+                                        },
+                                        {
+                                            type: 'reward',
+                                            commands: [
+                                                {
+                                                    command: 'dispense',
+                                                    amount: 0.025
+                                                }
+                                            ],
+                                            delay: 0,
+                                            duration: 0.06666666666666667
+                                        },
+                                        {
+                                            type: 'lights',
+                                            commands: [
+                                                {
+                                                    command: 'on',
+                                                    delay: 0,
+                                                    pins: [
+                                                        3
+                                                    ]
+                                                },
+                                                {
+                                                    command: 'off',
+                                                    delay: 2500,
+                                                    pins: [
+                                                        3
+                                                    ]
+                                                }
+                                            ],
+                                            delay: 0,
+                                            dim: 10,
+                                            duration: 2500
+                                        }
+                                    ]
+                                },
+                                {
+                                    action: '+',
+                                    specifications: {
+                                        amount: 1
+                                    },
+                                    delay: 5000,
+                                    targets: [
+                                        'trial'
+                                    ]
+                                }
+                            ],
+                            event: 'click',
+                            incorrect: []
+                        }
+                    ]
+                ],
+                name: 'Shaping II',
+                number: 1,
+                session: {
+                    'delay': 0,
+                    'duration': 1800000,
+                    'iti': 30000,
+                    'total': 0
+                },
+                stages: [
+                    [
+                        {
+                            'delay': 0,
+                            'duration': 1000,
+                            'type': 'cross',
+                            'span': 75,
+                            'weight': 10
+                        },
+                        {
+                            'type': 'audio',
+                            'delay': 0,
+                            'duration': 30,
+                            'source': {
+                                'wave': {
+                                    'frequency': 600,
+                                    'type': 'sine'
+                                },
+                                'type': 'wave'
+                            },
+                            'loop': 'loop'
+                        }
+                    ]
+                ],
+                users: 'any'
             }
         ];
 
