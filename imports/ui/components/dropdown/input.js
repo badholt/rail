@@ -63,13 +63,13 @@ Template.conditionsItem.helpers({
 });
 
 Template.correctDropdown.helpers({
-    correct() {
+    actions() {
         return [{action: "+", targets: ["trial"]}, {action: "insert", targets: []}];
     }
 });
 
 Template.correctDropdown.onRendered(function () {
-    $('#correct').dropdown();
+    this.$('.ui.dropdown').dropdown();
 });
 
 Template.correctItem.events({

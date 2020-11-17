@@ -64,7 +64,7 @@
 </template>
 
 <template name="conditionsList">
-    <div class="ui small list">
+    <div class="ui mini list">
         {{#each conditions}}
             {{> conditionsItem conditions=this item=@index}}
         {{/each}}
@@ -99,7 +99,7 @@
 </template>
 
 <template name="correctList">
-    <div class="ui small list">
+    <div class="ui mini list">
         {{#each correct}}
             {{> correctItem correct=this item=@index}}
         {{/each}}
@@ -107,12 +107,12 @@
 </template>
 
 <template name="correctDropdown">
-    <div id="correct" class="ui black button search dropdown">
+    <div id="conditions-{{conditions}}" class="ui black button search dropdown">
         <input type="hidden" name="input">
-        <div class="default text ui green tiny header">{ true }</div>
+        <div class="default text ui {{#if conditions}}green{{else}}red{{/if}} tiny header">{ action }</div>
 
         <div class="menu">
-            {{#each correct}}
+            {{#each actions}}
                 <div class="item" data-value="{{action}}">
                     {{action}}
                 </div>
@@ -140,7 +140,7 @@
 <template name="incorrectDropdown">
     <div id="incorrect" class="ui black button search dropdown">
         <input type="hidden" name="input">
-        <div class="default text ui red tiny header">{ false }</div>
+        <div class="default text ui red tiny header">{ action }</div>
 
         <div class="menu">
             {{#each incorrect}}
@@ -178,7 +178,7 @@
 </template>
 
 <template name="incorrectList">
-    <div class="ui small list">
+    <div class="ui mini list">
         {{#each incorrect}}
             {{> incorrectItem incorrect=this item=@index}}
         {{/each}}
@@ -222,7 +222,7 @@
                         <span class="ui black inverted horizontal label">When...</span>
                         {{> eventDropdown (input)}}
 
-                        <div class="ui horizontal divider"></div>
+                        <i class="ui big inverted right floated grey right arrow icon"></i>
                     </div>
                     <div class="ui basic segment">
                         <div class="ui form">
@@ -240,20 +240,13 @@
                     </div>
                 </div>
 
-                <div class="ui one wide middle aligned column">
-                    <i class="ui big right arrow icon"></i>
-                </div>
-
                 <div class="ui vertical segments column">
                     <div class="ui basic green segment">
-                        <div class="ui form">
-                            <label class="ui top left attached green horizontal label">
-                                <i class="check icon"></i>
-                                True
-                            </label>
+                        <label class="ui green corner label"><i class="check icon"></i></label>
 
+                        <div class="ui form">
                             <div class="ui small buttons">
-                                {{> correctDropdown (input)}}
+                                {{> correctDropdown conditions=true}}
                             </div>
 
                             <div class="add-correct ui small inverted black icon button"><i
@@ -262,14 +255,11 @@
                         </div>
                     </div>
                     <div class="ui basic red segment">
-                        <div class="ui form">
-                            <label class="ui top left attached red horizontal label">
-                                <i class="dont icon"></i>
-                                False
-                            </label>
+                        <label class="ui red corner label"><i class="dont icon"></i></label>
 
+                        <div class="ui form">
                             <div class="ui small buttons">
-                                {{> incorrectDropdown (input)}}
+                                {{> correctDropdown conditions=false}}
                             </div>
 
                             <div class="add-incorrect ui small inverted black icon button"><i
