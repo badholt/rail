@@ -1,7 +1,7 @@
 <template name="blacklist">
     <div id="blacklist" class="ui centered equal width internally celled padded grid">
         {{#each range 0 grid.y 1}}
-            {{> blacklistRow (blacklist order)}}
+            {{> blacklistRow (blacklist order index)}}
         {{/each}}
     </div>
 </template>

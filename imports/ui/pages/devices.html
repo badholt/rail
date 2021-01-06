@@ -14,6 +14,18 @@
     <div class="ui {{color status}} card">
         {{#if status.message}}{{>deviceCardMessage (status.message)}}{{/if}}
 
+        {{#with status.active.session}}
+            <div class="ui attached green icon message">
+                <i class="notched circle loading icon"></i>
+
+                <div class="content">
+                    <div class="header">Active Session</div>
+                </div>
+
+                <i class="large abort close icon"></i>
+            </div>
+        {{/with}}
+
         <div class="content">
             <i class="{{color status}} large right floated circle icon"></i>
 
@@ -40,7 +52,7 @@
                     <i class="link microchip icon"></i>
 
                     <div class="content">
-                        <div class="header">Assigned Pins</div>
+                        <div class="header">Assigned Pins{{this._id}}</div>
 
                         <div class="ui mini labels list">
                             {{#each profile.components}}

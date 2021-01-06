@@ -22,8 +22,10 @@
     <form id="device-form" class="ui equal width inverted form">
         <div class="ui basic segment">
             <a id="save" class="ui {{#if hasTemplate}}grey{{else}}blue{{/if}} corner label">
-                <i class="save icon"></i>
+                <i class="link save icon"></i>
             </a>
+
+            {{> templateModal}}
 
             <div class="fields">
                 <div class="field">
@@ -120,7 +122,7 @@
             {{title}}
 
             <label class="ui big black top right attached label">
-                <i class="fitted grey link close icon"></i>
+                <i class="fitted grey link delete icon"></i>
             </label>
         </div>
 

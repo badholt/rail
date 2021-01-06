@@ -2,6 +2,7 @@ import './audio.html';
 
 import _ from "underscore";
 
+import {ReactiveVar} from 'meteor/reactive-var';
 import {Template} from "meteor/templating";
 
 Template.audioForm.events({
@@ -51,7 +52,7 @@ Template.audioForm.helpers({
 Template.audioForm.onCreated(function () {
     const audio = _.clone(this.data.element.source);
 
-    this.audioType = new ReactiveVar(audio.type);
+    this.audioType = new ReactiveVar((audio) ? audio.type : 'wave');
     this.defaults = _.defaults(audio, {
         file: {
             name: 'Beep',
@@ -104,4 +105,7 @@ Template.audioNoise.onRendered(function () {
             stages[element.page][element.i].source.noise.type = value;
         }
     });
+});
+Template.audioWave.onRendered(function () {
+    console.log(this, Template.instance().parent());
 });

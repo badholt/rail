@@ -5,13 +5,38 @@
                 <label>Authorized Users</label>
                 {{> authorizedDropdown}}
             </div>
-            <div class="field">
-                <label>Current Template</label>
-                {{> templateDropdown}}
-            </div>
-            <div class="ui divider"></div>
         </div>
+
+        <div class="field">
+            <label>Associated Template(s)</label>
+            {{> templateList}}
+        </div>
+
         <button class="ui black fluid button" type="submit">Save</button>
     </form>
+</template>
+
+<template name="templateList">
+    <div class="ui middle aligned divided inverted list">
+        {{#each templates}}
+            {{> templateItem}}
+        {{/each}}
+    </div>
+</template>
+
+<template name="templateItem">
+    <div class="item">
+        <div class="ui inverted segment">
+            <div class="right floated content">
+                <i class="{{#if current _id}}yellow{{/if}} link star icon"></i>
+                <i class="{{#if default users}}disabled {{else}}link {{/if}}delete icon"></i>
+            </div>
+
+            <div class="content">
+                <div class="description">{{#each users}}{{> profileAvatar this}}{{/each}}</div>
+                <div class="header">{{#if name}}{{name}}{{/if}}</div>
+            </div>
+        </div>
+    </div>
 </template>
 

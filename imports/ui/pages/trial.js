@@ -79,6 +79,13 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
     };
 
 Template.trial.helpers({
+    abort() {
+        const user = Meteor.user();
+
+        if (user && user.status) {
+            if (user.status.active.session === '') FlowRouter.go('/');
+        }
+    },
     data(settings, stage, trials) {
         if (settings) {
             const template = Template.instance(),
@@ -197,6 +204,7 @@ Template.trial.onCreated(function () {
         if (session) {
             this.subscribe('experiments.single', session.experiment);
             this.session.set(session);
+            this.subscribe('users', {_id: session.device});
         }
     });
 

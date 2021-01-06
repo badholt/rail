@@ -48,6 +48,7 @@ Meteor.publish('sessions.single', (id) => Sessions.find(id));
  *  (2) subjects included in an experiment by experiment id */
 Meteor.publish('subjects', () => Subjects.find());
 Meteor.publish('subjects.experiment', (id) => Subjects.find({experiments: {$elemMatch: {$eq: id}}}));
+Meteor.publish('subjects.user', (id) => Subjects.find({users: {$elemMatch: {$eq: id}}}));
 
 /**
  * Templates Collection
@@ -57,14 +58,14 @@ Meteor.publish('subjects.experiment', (id) => Subjects.find({experiments: {$elem
  *  (2) templates associated w/an experiment by experiment id, and public or private templates belonging to a user by user id TODO: Remove redundancy?
  *  (3) public templates, or all private templates belonging to a user by user id */
 Meteor.publish('templates', () => Templates.find());
-Meteor.publish('templates.experiment', (id, user) => {
-    const experiment = Experiments.findOne(id);
+Meteor.publish('templates.experiment', (experiment, user) => {
+    // const experiment = Experiments.findOne(id);
     if (experiment) return Templates.find({
         $and: [{_id: {$in: experiment.templates}},
-            {$or: [{users: 'any'}, {users: {$elemMatch: {$eq: user}}}]}]
+            {$or: [{author: user}, {users: {$elemMatch: {$eq: 'any'}}}, {users: {$elemMatch: {$eq: user}}}]}]
     });
 });
-Meteor.publish('templates.user', (id) => Templates.find({$or: [{users: 'any'}, {users: {$elemMatch: {$eq: id}}}]}));
+Meteor.publish('templates.user', (id) => Templates.find({$or: [{users: {$elemMatch: {$eq: 'any'}}}, {users: {$elemMatch: {$eq: id}}}]}));
 
 /**
  * Trials Collection

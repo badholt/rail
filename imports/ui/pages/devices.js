@@ -6,6 +6,10 @@ import {Meteor} from 'meteor/meteor';
 import {Template} from "meteor/templating";
 
 Template.deviceCard.events({
+    'click .abort'(event, template) {
+        console.log(template);
+        Meteor.call('updateUser', template.data._id, 'status.active.session', 'set', '');
+    },
     'click .editable'(event, template) {
         template.edit.set(event.currentTarget.title);
 

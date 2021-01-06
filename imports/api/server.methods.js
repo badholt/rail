@@ -15,7 +15,6 @@ const bound = Meteor.bindEnvironment((callback) => callback()),
 if (Meteor.isServer) Meteor.methods({
     'addExperiment': (fields) => {
         const template = Templates.findOne(fields.template);
-        console.log(fields, template);
 
         return Experiments.insert({
             investigator: {
@@ -48,17 +47,21 @@ if (Meteor.isServer) Meteor.methods({
         protocol: fields.protocol,
         sex: fields.sex,
         strain: fields.strain,
-        tags: fields.tags
+        tags: fields.tags,
+        users: [Meteor.userId()]
     }),
     'addTemplate': (template) => Templates.insert({
         author: Meteor.userId() || template.author,
         devices: 'any',
+        icon: template.icon,
         inputs: template.inputs,
         name: template.name,
         number: template.number,
         session: template.session,
         stages: template.stages,
-        users: template.users
+        users: (template.users) ? template.users : [Meteor.userId()]
+    }, (e, r) => {
+        console.log(e, r);
     }),
     'addTrial': (id, index) => {
         const session = Sessions.findOne(id),
@@ -191,19 +194,39 @@ if (Meteor.isServer) Meteor.methods({
             });
         }
     },
+    'removeTemplate': (id) => Templates.remove({_id: id}, (error, result) => {
+        if (!error) {
+            console.log(id);
+            Experiments.update({}, {
+                $pull: {templates: id}
+            }, {multi: true});
+        }
+    }),
     'removeUser': (username, id) => Meteor.users.update({'profile.username': username}, {
         $pull: {'profile.experiments': id}
     }),
+    'setDefaultTemplate': (id, template) => {
+        Experiments.update(id, {
+            $pull: {
+                templates: template
+            }
+        });
+        Experiments.update(id, {
+            $push: {
+                templates: template
+            }
+        });
+    },
     'updateExperiment': (experiment, values) => {
         const users = Meteor.users.find({'profile.username': {$in: values.users}}).fetch(),
             ids = _.pluck(users, '_id');
 
         _.difference(experiment.users, ids).forEach((id) => {
-            // console.log('rem: ', id);
+            console.log('rem: ', id);
             Meteor.call('removeUser', id, experiment._id);
         });
         _.difference(ids, experiment.users).forEach((id) => {
-            // console.log('add: ', id);
+            console.log('add: ', id);
             Meteor.call('addUser', id, experiment._id);
         });
 
@@ -214,7 +237,6 @@ if (Meteor.isServer) Meteor.methods({
         });
     },
     'updateSession': (session, key, value) => {
-        // console.log(session, key, value);
         if (key === 'trials') {
             Sessions.update(session, {
                 $currentDate: {

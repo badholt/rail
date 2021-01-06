@@ -1,0 +1,37 @@
+<template name="templateForm">
+    <form id="template-form" class="ui mini form">
+        <div class="field">
+                <label class="ui inverted header">
+                    Name
+                    <span class="content">
+                        <span class="sub header">(optional)</span>
+                    </span>
+                </label>
+
+                <input name="name" placeholder="ex: Gratings" type="text">
+            </div>
+
+        <button class="ui fluid blue icon submit button" type="button">
+            <i class="check icon"></i>
+        </button>
+    </form>
+</template>
+
+<template name="templateModal">
+    <div id="template-modal" class="ui modal">
+        <i class="close icon"></i>
+
+        <div class="content">
+            <div class="ui huge blue dividing header">
+                <i class="icons">
+                    <i class="blue save icon"></i>
+                    <i class="corner inverted add icon"></i>
+                </i>
+
+                Save Template
+            </div>
+
+            {{> templateForm}}
+        </div>
+    </div>
+</template>

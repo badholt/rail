@@ -46,7 +46,7 @@ Template.conditionsDropdown.onRendered(function () {
 });
 
 Template.conditionsItem.events({
-    'click .condition.item > .left.content > .close'(e, template) {
+    'click .condition.item > .left.content > .delete'(e, template) {
         const input = template.parent(2).data,
             session = template.parent(5),
             inputs = session.inputs.get();
@@ -73,7 +73,7 @@ Template.correctDropdown.onRendered(function () {
 });
 
 Template.correctItem.events({
-    'click .correct.item > .left.content > .close'(e, template) {
+    'click .correct.item > .left.content > .delete'(e, template) {
         const input = template.parent(2).data,
             session = template.parent(5),
             inputs = session.inputs.get();
@@ -150,7 +150,7 @@ Template.incorrectDropdown.onRendered(function () {
 });
 
 Template.incorrectItem.events({
-    'click .incorrect.item > .left.content > .close'(e, template) {
+    'click .incorrect.item > .left.content > .delete'(e, template) {
         const input = template.parent(2).data,
             session = template.parent(5),
             inputs = session.inputs.get();
@@ -200,16 +200,16 @@ Template.inputItem.events({
                 subjects: {$apply: (value) => ([_.object(['name', 'property'], value.split(','))])},
             });
 
-        console.log(condition, session);
-
         session.inputs.set(update(inputs,
             {[template.data.stage]: {[template.data.index]: {conditions: {$push: [condition]}}}}));
     },
-    'click .input.item > .right.content > .close'(e, template) {
+    'click .input.item > .right.content > .delete'(e, template) {
         const session = template.parent(3),
-            inputs = session.inputs.get();
+            inputs = session.inputs.get(),
+            u = update(inputs, {[template.data.stage]: {$splice: [[template.data.index, 1]]}});
+        console.log(session, u);
 
-        session.inputs.set(update(inputs, {[template.data.stage]: {$splice: [[template.data.index, 1]]}}));
+        session.inputs.set(u);
     }
 });
 

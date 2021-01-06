@@ -49,6 +49,7 @@ Template.menu.onCreated(function () {
     this.autorun(() => {
         if (user.profile.device) {
             this.subscribe('sessions.device', user._id);
+            Meteor.call('updateUser', user._id, 'status.active.session', 'set', '');
         } else {
             this.subscribe('experiments.user', user._id);
             this.tabs = new ReactiveVar({});
@@ -57,5 +58,6 @@ Template.menu.onCreated(function () {
 });
 
 Template.sessionWindow.onCreated(function () {
+    Meteor.call('updateUser', this.data.device, 'status.active.session', 'set', this.data._id);
     FlowRouter.go('/session/' + this.data._id);
 });

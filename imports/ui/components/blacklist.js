@@ -5,14 +5,101 @@ import _ from 'underscore';
 import {Template} from "meteor/templating";
 
 Template.blacklist.helpers({
-    blacklist(y) {
-        const index = Template.instance().data.index,
-            session = Template.instance().parent(5),
+    blacklist(y, index) {
+        const session = Template.instance().parent(7),
             page = session.page.get(),
             stages = session.stages.get();
-
-        console.log(session, page, stages);
-        const stimuli = stages[page][index];
+        const stimuli = stages[page][index] || { //TODO: Update default stimulus
+            "type": "stimuli",
+            "bars": 3,
+            "contrast": 1,
+            "delay": 0,
+            "duration": 5000,
+            "frequency": 4,
+            "grid": {
+                "blacklist": [
+                    {
+                        "x": 1,
+                        "y": 1,
+                        "blacklist": true,
+                        "weight": 1
+                    },
+                    {
+                        "x": 1,
+                        "y": 2,
+                        "blacklist": true,
+                        "weight": 1
+                    },
+                    {
+                        "x": 1,
+                        "y": 3,
+                        "blacklist": true,
+                        "weight": 1
+                    },
+                    {
+                        "x": 2,
+                        "y": 1,
+                        "blacklist": true,
+                        "weight": 1
+                    },
+                    {
+                        "x": 2,
+                        "y": 2,
+                        "blacklist": false,
+                        "weight": 1
+                    },
+                    {
+                        "x": 2,
+                        "y": 3,
+                        "blacklist": false,
+                        "weight": 1
+                    },
+                    {
+                        "x": 3,
+                        "y": 1,
+                        "blacklist": true,
+                        "weight": 1
+                    },
+                    {
+                        "x": 3,
+                        "y": 2,
+                        "blacklist": true,
+                        "weight": 1
+                    },
+                    {
+                        "x": 3,
+                        "y": 3,
+                        "blacklist": true,
+                        "weight": 1
+                    }
+                ],
+                "weighted": false,
+                "x": 3,
+                "y": 3
+            },
+            "location": {
+                "x": 1,
+                "y": 1
+            },
+            "number": 1,
+            "orientation": [
+                {
+                    "units": "deg",
+                    "value": 0
+                },
+                {
+                    "units": "deg",
+                    "value": 90
+                }
+            ],
+            "spacing": 2,
+            "span": 100,
+            "variables": [
+                "location",
+                "orientation"
+            ],
+            "weight": 5
+        };
 
         if (stimuli && stimuli.grid) return {
             blacklist: _.filter(stimuli.grid.blacklist, _.matches({y: y})),
@@ -22,18 +109,16 @@ Template.blacklist.helpers({
             x: stimuli.grid.x,
             y: stimuli.grid.y
         };
-    },
-    grid() {
-        return Template.instance().data.grid;
     }
 });
 
 Template.blacklistCell.events({
     'click .column'(event, template) {
-        const session = template.parent(6),
+        console.log(this, template, template.parent(9));
+        const session = template.parent(9),
             page = session.page.get(),
             stages = session.stages.get(),
-            stimulus = stages[page][Template.instance().data.stimulus],
+            stimulus = stages[page][template.data.stimulus - 1],
             blacklist = stimulus.grid.blacklist,
             cell = template.data.cell,
             index = _.findIndex(blacklist, _.matches({x: cell.x, y: cell.y}));

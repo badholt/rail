@@ -13,8 +13,10 @@ import '/imports/ui/components/forms/light';
 import '/imports/ui/components/forms/reward';
 import '/imports/ui/components/forms/stimuli';
 import '/imports/ui/components/forms/session';
+import '/imports/ui/components/forms/template';
 
 import _ from 'underscore';
+import update from "immutability-helper";
 
 import {Meteor} from 'meteor/meteor';
 import {ReactiveVar} from 'meteor/reactive-var';
@@ -23,7 +25,7 @@ import {Templates} from "../../api/collections";
 
 const hasTemplate = (id, data) => {
     const templates = Templates.find({$or: [{users: 'any'}, {users: {$elemMatch: {$eq: id}}}]}).fetch();
-    console.log(id, data, templates);
+
     return _.some(templates, (template) => {
         const a = _.pick(template, 'inputs', 'session', 'stages'),
             b = _.pick(data, 'inputs', 'session', 'stages'),
@@ -32,7 +34,7 @@ const hasTemplate = (id, data) => {
             stages = _.isEqual(
                 _.map(a.stages, (stage) => _.map(stage, (element) => _.omit(element, 'index'))),
                 _.map(a.stages, (stage) => _.map(stage, (element) => _.omit(element, 'index'))));
-        console.log(a, b, inputs, session, stages);
+
         return inputs && session && stages;
     });
 };
@@ -55,7 +57,7 @@ Template.sessionSetup.helpers({
     },
     template(id) {
         const template = Templates.findOne(id);
-        console.log(id, template);
+
         if (template) {
             Template.instance().inputs.set(template.inputs);
             Template.instance().session.set(template.session);
@@ -101,7 +103,7 @@ Template.sessionSetup.onCreated(function () {
         });
     };
     this.success = new ReactiveVar(false);
-    this.templateId = new ReactiveVar(this.data.templates[0]);
+    this.templateId = new ReactiveVar(_.last(this.data.templates));
 });
 
 Template.sessionSuccess.onRendered(function () {
@@ -121,9 +123,10 @@ Template.sessionTemplate.events({
     },
     'click #save'(event, template) {
         const exists = hasTemplate(Meteor.userId(), _.omit(template.data, '_id'));
-        console.log(exists);
+
         if (!exists) {
-            Meteor.call('addTemplate', template.data);
+            /** Open modal: */
+            $('#template-modal').modal('show');
         } else {
             console.log('Already saved!');
         }
@@ -181,7 +184,6 @@ Template.sessionTemplate.onRendered(function () {
 
 Template.stageItem.events({
     'click .stage'(event, template) {
-        console.log(event, template, template.parent(), template.parent(2));
         Template.instance().parent(2).page.set(template.data.index - 1);
     }
 });
@@ -201,6 +203,12 @@ Template.stagePage.helpers({
 
 // TODO: Allow for multiple crosses??
 Template.stagePage.events({
+    'click .delete.icon'(event, template) {
+        const session = template.parent(2),
+            stages = session.stages.get();
+
+        session.stages.set(update(stages, {[template.data.page]: {$splice: [[template.data.i, 1]]}}));
+    },
     'click [id^=cross]'(event, template) {
         const opened = template.opened.get();
         if (!opened) template.opened.set(true);

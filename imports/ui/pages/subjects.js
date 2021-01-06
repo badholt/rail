@@ -90,6 +90,7 @@ Template.subjectPanel.helpers({
 });
 
 Template.subjectPanel.onCreated(function () {
-    this.autorun(() => this.subscribe('subjects'));
+    console.log(this, Template.instance().parent(3));
+    this.autorun(() => this.subscribe('subjects.user', Meteor.userId()));
     this.edit = new ReactiveVar('');
 });

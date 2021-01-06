@@ -5,11 +5,10 @@ import update from 'immutability-helper';
 
 import {calculateCenter, calculateWeights, generateBlacklist, generateVisuals} from '../../../api/client.methods';
 import {Template} from 'meteor/templating';
-import {Trials} from "../../../api/collections";
 
 Template.stimuliForm.helpers({
-    stimuli(index) {
-        return _.extend(this, {index: index, order: index + 1});
+    number() {
+        return Template.instance().parent(5).number;
     }
 });
 
@@ -19,13 +18,12 @@ Template.stimuliForm.events({
             value = parseFloat($('#' + target.form.id).form('get value', target.name));
 
         if (!_.isNaN(value)) {
-            console.log(template, template.parent(3));
-            const session = template.parent(3),
+            const session = template.parent(5),
                 page = session.page.get(),
                 stages = session.stages.get(),
-                stage = stages[page][this.index - 1];
+                stage = stages[page][this.number - 1];
+            console.log(session, stages, this, stage);
             let grid;
-            console.log(session, page, stage, this);
 
             switch (target.name) {
                 case 'bars':
@@ -38,6 +36,7 @@ Template.stimuliForm.events({
                 case 'span':
                 case 'step':
                 case 'weight':
+                    console.log(stage, target, value, stages);
                     stage[target.name] = value;
                     session.stages.set(stages);
                     break;
@@ -76,9 +75,15 @@ Template.stimuliForm.events({
     },
 });
 
+Template.stimuliForm.helpers({
+    stimuli(index) {
+        return _.extend(this, {index: index, order: index + 1});
+    }
+});
+
 Template.stimulusForm.events({
     'click i.trophy.icon'(event, template) {
-        const session = template.parent(3),
+        const session = template.parent(5),
             trials = session.trials.get();
 
         _.each(trials.correct, (condition) => condition.stimulus = this.index);
@@ -88,7 +93,7 @@ Template.stimulusForm.events({
 
 Template.stimulusForm.helpers({
     attend(index) {
-        // const session = Template.instance().parent(3),
+        // const session = Template.instance().parent(5),
         //     trials = session.trials.get();
         //
         // return _.some(trials.correct, (condition) => condition.stimulus === index);
@@ -97,13 +102,13 @@ Template.stimulusForm.helpers({
         return _.contains(this.variables, field);
     },
     weighted() {
+        console.log(this, Template.instance());
         return this.grid.weighted;
     }
 });
 
 Template.stimulusForm.onRendered(function () {
-    let template = Template.instance().parent(3);
-    console.log(template);
+    let template = Template.instance().parent(5);
 
     $('.ui.checkbox').checkbox({
         onChecked: function () {

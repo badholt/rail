@@ -34,7 +34,7 @@ Template.templateDropdown.onRendered(function () {
     const form = Template.instance().parent(2),
         template = form.templateId.get(),
         stored = _.find(_.invert(form.cipher), (value, key) => key === template);
-
+    console.log(form);
     $('#templates')
         .dropdown({
             action: 'activate',

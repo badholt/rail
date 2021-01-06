@@ -13,7 +13,7 @@ body, html {
 }
 
 .ui.inverted.transparent input[type="number"] {
-    color: white !important;
+    color: #FFF !important;
     text-align: center;
 }
 
@@ -28,6 +28,14 @@ body, html {
     border-radius: 0.1em;
     margin-top: 0em;
     margin-bottom: 0em;
+}
+
+#cross-preview {
+    border: 0.1em solid #767676;
+    -webkit-border-radius: 0.5em;
+    -moz-border-radius: 0.5em;
+    border-radius: 0.5em;
+    margin-bottom: 0.5em;
 }
 
 #main-panel {

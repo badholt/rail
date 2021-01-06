@@ -1,47 +1,71 @@
 <template name="crossForm">
     {{#with element}}
-    <form id="cross-form" class="ui inverted form">
-        {{#if visible}}
-            <svg id="cross-preview" width="100%">{{> cross preview=true span=span weight=weight}}</svg>
-        {{/if}}
+        <form id="cross-form" class="ui inverted form">
+            {{#if visible}}
+                <svg id="cross-preview"
+                     width="100%">{{> cross preview=true offset=offset span=span weight=weight}}</svg>
+            {{/if}}
 
-        <div class="two fields">
-            <div class="field">
-                <label>
-                    Span (Size)
-                    <span class="ui mini horizontal label">pixels</span>
-                </label>
-                <input type="number" name="span"
-                       placeholder="#" value="{{span}}">
-            </div>
-            <div class="field">
-                <label>
-                    Weight (Thickness)
-                    <span class="ui mini horizontal label">pixels</span>
-                </label>
-                <input type="number" name="weight"
-                       placeholder="#" value="{{weight}}">
-            </div>
-        </div>
+            <label>Offset <span class="ui mini horizontal label">% from center</span></label>
 
-        <div class="two fields">
-            <div class="field">
-                <label>
-                    Delay
-                    <span class="ui mini horizontal label">ms</span>
-                </label>
-                <input type="number" name="delay"
-                       placeholder="#" value="{{delay}}">
+            <div class="two fields">
+                <div class="field">
+                    <div class="ui inverted transparent input">
+                        <div class="ui mini blue right pointing label">
+                            x
+                        </div>
+                        <input type="number" name="offset-x" placeholder="0.0"
+                               value="{{offset.x}}" max="1.0" min="-1.0" step="0.1">
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="ui inverted transparent input">
+                        <div class="ui mini blue right pointing label">
+                            y
+                        </div>
+                        <input type="number" name="offset-y" placeholder="0.0"
+                               value="{{offset.y}}" max="1.0" min="-1.0" step="0.1">
+                    </div>
+                </div>
             </div>
-            <div class="field">
-                <label>
-                    Duration
-                    <span class="ui mini horizontal label">ms</span>
-                </label>
-                <input type="number" name="duration"
-                       placeholder="#" value="{{duration}}">
+
+            <div class="two fields">
+                <div class="field">
+                    <label>
+                        Span (Size)
+                        <span class="ui mini horizontal label">pixels</span>
+                    </label>
+                    <input type="number" name="span"
+                           placeholder="#" value="{{span}}">
+                </div>
+                <div class="field">
+                    <label>
+                        Weight (Thickness)
+                        <span class="ui mini horizontal label">pixels</span>
+                    </label>
+                    <input type="number" name="weight"
+                           placeholder="#" value="{{weight}}">
+                </div>
             </div>
-        </div>
-    </form>
-        {{/with}}
+
+            <div class="two fields">
+                <div class="field">
+                    <label>
+                        Delay
+                        <span class="ui mini horizontal label">ms</span>
+                    </label>
+                    <input type="number" name="delay"
+                           placeholder="#" value="{{delay}}">
+                </div>
+                <div class="field">
+                    <label>
+                        Duration
+                        <span class="ui mini horizontal label">ms</span>
+                    </label>
+                    <input type="number" name="duration"
+                           placeholder="#" value="{{duration}}">
+                </div>
+            </div>
+        </form>
+    {{/with}}
 </template>

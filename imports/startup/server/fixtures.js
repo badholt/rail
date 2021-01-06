@@ -9,8 +9,9 @@ Meteor.startup(() => {
     if (Templates.find().count() === 0) {
         const templates = [
             {
-                author: 'default bars',
+                author: '',
                 devices: 'any',
+                icon: 'default bars',
                 inputs: [
                     [{
                         conditions: [],
@@ -214,6 +215,12 @@ Meteor.startup(() => {
                 stages: [
                     [
                         {
+                            delay: 0,
+                            duration: 1000,
+                            offset: {
+                                x: 0,
+                                y: 0.75
+                            },
                             type: 'cross',
                             span: 75,
                             weight: 5
@@ -307,11 +314,12 @@ Meteor.startup(() => {
                         }
                     ]
                 ],
-                users: 'any'
+                users: ['any']
             },
             {
-                author: 'default bell',
+                author: '',
                 devices: 'any',
+                icon: 'default bell',
                 inputs: [
                     [{
                         conditions: [],
@@ -356,6 +364,10 @@ Meteor.startup(() => {
                         {
                             delay: 0,
                             duration: 1000,
+                            offset: {
+                                x: 0,
+                                y: 0.75
+                            },
                             type: 'cross',
                             span: 75,
                             weight: 10
@@ -410,11 +422,12 @@ Meteor.startup(() => {
                         }
                     ]
                 ],
-                users: 'any'
+                users: ['any']
             },
             {
-                author: 'default bell',
+                author: '',
                 devices: 'any',
+                icon: 'default bell',
                 inputs: [
                     [
                         {
@@ -522,36 +535,40 @@ Meteor.startup(() => {
                 name: 'Shaping II',
                 number: 1,
                 session: {
-                    'delay': 0,
-                    'duration': 1800000,
-                    'iti': 30000,
-                    'total': 0
+                    delay: 0,
+                    duration: 1800000,
+                    iti: 30000,
+                    total: 0
                 },
                 stages: [
                     [
                         {
-                            'delay': 0,
-                            'duration': 1000,
-                            'type': 'cross',
-                            'span': 75,
-                            'weight': 10
+                            delay: 0,
+                            duration: 1000,
+                            offset: {
+                                x: 0,
+                                y: 0.75
+                            },
+                            type: 'cross',
+                            span: 75,
+                            weight: 10
                         },
                         {
-                            'type': 'audio',
-                            'delay': 0,
-                            'duration': 30,
-                            'source': {
-                                'wave': {
-                                    'frequency': 600,
-                                    'type': 'sine'
+                            type: 'audio',
+                            delay: 0,
+                            duration: 30,
+                            source: {
+                                wave: {
+                                    frequency: 600,
+                                    type: 'sine'
                                 },
-                                'type': 'wave'
+                                type: 'wave'
                             },
-                            'loop': 'loop'
+                            loop: 'loop'
                         }
                     ]
                 ],
-                users: 'any'
+                users: ['any']
             }
         ];
 

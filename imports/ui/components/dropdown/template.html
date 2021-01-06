@@ -7,7 +7,7 @@
 
         {{#each templates}}
             <option class="item" value="{{encrypt _id}}">
-                {{> profileAvatar author}} {{name}}
+                {{> profileAvatar author}} {{#if name}}{{name}}{{/if}}
             </option>
         {{/each}}
     </select>

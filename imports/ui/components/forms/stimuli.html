@@ -28,182 +28,185 @@
             <i class="right chevron icon"></i>
             Grid
         </h5>
-        {{> blacklist}}
-        <div class="three fields">
-            <div class="field">
-                <div class="ui inverted transparent input">
-                    <div class="ui mini blue right pointing label">
-                        columns
+
+        {{#with element}}
+            {{> blacklist}}
+            <div class="three fields">
+                <div class="field">
+                    <div class="ui inverted transparent input">
+                        <div class="ui mini blue right pointing label">
+                            columns
+                        </div>
+                        <input type="number" name="grid-x" placeholder="#"
+                               value="{{grid.x}}">
                     </div>
-                    <input type="number" name="grid-x" placeholder="#"
-                           value="{{grid.x}}">
                 </div>
-            </div>
-            <div class="field">
-                <div class="ui inverted transparent input">
-                    <div class="ui mini blue right pointing label">
-                        rows
+                <div class="field">
+                    <div class="ui inverted transparent input">
+                        <div class="ui mini blue right pointing label">
+                            rows
+                        </div>
+                        <input type="number" name="grid-y" placeholder="#"
+                               value="{{grid.y}}">
                     </div>
-                    <input type="number" name="grid-y" placeholder="#"
-                           value="{{grid.y}}">
                 </div>
-            </div>
-            <div class="inline field">
-                <div class="ui checked toggle checkbox">
-                    <input id="dynamic-grid-{{order}}" checked type="checkbox" tabindex="0" class="hidden">
-                    <label for="dynamic-grid-{{order}}">
-                        {{#if checked 'grid'}}
-                            <span class="ui blue inverted sub header">Variable</span>
-                        {{else}}
-                            <span class="ui inverted sub header">Fixed</span>
-                        {{/if}}
-                    </label>
+                <div class="inline field">
+                    <div class="ui checked toggle checkbox">
+                        <input id="dynamic-grid-{{order}}" checked type="checkbox" tabindex="0" class="hidden">
+                        <label for="dynamic-grid-{{order}}">
+                            {{#if checked 'grid'}}
+                                <span class="ui blue inverted sub header">Variable</span>
+                            {{else}}
+                                <span class="ui inverted sub header">Fixed</span>
+                            {{/if}}
+                        </label>
+                    </div>
                 </div>
-            </div>
-            <div class="inline field">
-                <div class="ui toggle checkbox">
-                    <input id="weighted-grid-{{order}}" type="checkbox" tabindex="0" class="hidden">
-                    <label for="weighted-grid-{{order}}">
-                        {{#if weighted}}
-                            <span class="ui blue inverted sub header">
+                <div class="inline field">
+                    <div class="ui toggle checkbox">
+                        <input id="weighted-grid-{{order}}" type="checkbox" tabindex="0" class="hidden">
+                        <label for="weighted-grid-{{order}}">
+                            {{#if weighted element}}
+                                <span class="ui blue inverted sub header">
                                 Weighted
                             </span>
-                            <i class="small blue percent icon"></i>
-                        {{else}}
-                            <span class="ui inverted sub header">
+                                <i class="small blue percent icon"></i>
+                            {{else}}
+                                <span class="ui inverted sub header">
                                 Equal
                             </span>
-                            <i class="small percent icon"></i>
-                        {{/if}}
-                    </label>
+                                <i class="small percent icon"></i>
+                            {{/if}}
+                        </label>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <h5 class="blue header inverted sub ui">
-            <i class="right chevron icon"></i>
-            Color
-        </h5>
-        <div class="two inline fields">
-            {{#if checked 'contrast'}}
+            <h5 class="blue header inverted sub ui">
+                <i class="right chevron icon"></i>
+                Color
+            </h5>
+            <div class="two inline fields">
+                {{#if checked 'contrast'}}
+                    <div class="field">
+                        <label>Contrast Min</label>
+                        <input type="number" name="min"
+                               placeholder="#" step="0.01" value="0">
+                    </div>
+                    <div class="field">
+                        <label>Contrast Max</label>
+                        <input type="number" name="contrast"
+                               placeholder="#" step="0.01" value="{{contrast}}">
+                    </div>
+                    <div class="field">
+                        <label>Step Size</label>
+                        <input type="number" name="step"
+                               placeholder="#" step="0.01" value="0.1">
+                    </div>
+                {{else}}
+                    <div class="field">
+                        <label>
+                            Contrast
+                            <span class="ui mini horizontal label">x/1</span>
+                        </label>
+                        <input type="number" name="contrast"
+                               placeholder="#" step="0.01" value="{{contrast}}">
+                    </div>
+                {{/if}}
                 <div class="field">
-                    <label>Contrast Min</label>
-                    <input type="number" name="min"
-                           placeholder="#" step="0.01" value="0">
+                    <div class="ui toggle checkbox">
+                        <input id="dynamic-contrast-{{order}}" type="checkbox" tabindex="0" class="hidden">
+                        <label for="dynamic-contrast-{{order}}">
+                            {{#if checked 'contrast'}}
+                                <span class="ui blue inverted sub header">Variable</span>
+                            {{else}}
+                                <span class="ui inverted sub header">Fixed</span>
+                            {{/if}}
+                        </label>
+                    </div>
                 </div>
-                <div class="field">
-                    <label>Contrast Max</label>
-                    <input type="number" name="contrast"
-                           placeholder="#" step="0.01" value="{{contrast}}">
+            </div>
+
+            <h5 class="blue header inverted sub ui">
+                <i class="right chevron icon"></i>
+                Size
+            </h5>
+
+            {{> stimulusPreview}}
+
+            {{#unless frequency}}
+                <div class="fields">
+                    <div class="field">
+                        <label>
+                            Bars
+                            <span class="ui mini horizontal label">bars</span>
+                        </label>
+                        <input type="number" name="bars"
+                               placeholder="#" value="{{bars}}">
+                    </div>
+                    <div class="field">
+                        <label>
+                            Spacing
+                            <span class="ui mini horizontal label">x Weight</span>
+                        </label>
+                        <input type="number" name="spacing"
+                               placeholder="#" value="{{spacing}}">
+                    </div>
                 </div>
-                <div class="field">
-                    <label>Step Size</label>
-                    <input type="number" name="step"
-                           placeholder="#" step="0.01" value="0.1">
-                </div>
-            {{else}}
+            {{/unless}}
+
+            <div class="fields">
+                {{#if frequency}}
+                    <div class="field">
+                        <label>
+                            Frequency
+                            <span class="ui mini horizontal label">bars/unit</span>
+                        </label>
+                        <input type="number" name="frequency"
+                               placeholder="#" value="{{frequency}}">
+                    </div>
+                {{/if}}
                 <div class="field">
                     <label>
-                        Contrast
-                        <span class="ui mini horizontal label">x/1</span>
+                        Span
+                        <span class="ui mini horizontal label">px</span>
                     </label>
-                    <input type="number" name="contrast"
-                           placeholder="#" step="0.01" value="{{contrast}}">
+                    <input type="number" name="span"
+                           placeholder="#" value="{{span}}">
                 </div>
-            {{/if}}
-            <div class="field">
-                <div class="ui toggle checkbox">
-                    <input id="dynamic-contrast-{{order}}" type="checkbox" tabindex="0" class="hidden">
-                    <label for="dynamic-contrast-{{order}}">
-                        {{#if checked 'contrast'}}
-                            <span class="ui blue inverted sub header">Variable</span>
-                        {{else}}
-                            <span class="ui inverted sub header">Fixed</span>
-                        {{/if}}
+                <div class="field">
+                    <label>
+                        Weight
+                        <span class="ui mini horizontal label">px</span>
                     </label>
+                    <input type="number" name="weight"
+                           placeholder="#" value="{{weight}}">
                 </div>
             </div>
-        </div>
 
-        <h5 class="blue header inverted sub ui">
-            <i class="right chevron icon"></i>
-            Size
-        </h5>
-
-        {{> stimulusPreview}}
-
-        {{#unless frequency}}
+            <h5 class="blue header inverted sub ui">
+                <i class="right chevron icon"></i>
+                Timing
+            </h5>
             <div class="fields">
                 <div class="field">
                     <label>
-                        Bars
-                        <span class="ui mini horizontal label">bars</span>
+                        Delay
+                        <span class="ui mini horizontal label">ms</span>
                     </label>
-                    <input type="number" name="bars"
-                           placeholder="#" value="{{bars}}">
+                    <input type="number" name="delay"
+                           placeholder="#" value="{{delay}}">
                 </div>
                 <div class="field">
                     <label>
-                        Spacing
-                        <span class="ui mini horizontal label">x Weight</span>
+                        Stimulus Duration
+                        <span class="ui mini horizontal label">ms</span>
                     </label>
-                    <input type="number" name="spacing"
-                           placeholder="#" value="{{spacing}}">
+                    <input type="number" name="duration"
+                           placeholder="#" value="{{duration}}">
                 </div>
             </div>
-        {{/unless}}
-
-        <div class="fields">
-            {{#if frequency}}
-                <div class="field">
-                    <label>
-                        Frequency
-                        <span class="ui mini horizontal label">bars/unit</span>
-                    </label>
-                    <input type="number" name="frequency"
-                           placeholder="#" value="{{frequency}}">
-                </div>
-            {{/if}}
-            <div class="field">
-                <label>
-                    Span
-                    <span class="ui mini horizontal label">px</span>
-                </label>
-                <input type="number" name="span"
-                       placeholder="#" value="{{span}}">
-            </div>
-            <div class="field">
-                <label>
-                    Weight
-                    <span class="ui mini horizontal label">px</span>
-                </label>
-                <input type="number" name="weight"
-                       placeholder="#" value="{{weight}}">
-            </div>
-        </div>
-
-        <h5 class="blue header inverted sub ui">
-            <i class="right chevron icon"></i>
-            Timing
-        </h5>
-        <div class="fields">
-            <div class="field">
-                <label>
-                    Delay
-                    <span class="ui mini horizontal label">ms</span>
-                </label>
-                <input type="number" name="delay"
-                       placeholder="#" value="{{delay}}">
-            </div>
-            <div class="field">
-                <label>
-                    Stimulus Duration
-                    <span class="ui mini horizontal label">ms</span>
-                </label>
-                <input type="number" name="duration"
-                       placeholder="#" value="{{duration}}">
-            </div>
-        </div>
+        {{/with}}
     </form>
 </template>
 

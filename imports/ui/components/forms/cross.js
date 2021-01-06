@@ -1,6 +1,7 @@
 import './cross.html';
 
 import _ from "underscore";
+import {getContainer, renderCross} from '../cross';
 
 import {Template} from "meteor/templating";
 
@@ -20,9 +21,16 @@ Template.crossForm.events({
                 case 'span':
                 case 'weight':
                     stages[page][template.data.i][target.name] = value;
-                    session.stages.set(stages);
+                    break;
+                case 'offset-x':
+                case 'offset-y':
+                    const name = target.name.split('-');
+                    stages[page][template.data.i][name[0]][name[1]] = value;
                     break;
             }
+
+            session.stages.set(stages);
+            renderCross('#cross-preview', this);
         }
     }
 });
@@ -35,14 +43,13 @@ Template.crossForm.helpers({
 });
 
 Template.crossForm.onCreated(function () {
-   console.log(this);
-   if (!this.data.span || !this.data.weight) {
-       const session = this.parent(5),
-           stages = session.stages.get();
+    if (!this.data.span || !this.data.weight) {
+        const session = this.parent(5),
+            stages = session.stages.get();
 
-       stages[this.data.page][this.data.i].span = 75;
-       stages[this.data.page][this.data.i].weight = 20;
-       session.stages.set(stages);
-   }
+        stages[this.data.page][this.data.i].span = 75;
+        stages[this.data.page][this.data.i].weight = 20;
+        session.stages.set(stages);
+    }
 });
 
