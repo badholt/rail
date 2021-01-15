@@ -36,7 +36,6 @@ Template.data.helpers({
         const id = Template.instance().session.get(),
             session = Sessions.findOne(id);
 
-        console.log(id, session);
         if (session) return session;
     }
 });
@@ -101,7 +100,7 @@ Template.sessionsView.events({
         const prev = template.parent().session.get(),
             table = template.$('table').DataTable(),
             session = table.row(event.currentTarget).data();
-        console.log(table, session);
+
         if (prev !== session._id) template.parent().session.set(session._id);
     }
 });
@@ -111,7 +110,7 @@ Template.sessionsView.helpers({
         const filters = {
             subjects: {subjects: {$all: [""]}}
         };
-        console.log('filter');
+
         return {};
     }
 });
@@ -170,150 +169,151 @@ Template.subjectsCell.helpers({
     },
 });
 
-Template.trialCell.helpers({
-    delay(index, event) {
-        const events = Template.parentData(1);
-
-        if (index > 0) {
-            const previous = events[index - 1],
-                delay = event.timeStamp - previous.timeStamp;
-
-            return delay.toFixed(3);
-        }
-    },
-    event(request) {
-        return _.map(_.pairs(request), (property) => ({
-            key: property[0],
-            value: (parseFloat(property[1])) ? parseFloat(property[1]).toFixed(3) : property[1]
-        }));
-    },
-    icon(request, sender, type) {
-        if (sender || type) {
-            const icons = {
-                    amount: {
-                        dispense: {
-                            main: 'teal tint'
-                        }
-                    },
-                    audio: {
-                        file: {
-                            start: {
-                                main: 'green volume up'
-                            },
-                            stop: {
-                                main: 'green volume off'
-                            }
-                        },
-                        noise: {
-                            start: {
-                                main: 'green volume up'
-                            },
-                            stop: {
-                                main: 'green volume off'
-                            }
-                        },
-                        wave: {
-                            start: {
-                                main: 'green volume up'
-                            },
-                            stop: {
-                                main: 'green volume off'
-                            }
-                        }
-                    },
-                    click: {
-                        main: 'olive mouse pointer'
-                    },
-                    ir: {
-                        entry: {
-                            main: 'sign in'
-                        },
-                        exit: {
-                            main: 'sign out'
-                        }
-                    },
-                    lights: {
-                        dim: {
-                            fired: {
-                                main: 'yellow moon'
-                            },
-                            sent: {
-                                corner: 'yellow moon',
-                                main: 'envelope'
-                            }
-                        },
-                        off: {
-                            fired: {
-                                main: 'yellow lightbulb outline'
-                            },
-                            sent: {
-                                corner: 'yellow lightbulb outline',
-                                main: 'envelope'
-                            }
-                        },
-                        on: {
-                            fired: {
-                                main: 'yellow lightbulb'
-                            },
-                            sent: {
-                                corner: 'yellow lightbulb',
-                                main: 'envelope'
-                            }
-                        }
-                    },
-                    reward: {
-                        dispense: {
-                            fired: {
-                                main: 'yellow star outline'
-                            },
-                            sent: {
-                                corner: 'yellow star outline',
-                                main: 'envelope'
-                            }
-                        },
-                        off: {
-                            fired: {
-                                main: 'yellow star outline'
-                            },
-                            sent: {
-                                corner: 'yellow star outline',
-                                main: 'envelope'
-                            }
-                        },
-                        on: {
-                            fired: {
-                                main: 'yellow star'
-                            },
-                            sent: {
-                                corner: 'yellow star',
-                                main: 'envelope'
-                            }
-                        }
-                    },
-                    session: {
-                        end: {
-                            main: 'orange hourglass end'
-                        },
-                        start: {
-                            main: 'orange hourglass start'
-                        }
-                    },
-                    trial: {
-                        end: {
-                            main: 'blue clock'
-                        },
-                        start: {
-                            main: 'blue clock outline'
-                        }
-                    }
-                },
-                properties = (!request) ? type.split(/(?:\.[\d]?\.?)+/ig) : _.flatten(_.pairs(request)),
-                path = _.property(_.filter(properties, _.isString));
-
-            return path(icons);
-        }
-    }
-});
+//TODO Determine whether or not this template will be used, resolving confusion
+// Template.trialCell.helpers({
+//     delay(index, event) {
+//         const events = Template.parentData(1);
+//
+//         if (index > 0) {
+//             const previous = events[index - 1],
+//                 delay = event.timeStamp - previous.timeStamp;
+//
+//             return delay.toFixed(3);
+//         }
+//     },
+//     event(request) {
+//         return _.map(_.pairs(request), (property) => ({
+//             key: property[0],
+//             value: (parseFloat(property[1])) ? parseFloat(property[1]).toFixed(3) : property[1]
+//         }));
+//     },
+//     icon(request, sender, type) {
+//         console.log('trial cell', request, sender, type);
+//         if (sender || type) {
+//             const icons = {
+//                     amount: {
+//                         dispense: {
+//                             main: 'teal tint'
+//                         }
+//                     },
+//                     audio: {
+//                         file: {
+//                             start: {
+//                                 main: 'green volume up'
+//                             },
+//                             stop: {
+//                                 main: 'green volume off'
+//                             }
+//                         },
+//                         noise: {
+//                             start: {
+//                                 main: 'green volume up'
+//                             },
+//                             stop: {
+//                                 main: 'green volume off'
+//                             }
+//                         },
+//                         wave: {
+//                             start: {
+//                                 main: 'green volume up'
+//                             },
+//                             stop: {
+//                                 main: 'green volume off'
+//                             }
+//                         }
+//                     },
+//                     click: {
+//                         main: 'olive mouse pointer'
+//                     },
+//                     ir: {
+//                         entry: {
+//                             main: 'sign in'
+//                         },
+//                         exit: {
+//                             main: 'sign out'
+//                         }
+//                     },
+//                     lights: {
+//                         dim: {
+//                             fired: {
+//                                 main: 'yellow moon'
+//                             },
+//                             sent: {
+//                                 corner: 'yellow moon',
+//                                 main: 'envelope'
+//                             }
+//                         },
+//                         off: {
+//                             fired: {
+//                                 main: 'yellow lightbulb outline'
+//                             },
+//                             sent: {
+//                                 corner: 'yellow lightbulb outline',
+//                                 main: 'envelope'
+//                             }
+//                         },
+//                         on: {
+//                             fired: {
+//                                 main: 'yellow lightbulb'
+//                             },
+//                             sent: {
+//                                 corner: 'yellow lightbulb',
+//                                 main: 'envelope'
+//                             }
+//                         }
+//                     },
+//                     reward: {
+//                         dispense: {
+//                             fired: {
+//                                 main: 'yellow star outline'
+//                             },
+//                             sent: {
+//                                 corner: 'yellow star outline',
+//                                 main: 'envelope'
+//                             }
+//                         },
+//                         off: {
+//                             fired: {
+//                                 main: 'yellow star outline'
+//                             },
+//                             sent: {
+//                                 corner: 'yellow star outline',
+//                                 main: 'envelope'
+//                             }
+//                         },
+//                         on: {
+//                             fired: {
+//                                 main: 'yellow star'
+//                             },
+//                             sent: {
+//                                 corner: 'yellow star',
+//                                 main: 'envelope'
+//                             }
+//                         }
+//                     },
+//                     session: {
+//                         end: {
+//                             main: 'orange hourglass end'
+//                         },
+//                         start: {
+//                             main: 'orange hourglass start'
+//                         }
+//                     },
+//                     trial: {
+//                         end: {
+//                             main: 'blue clock'
+//                         },
+//                         start: {
+//                             main: 'blue clock outline'
+//                         }
+//                     }
+//                 },
+//                 properties = (!request) ? type.split(/(?:\.[\d]?\.?)+/ig) : _.flatten(_.pairs(request)),
+//                 path = _.property(_.filter(properties, _.isString));
+//             return path(icons);
+//         }
+//     }
+// });
 
 Template.trialList.helpers({
     delay(index, event) {
@@ -333,6 +333,7 @@ Template.trialList.helpers({
         }));
     },
     icon(request, sender, type) {
+        console.log(request, sender, type);
         if (sender || type) {
             const icons = {
                     amount: {
@@ -407,26 +408,42 @@ Template.trialList.helpers({
                         }
                     },
                     reward: {
-                        off: {
+                        dispense: {
                             fired: {
-                                main: 'yellow star outline'
+                                main: 'yellow trophy'
                             },
                             sent: {
-                                corner: 'yellow star outline',
+                                corner: 'yellow trophy',
+                                main: 'envelope'
+                            }
+                        },
+                        off: {
+                            corner: 'dont',
+                            fired: {
+                                main: 'yellow trophy'
+                            },
+                            main: 'teal tint',
+                            sent: {
+                                corner: 'yellow trophy',
                                 main: 'envelope'
                             }
                         },
                         on: {
+                            corner: 'play',
                             fired: {
-                                main: 'yellow star'
+                                main: 'yellow trophy'
                             },
+                            main: 'teal tint',
                             sent: {
-                                corner: 'yellow star',
+                                corner: 'yellow trophy',
                                 main: 'envelope'
                             }
                         }
                     },
                     session: {
+                        abort: {
+                            main: 'orange dont abort'
+                        },
                         end: {
                             main: 'orange hourglass end'
                         },
@@ -443,9 +460,11 @@ Template.trialList.helpers({
                         }
                     }
                 },
-                properties = (!request) ? type.split(/(?:\.[\d]?\.?)+/ig) : _.flatten(_.pairs(request)),
-                path = _.property(_.filter(properties, _.isString));
-
+                properties = (!request)
+                    ? type.split(/(?:\.[\d]?\.?)+/ig)
+                    : _.filter(_.flatten(_.pairs(request)), _.isString),
+                path = _.property(_.filter(properties, (string) => !parseInt(string)));
+            console.log(properties, path(icons));
             return path(icons);
         }
     },
@@ -490,7 +509,7 @@ Template.trialList.onCreated(function () {
                     time = _.groupBy(_.compact(session), (e) => _.last(e.type.split('.'))),
                     types = _.map(stages, (stage, i) => _.map(stage, (e) =>
                         (groups[i][e.type || e.sender] || []))),
-                    cells = _.flatten([[time['start']], ...types, [time['end']]], true);
+                    cells = _.flatten([[time['start']], ...types, [time['end'] || time ['abort']]], true);
 
                 /** Distribute clicks by timestamp rather than event: */
                 const clicks = _.flatten([groups[s]['click']]);
@@ -512,21 +531,21 @@ Template.trialList.onCreated(function () {
                                 if (e.type.endsWith('start')) {
                                     counts.tones.push(e.timeStamp);
                                     lastTone = e.timeStamp;
-                                    console.log('%caudio:\t', 'color: blue;', e, lastTone);
+                                    // console.log('%caudio:\t', 'color: blue;', e, lastTone);
                                 }
                                 if (e.type.endsWith('stop')) {
-                                    console.log('%caudio:\t', 'color: red;', e, lastTone);
+                                    // console.log('%caudio:\t', 'color: red;', e, lastTone);
                                 }
                             }
                         } else if (e.type === 'reward') {
                             if (_.has(e.request, 'ir')) {
                                 if (!firstEntry) {
                                     if (e.request.ir === 'entry') {
-                                        console.log('%cIR:\t', 'color: purple;', e);
+                                        // console.log('%cIR:\t', 'color: purple;', e);
                                         counts.ir.entries.push(e.timeStamp);
                                         firstEntry = e.timeStamp;
                                     } else {
-                                        console.log('%cIR:\t', 'color: violet;', e);
+                                        // console.log('%cIR:\t', 'color: violet;', e);
                                         counts.ir.exits.push(e.timeStamp);
                                     }
                                 }
@@ -539,8 +558,6 @@ Template.trialList.onCreated(function () {
                 });
 
                 if (firstEntry && lastTone && firstEntry - lastTone > 0) counts.ir.delays.push(firstEntry - lastTone);
-                console.log(firstEntry, lastTone);
-                console.log(cells, counts);
                 list.push(cells);
             }
         });
@@ -564,8 +581,6 @@ Template.trialList.onRendered(function () {
 });
 
 Template.trialsView.onCreated(function () {
-    const session = this.parent().session.get();
-    console.log(this, session);
     this.subscribe('sessions.single', this.data._id);
     this.subscribe('trials.session', this.data._id);
 });

@@ -70,6 +70,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
                     console.log('%c ' + pre + ' ITI end\t' + performance.now() + ' ', 'background: darkblue; color: white;');
                     return template.nextTrial(0);
                 }, settings.session.iti);
+                console.log(settings.session.iti, template.timers);
                 console.log('%c ' + pre + ' ITI start\t' + performance.now() + ' ', 'background: blue; color: white;');
 
                 /** Records trial start: */
@@ -83,7 +84,10 @@ Template.trial.helpers({
         const user = Meteor.user();
 
         if (user && user.status) {
-            if (user.status.active.session === '') FlowRouter.go('/');
+            if (user.status.active.session === '') {
+                Template.instance().recordEvent({timeStamp: performance.now(), type: 'session.abort'});
+                FlowRouter.go('/');
+            }
         }
     },
     data(settings, stage, trials) {
@@ -411,9 +415,9 @@ Template.trialSVG.helpers({
             const entry = _.some(trial.data[stage - 1], (element) => (element.request && element.request.ir === 'entry'));
             console.log('%c⚡ trial.' + trial.number + ':\t 1st IR entry', 'color:red;', performance.now());
 
-            const parent = template.parent();
-            parent.clearTimers(parent.timers, trial.number);
-            parent.nextTrial(20000);
+            // const parent = template.parent();
+            // parent.clearTimers(parent.timers, trial.number);
+            // parent.nextTrial(20000);
             template.triggered.set(true);
         }
 

@@ -9,14 +9,19 @@
                 <input type="number" name="reward.delay"
                        placeholder="#" value="{{delay}}">
             </div>
-            <div class="field">
-                <label>
-                    Duration
-                    <span class="ui mini horizontal label">ms</span>
-                </label>
-                <input type="number" name="reward.duration"
-                       placeholder="#" value="{{duration}}">
-            </div>
+
+            {{#each commands}}
+                {{#if $eq command 'dispense'}}
+                    <div class="field">
+                        <label>
+                            Dispense Duration
+                            <span class="ui mini horizontal label">s</span>
+                        </label>
+                        <input type="number" name="reward.amount"
+                               placeholder="#" value="{{amount}}">
+                    </div>
+                {{/if}}
+            {{/each}}
         </div>
     </form>
 </template>

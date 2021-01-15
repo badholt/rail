@@ -19,6 +19,17 @@ Template.rewardForm.events({
                     stages[page][this.index][property] = value;
                     session.stages.set(stages);
                     break;
+                case 'amount':
+                    const i = template.parent(3).data.i,
+                        commands = stages[page][i]['commands'];
+
+                    _.each(commands, (command, j) => {
+                        if (command.command === 'dispense') {
+                            stages[page][i]['commands'][j][property] = value;
+                            session.stages.set(stages);
+                        }
+                    });
+                    break;
             }
         }
     }

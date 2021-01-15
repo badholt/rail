@@ -219,7 +219,7 @@ Meteor.startup(() => {
                             duration: 1000,
                             offset: {
                                 x: 0,
-                                y: 0.75
+                                y: 0.85
                             },
                             type: 'cross',
                             span: 75,
@@ -366,7 +366,7 @@ Meteor.startup(() => {
                             duration: 1000,
                             offset: {
                                 x: 0,
-                                y: 0.75
+                                y: 0.85
                             },
                             type: 'cross',
                             span: 75,
@@ -547,7 +547,7 @@ Meteor.startup(() => {
                             duration: 1000,
                             offset: {
                                 x: 0,
-                                y: 0.75
+                                y: 0.85
                             },
                             type: 'cross',
                             span: 75,

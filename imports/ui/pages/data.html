@@ -291,9 +291,9 @@
                                             {{formatDecimal (time context timeStamp) 3}}
 
                                             <div class="detail">
-                                                {{#if type}}
-                                                    {{replace type '[\\.]' ' '}}
-                                                {{else}}
+                                                {{replace type '[\\.]' ' '}}
+
+                                                {{#if request}}
                                                     <ul class="horizontal list">
                                                         {{#each event request}}
                                                             <li class="item">{{key}} {{value}}</li>
