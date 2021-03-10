@@ -42,6 +42,7 @@ configureServices();
 //TODO: Perhaps add a separate setup screen for running code on online boxes
 UserStatus.events.on('connectionLogin', function (fields) {
     const user = Meteor.users.findOne(fields.userId);
+
     if (user.profile.device) {
         if (user.profile.address !== fields.ipAddr || user.profile.device !== fields.userAgent) {
             //TODO: Create popup & make IP address update optional

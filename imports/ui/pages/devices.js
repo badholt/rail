@@ -138,7 +138,7 @@ Template.piRow.events({
         //     mode: 'IN',
         //     pin: template.data.physical
         // });
-        // $('#modal-device').modal('show');
+        $('#modal-device').modal('show');
     }
 });
 

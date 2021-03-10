@@ -91,8 +91,8 @@ Template.sessionSetup.onCreated(function () {
                 console.log(error, trials);
                 if (!error) Meteor.call('addSession', device, experiment,
                     inputs, session, subjects, trials, (error, session) => {
-                        console.log(error, session);
-                        if (!error) Meteor.call('addTrial', session, 0, () => {
+                        console.log(error, session, performance.timeOrigin, performance.now());
+                        if (!error) Meteor.call('addTrial', session, 0, Date.now(), () => {
                             /** A submission success message appears for 5 seconds: */
                             // this.success.set(true);
                             // $('#success').transition('fade');

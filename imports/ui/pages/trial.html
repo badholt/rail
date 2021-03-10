@@ -14,7 +14,7 @@
     {{/each}}
 
     {{#each responses}}
-        {{> trialElement e=this i=@index pre='_'}}
+        {{> trialElement e=this i=@index pre='re'}}
     {{/each}}
 </template>
 
@@ -23,6 +23,7 @@
         {{#with elements stage trial}}
             {{> trialElements element=this stage=../stage trial=../trial.number}}
         {{/with}}
+
         {{ir stage trial}}
     </svg>
 </template>

@@ -169,152 +169,6 @@ Template.subjectsCell.helpers({
     },
 });
 
-//TODO Determine whether or not this template will be used, resolving confusion
-// Template.trialCell.helpers({
-//     delay(index, event) {
-//         const events = Template.parentData(1);
-//
-//         if (index > 0) {
-//             const previous = events[index - 1],
-//                 delay = event.timeStamp - previous.timeStamp;
-//
-//             return delay.toFixed(3);
-//         }
-//     },
-//     event(request) {
-//         return _.map(_.pairs(request), (property) => ({
-//             key: property[0],
-//             value: (parseFloat(property[1])) ? parseFloat(property[1]).toFixed(3) : property[1]
-//         }));
-//     },
-//     icon(request, sender, type) {
-//         console.log('trial cell', request, sender, type);
-//         if (sender || type) {
-//             const icons = {
-//                     amount: {
-//                         dispense: {
-//                             main: 'teal tint'
-//                         }
-//                     },
-//                     audio: {
-//                         file: {
-//                             start: {
-//                                 main: 'green volume up'
-//                             },
-//                             stop: {
-//                                 main: 'green volume off'
-//                             }
-//                         },
-//                         noise: {
-//                             start: {
-//                                 main: 'green volume up'
-//                             },
-//                             stop: {
-//                                 main: 'green volume off'
-//                             }
-//                         },
-//                         wave: {
-//                             start: {
-//                                 main: 'green volume up'
-//                             },
-//                             stop: {
-//                                 main: 'green volume off'
-//                             }
-//                         }
-//                     },
-//                     click: {
-//                         main: 'olive mouse pointer'
-//                     },
-//                     ir: {
-//                         entry: {
-//                             main: 'sign in'
-//                         },
-//                         exit: {
-//                             main: 'sign out'
-//                         }
-//                     },
-//                     lights: {
-//                         dim: {
-//                             fired: {
-//                                 main: 'yellow moon'
-//                             },
-//                             sent: {
-//                                 corner: 'yellow moon',
-//                                 main: 'envelope'
-//                             }
-//                         },
-//                         off: {
-//                             fired: {
-//                                 main: 'yellow lightbulb outline'
-//                             },
-//                             sent: {
-//                                 corner: 'yellow lightbulb outline',
-//                                 main: 'envelope'
-//                             }
-//                         },
-//                         on: {
-//                             fired: {
-//                                 main: 'yellow lightbulb'
-//                             },
-//                             sent: {
-//                                 corner: 'yellow lightbulb',
-//                                 main: 'envelope'
-//                             }
-//                         }
-//                     },
-//                     reward: {
-//                         dispense: {
-//                             fired: {
-//                                 main: 'yellow star outline'
-//                             },
-//                             sent: {
-//                                 corner: 'yellow star outline',
-//                                 main: 'envelope'
-//                             }
-//                         },
-//                         off: {
-//                             fired: {
-//                                 main: 'yellow star outline'
-//                             },
-//                             sent: {
-//                                 corner: 'yellow star outline',
-//                                 main: 'envelope'
-//                             }
-//                         },
-//                         on: {
-//                             fired: {
-//                                 main: 'yellow star'
-//                             },
-//                             sent: {
-//                                 corner: 'yellow star',
-//                                 main: 'envelope'
-//                             }
-//                         }
-//                     },
-//                     session: {
-//                         end: {
-//                             main: 'orange hourglass end'
-//                         },
-//                         start: {
-//                             main: 'orange hourglass start'
-//                         }
-//                     },
-//                     trial: {
-//                         end: {
-//                             main: 'blue clock'
-//                         },
-//                         start: {
-//                             main: 'blue clock outline'
-//                         }
-//                     }
-//                 },
-//                 properties = (!request) ? type.split(/(?:\.[\d]?\.?)+/ig) : _.flatten(_.pairs(request)),
-//                 path = _.property(_.filter(properties, _.isString));
-//             return path(icons);
-//         }
-//     }
-// });
-
 Template.trialList.helpers({
     delay(index, event) {
         const events = Template.parentData(1);
@@ -333,7 +187,6 @@ Template.trialList.helpers({
         }));
     },
     icon(request, sender, type) {
-        console.log(request, sender, type);
         if (sender || type) {
             const icons = {
                     amount: {
@@ -359,6 +212,14 @@ Template.trialList.helpers({
                             }
                         },
                         wave: {
+                            re: {
+                                start: {
+                                    main: 'violet volume up'
+                                },
+                                stop: {
+                                    main: 'violet volume off'
+                                }
+                            },
                             start: {
                                 main: 'green volume up'
                             },
@@ -370,12 +231,22 @@ Template.trialList.helpers({
                     click: {
                         main: 'olive mouse pointer'
                     },
+                    cross: {
+                        end: {
+                            corner: 'dont',
+                            main: 'plus'
+                        },
+                        start: {
+                            corner: 'play',
+                            main: 'plus'
+                        }
+                    },
                     ir: {
                         entry: {
-                            main: 'sign in'
+                            main: 'orange sign in'
                         },
                         exit: {
-                            main: 'sign out'
+                            main: 'orange sign out'
                         }
                     },
                     light: {
@@ -461,10 +332,10 @@ Template.trialList.helpers({
                     }
                 },
                 properties = (!request)
-                    ? type.split(/(?:\.[\d]?\.?)+/ig)
+                    ? type.split(/(?:[.\d])+/ig)
                     : _.filter(_.flatten(_.pairs(request)), _.isString),
                 path = _.property(_.filter(properties, (string) => !parseInt(string)));
-            console.log(properties, path(icons));
+
             return path(icons);
         }
     },
@@ -503,57 +374,61 @@ Template.trialList.onCreated(function () {
         if (trials) _.each(trials, (trial) => {
             if (trial) {
                 const s = 0,
-                    groups = _.map(trial.data, (stage) =>
-                        _.groupBy(stage, (element) => (element.type) ? element.type.split('.')[0] : element.sender)),
+                    groups = _.map(trial.data, (stage) => _.groupBy(stage, (element) =>
+                        (element.type) ? element.type.split('.')[0] : element.sender)),
                     session = _.flatten([groups[s]['session'], groups[s]['trial']]),
                     time = _.groupBy(_.compact(session), (e) => _.last(e.type.split('.'))),
                     types = _.map(stages, (stage, i) => _.map(stage, (e) =>
                         (groups[i][e.type || e.sender] || []))),
                     cells = _.flatten([[time['start']], ...types, [time['end'] || time ['abort']]], true);
 
-                /** Distribute clicks by timestamp rather than event: */
-                const clicks = _.flatten([groups[s]['click']]);
-                if (clicks) counts.clicks += _.compact(clicks).length;
+                /** Distribute events by timestamp rather than event: */
+                const events = _.flatten(trial.data),
+                    es = _.omit(groups[s], _.pluck(stages[s], 'type' || 'sender'), ['session', 'trial']);
+                console.log(es);
+                if (es.click) counts.clicks += es.click.length;
 
                 let n = 0,
                     firstEntry = 0,
                     lastTone = 0;
 
                 _.each(cells, (cell) => {
-                    let click = clicks[n];
+                    let event = events[n];
 
-                    _.each(cell, (e, j, list) => {
-                        if (click && click.timeStamp <= e.timeStamp) {
-                            list.splice(j, 0, click);
-                            click = clicks[n++];
-                        } else if (e.type.startsWith('audio')) {
+                    _.each(cell, (step, j, list) => {
+                        console.log(event, step);
+                        if (event.type === 'click' && event.timeStamp <= step.timeStamp) {
+                            list.splice(j, 0, event);
+                        } else if (step.type.startsWith('audio')) {
                             if (!lastTone) {
-                                if (e.type.endsWith('start')) {
-                                    counts.tones.push(e.timeStamp);
-                                    lastTone = e.timeStamp;
+                                if (step.type.endsWith('start')) {
+                                    counts.tones.push(step.timeStamp);
+                                    lastTone = step.timeStamp;
                                     // console.log('%caudio:\t', 'color: blue;', e, lastTone);
                                 }
-                                if (e.type.endsWith('stop')) {
+                                if (step.type.endsWith('stop')) {
                                     // console.log('%caudio:\t', 'color: red;', e, lastTone);
                                 }
                             }
-                        } else if (e.type === 'reward') {
-                            if (_.has(e.request, 'ir')) {
+                        } else if (step.type === 'reward') {
+                            if (_.has(step.request, 'ir')) {
                                 if (!firstEntry) {
-                                    if (e.request.ir === 'entry') {
-                                        // console.log('%cIR:\t', 'color: purple;', e);
-                                        counts.ir.entries.push(e.timeStamp);
-                                        firstEntry = e.timeStamp;
+                                    if (step.request.ir === 'entry') {
+                                        // console.log('%cIR:\t', 'color: purple;', step);
+                                        counts.ir.entries.push(step.timeStamp);
+                                        firstEntry = step.timeStamp;
                                     } else {
-                                        // console.log('%cIR:\t', 'color: violet;', e);
-                                        counts.ir.exits.push(e.timeStamp);
+                                        // console.log('%cIR:\t', 'color: violet;', step);
+                                        counts.ir.exits.push(step.timeStamp);
                                     }
                                 }
-                            } else if (_.has(e.request, 'dispense')) {
-                                counts.amount += e.request['amount'];
-                                counts.dispensed += e.request['dispense'];
+                            } else if (_.has(step.request, 'dispense')) {
+                                counts.amount += step.request['amount'];
+                                counts.dispensed += step.request['dispense'];
                             }
                         }
+
+                        event = events[n++];
                     });
                 });
 
@@ -583,4 +458,5 @@ Template.trialList.onRendered(function () {
 Template.trialsView.onCreated(function () {
     this.subscribe('sessions.single', this.data._id);
     this.subscribe('trials.session', this.data._id);
+    this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': {$ne: false}}]});
 });

@@ -176,7 +176,7 @@ Meteor.methods({
                  *  If the Session duration is given in terms of the total number of ms, the total ms are divided by
                  *  the ms duration of the ITI, which represents the total length of a trial, including any delay periods */
                 const n = (session.duration) ? Math.round(session.duration / session.iti) * 6 : session.total; //TODO: Why multiply by 6?
-                console.log(session.duration, session.iti, session.total, n);
+                // console.log(session.duration, session.iti, session.total, n);
 
                 /** Retrieves a current list of elements in stage i */
                 let map = [...combinations.entries()];
@@ -200,13 +200,13 @@ Meteor.methods({
 
             /** Distributes elements of stage i */
             //trials[i]=stage i --> [element 1, element 2]
-            console.log(trials[i]);
+            // console.log(trials[i]);
             trials = update(trials, {[i]: {$set: _.zip(...trials[i])}});
         });
 
         /** Distributes stages of Session */
         //[stage 1, stage 2] --->
-        console.log(trials);
+        // console.log(trials);
         return _.zip(...trials);
     }
 });

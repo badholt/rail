@@ -6,7 +6,6 @@ import moment from 'moment/moment';
 import {Experiments, Sessions, Subjects, Templates, Trials} from './collections';
 import {Meteor} from 'meteor/meteor';
 
-import NanoTimer from 'NanoTimer';
 // TODO: Use mqtt imports instead of require?
 const bound = Meteor.bindEnvironment((callback) => callback()),
     clients = new Map(),
@@ -60,13 +59,11 @@ if (Meteor.isServer) Meteor.methods({
         session: template.session,
         stages: template.stages,
         users: (template.users) ? template.users : [Meteor.userId()]
-    }, (e, r) => {
-        console.log(e, r);
     }),
-    'addTrial': (id, index) => {
+    'addTrial': (id, index, origin) => {
         const session = Sessions.findOne(id),
             stages = session.settings.stages[index];
-        // console.log('add trial:\n', id, session, stages);
+
         if (stages) {
             const trial = Trials.insert({
                 data: Array.from(stages, () => []),
@@ -75,9 +72,9 @@ if (Meteor.isServer) Meteor.methods({
                 number: index + 1,
                 session: id,
                 stages: stages,
-                subject: 'MouseID'
+                subject: 'MouseID',
+                timeOrigin: origin,
             });
-            // console.log('insert trial:\t', trial);
 
             if (trial) Meteor.call('updateSession', id, 'trials', trial);
             return trial;
@@ -96,9 +93,9 @@ if (Meteor.isServer) Meteor.methods({
             /** If client does not exist for device, create a new client with its IP address: */
             const device = Meteor.users.findOne(id),
                 client = mqtt.connect('mqtt://' + device.profile.address);
-
             /** Configure client settings for this device: */
             client.on('connect', () => client.subscribe('response'));
+
             client.on('message', (topic, payload) => bound(() => {
                 /** Instructs mqtt client on how to handle all incoming messages: */
                 if (topic === 'response') {
@@ -110,28 +107,29 @@ if (Meteor.isServer) Meteor.methods({
                     /** Sort message by the mqtt service/channel responding: */
                     if (message.sender) switch (message.sender) {
                         case 'board':
-                            /** Information from Raspberry Pi command line output is extracted & stored in array: */
-                            const text = message['board']['pins'].split(/(?:[^.\\\s\w]+)(?:\+?\\n\s?\+?)?/igm),
-                                cells = _.filter(text, (cell, i) =>
-                                    i > 15 && i < (text.length - 16) && (i - 15) % 13),
+                            if (message.board) {
+                                /** Information from Raspberry Pi command line output is extracted & stored in array: */
+                                const text = message['board']['pins'].split(/(?:[^.\\\s\w]+)(?:\+?\\n\s?\+?)?/igm),
+                                    cells = _.filter(text, (cell, i) =>
+                                        i > 15 && i < (text.length - 16) && (i - 15) % 13),
+                                    groups = _.chunk(cells, 6),
+                                    pins = _.map(groups, (row, i) => {
+                                        const pin = (i % 2) ? row.reverse() : row;
 
-                                groups = _.chunk(cells, 6),
-                                pins = _.map(groups, (row, i) => {
-                                    const pin = (i % 2) ? row.reverse() : row;
+                                        return {
+                                            bcm: pin[0].trim(),
+                                            mode: pin[3].trim(),
+                                            name: pin[2].trim(),
+                                            physical: pin[5].trim(),
+                                            voltage: pin[4].trim(),
+                                            wpi: pin[1].trim()
+                                        };
+                                    });
 
-                                    return {
-                                        bcm: pin[0].trim(),
-                                        mode: pin[3].trim(),
-                                        name: pin[2].trim(),
-                                        physical: pin[5].trim(),
-                                        voltage: pin[4].trim(),
-                                        wpi: pin[1].trim()
-                                    };
-                                });
-
-                            /** Device user's status updates to new pin readouts: */
-                            Meteor.call('updateUser', id, 'status.board.pins', 'set', pins);
-                            break;
+                                /** Device user's status updates to new pin readouts: */
+                                Meteor.call('updateUser', id, 'status.board.pins', 'set', pins);
+                                break;
+                            }
                         case 'lights':
                         case 'reward':
                             if (message.context && message.context.trial) {
@@ -141,18 +139,18 @@ if (Meteor.isServer) Meteor.methods({
                                     const stage = message.context.stage - 1,
                                         trial = session.trials[message.context.trial - 1];
 
-                                    console.log('trial:\t', trial, message);
                                     Meteor.call('updateTrial', trial, 'data.' + stage, 'push', {
                                         pins: message.pins,
-                                        request: message.request,
-                                        // requestTime: message.context.time,
-                                        timeStamp: message.context.time,
+                                        request: _.extend(message.request, {timeStamp: message.context.time}),
+                                        timeStamp: message.context.timeStamp,
                                         status: message.status,
                                         type: message.sender
                                     });
                                 }
-                            } else if (message.context && message.context.device) Meteor.call('updateUser', message.context.device,
-                                'status.message', 'set', message);
+                            } else if (message.context && message.context.device) {
+                                Meteor.call('updateUser', message.context.device, 'status.message', 'set', message);
+                            }
+                            break;
                     }
                 } else if (topic === 'client') {
                     /** Messages for modifying this mqtt client: */
@@ -195,12 +193,9 @@ if (Meteor.isServer) Meteor.methods({
         }
     },
     'removeTemplate': (id) => Templates.remove({_id: id}, (error, result) => {
-        if (!error) {
-            console.log(id);
-            Experiments.update({}, {
-                $pull: {templates: id}
-            }, {multi: true});
-        }
+        if (!error) Experiments.update({}, {
+            $pull: {templates: id}
+        }, {multi: true});
     }),
     'removeUser': (username, id) => Meteor.users.update({'profile.username': username}, {
         $pull: {'profile.experiments': id}
@@ -222,11 +217,9 @@ if (Meteor.isServer) Meteor.methods({
             ids = _.pluck(users, '_id');
 
         _.difference(experiment.users, ids).forEach((id) => {
-            console.log('rem: ', id);
             Meteor.call('removeUser', id, experiment._id);
         });
         _.difference(ids, experiment.users).forEach((id) => {
-            console.log('add: ', id);
             Meteor.call('addUser', id, experiment._id);
         });
 

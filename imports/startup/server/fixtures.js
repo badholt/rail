@@ -48,12 +48,11 @@ Meteor.startup(() => {
                                             delay: 0,
                                             duration: 1000,
                                             source: {
-                                                file: {
-                                                    name: 'Beep',
-                                                    source: '/audio/beep.wav',
-                                                    type: 'wav'
+                                                wave: {
+                                                    frequency: 600,
+                                                    type: 'sine'
                                                 },
-                                                type: 'file'
+                                                type: 'wave'
                                             },
                                             loop: 'loop'
                                         },
@@ -61,64 +60,23 @@ Meteor.startup(() => {
                                             type: 'reward',
                                             commands: [
                                                 {
-                                                    command: 'on',
-                                                    delay: 0
-                                                },
-                                                {
-                                                    command: 'off',
-                                                    delay: 1000
+                                                    command: 'dispense',
+                                                    amount: 0.025
                                                 }
                                             ],
-                                            delay: 1000,
-                                            duration: 1000
-                                        }]
+                                            delay: 0,
+                                            duration: 1 / 15
+                                        },]
                                 },
                                 {
                                     action: '+',
-                                    delay: 0,
+                                    delay: 5000,
                                     specifications: {amount: 1},
                                     targets: ['trial']
                                 }
                             ],
                             event: 'click',
-                            incorrect: [
-                                {
-                                    action: 'insert',
-                                    delay: 0,
-                                    targets: [
-                                        {
-                                            type: 'lights',
-                                            commands: [
-                                                {
-                                                    command: 'dim',
-                                                    delay: 0,
-                                                    dim: 10,
-                                                    numbers: 'LED1'
-                                                },
-                                                {
-                                                    command: 'on',
-                                                    delay: 0,
-                                                    numbers: 'LED1'
-                                                },
-                                                {
-                                                    command: 'off',
-                                                    delay: 9000,
-                                                    numbers: 'LED1'
-                                                }
-                                            ],
-                                            delay: 1000,
-                                            dim: 10,
-                                            duration: 10000
-                                        }
-                                    ]
-                                },
-                                {
-                                    action: '+',
-                                    delay: 0,
-                                    specifications: {amount: 1},
-                                    targets: ['trial']
-                                }
-                            ]
+                            incorrect: []
                         },
                         {
                             conditions: [
@@ -143,12 +101,11 @@ Meteor.startup(() => {
                                             delay: 0,
                                             duration: 1000,
                                             source: {
-                                                file: {
-                                                    name: 'Beep',
-                                                    source: '/audio/beep.wav',
-                                                    type: 'wav'
+                                                wave: {
+                                                    frequency: 600,
+                                                    type: 'sine'
                                                 },
-                                                type: 'file'
+                                                type: 'wave'
                                             },
                                             loop: 'loop'
                                         },
@@ -156,74 +113,46 @@ Meteor.startup(() => {
                                             type: 'reward',
                                             commands: [
                                                 {
-                                                    command: 'on',
-                                                    delay: 0
-                                                },
-                                                {
-                                                    command: 'off',
-                                                    delay: 1000
+                                                    command: 'dispense',
+                                                    amount: 0.025
                                                 }
                                             ],
-                                            delay: 1000,
-                                            duration: 1000
-                                        }
-                                    ]
+                                            delay: 0,
+                                            duration: 1 / 15
+                                        },]
+                                },
+                                {
+                                    action: '+',
+                                    delay: 5000,
+                                    specifications: {amount: 1},
+                                    targets: ['trial']
                                 }
                             ],
                             event: 'click',
-                            incorrect: [{
-                                action: 'insert',
-                                delay: 0,
-                                targets: [
-                                    {
-                                        type: 'lights',
-                                        commands: [
-                                            {
-                                                command: 'dim',
-                                                delay: 0,
-                                                dim: 10,
-                                                numbers: 'LED1'
-                                            },
-                                            {
-                                                command: 'on',
-                                                delay: 0,
-                                                numbers: 'LED1'
-                                            },
-                                            {
-                                                command: 'off',
-                                                delay: 9000,
-                                                numbers: 'LED1'
-                                            }
-                                        ],
-                                        delay: 1000,
-                                        dim: 10,
-                                        duration: 10000
-                                    }
-                                ]
-                            }]
+                            incorrect: []
                         },
                     ]
                 ],
-                name: 'Gratings',
+                name: 'Shaping IV',
                 number: 1,
                 session: {
                     delay: 0,
                     duration: 300000,
                     iti: 10000,
-                    total: 5
+                    total: 0
                 },
                 stages: [
                     [
                         {
                             delay: 0,
-                            duration: 1000,
+                            duration: 9500,
                             offset: {
                                 x: 0,
                                 y: 0.85
                             },
                             type: 'cross',
-                            span: 75,
-                            weight: 5
+                            span: 60,
+                            weight: 12
                         }
                     ],
                     [
@@ -232,7 +161,7 @@ Meteor.startup(() => {
                             bars: 3,
                             contrast: 1,
                             delay: 0,
-                            duration: 5000,
+                            duration: 60000,
                             frequency: 4,
                             grid: {
                                 blacklist: [
@@ -263,7 +192,7 @@ Meteor.startup(() => {
                                     {
                                         x: 2,
                                         y: 2,
-                                        blacklist: false,
+                                        blacklist: true,
                                         weight: 1
                                     },
                                     {
@@ -308,9 +237,9 @@ Meteor.startup(() => {
                                 }
                             ],
                             spacing: 2,
-                            span: 100,
+                            span: 108,
                             variables: ['location', 'orientation'],
-                            weight: 5
+                            weight: 12
                         }
                     ]
                 ],
@@ -490,7 +419,7 @@ Meteor.startup(() => {
                                                 }
                                             ],
                                             delay: 0,
-                                            duration: 0.06666666666666667
+                                            duration: 1 / 15
                                         },
                                         {
                                             type: 'lights',
@@ -550,8 +479,8 @@ Meteor.startup(() => {
                                 y: 0.85
                             },
                             type: 'cross',
-                            span: 75,
-                            weight: 10
+                            span: 60,
+                            weight: 12
                         },
                         {
                             type: 'audio',

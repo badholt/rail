@@ -39,7 +39,7 @@ export const translateBars = (i, n, spacing, thickness) => {
 Template.bars.helpers({
     dimensions() {
         const data = Template.instance().data;
-        return renderBars(data.center, data.data);
+        if (data.data.location) return renderBars(data.center, data.data);
     },
     gratings(max) {
         const template = Template.currentData(), unit = 100;
