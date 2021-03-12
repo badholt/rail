@@ -5,6 +5,7 @@ import '/imports/ui/components/stimulus';
 
 import _ from 'underscore';
 import Tone from 'tone';
+import update from 'immutability-helper';
 
 import {calculateCenter} from '../../api/client.methods';
 import {FlowRouter} from 'meteor/kadira:flow-router';
@@ -36,6 +37,13 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
         const session = template.session.get(),
             variables = {
                 'center': (p) => (template.center[p]),
+                'count': (p) => {
+                    const data = template.getTrial(trial + 1).data;
+                    return _.filter(data[stage], (e) => {
+                        const u = update(variables, {event: {$set: (p) => (e[p])}});
+                        return conditionsMet(p, u);
+                    }).length;
+                },
                 'event': (p) => (event[p]),
                 'insert': (d, s, t) => {
                     const responses = template.responses.get();
@@ -63,7 +71,6 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
         _.each(session.settings.inputs[stage], (input) => {
             if (input.event === event.type) {
                 const correct = conditionsMet(input, variables);
-
                 _.each((correct) ? input.correct : input.incorrect, (action) =>
                     _.each(action.targets, (target) =>
                         variables[action.action](action.delay, action.specifications, target)));
@@ -99,10 +106,11 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
             template.started.set(true);
         }
     },
-    trialTimers = (settings, stage, n, template) => {
+    trialTimers = (settings, n, template) => {
         /** Sets Trial-level timers: */
         if (settings) {
             const pre = 'trial.' + n;
+
             if (template.timers[n] && !template.timers[n][pre + '.iti']) {
 
                 /** Sets timer for maximum trial duration: */
@@ -138,10 +146,10 @@ Template.trial.helpers({
                     trial = Trials.findOne(id);
 
                 if (trial) {
-                    if (!template.timers[n]) template.timers[n] = {[stage]: {}};
-                    if (!template.timers[n]['trial.' + n + '.iti']) {
+                    if (!template.timers[n]) {
+                        template.timers[n] = {};
                         console.log('%c| trial.' + n + ' start\t' + performance.now() + ' |', 'background: black; color: white; font-size: 1.5em;');
-                        trialTimers(settings, stage, n, template);
+                        trialTimers(settings, n, template);
                     }
 
                     return trial;
@@ -184,11 +192,8 @@ Template.trial.onCreated(function () {
         if (n) {
             _.each(_.range(n, n - 2, -1), (trial) => {
                 if (timers[trial]) Meteor.clearTimeout(timers[trial]['trial.' + trial + '.iti']);
-                return _.each(timers[trial.toString()], (stage) =>
-                    _.each(_.values(stage), (timer) => {
-                        console.log(trial, stage, timer);
-                        return Meteor.clearTimeout(timer);
-                    }));
+                return _.each(timers[trial], (stage) =>
+                    _.each(_.values(stage), (timer) => Meteor.clearTimeout(timer)));
             });
         }
     };
@@ -201,28 +206,14 @@ Template.trial.onCreated(function () {
             length = session.settings.stages[trial].length;
 
         if (stage <= length) {
-            console.log(trial, this.stage.get(), stage, this.timers);
-            this.clearTimers(this.timers, stage);
-            const timers = this.timers[trial];
-            if (timers) {
-                if (timers.hasOwnProperty(stage)) {
-                    return this.timers[trial][stage]['stage.' + stage + '.start'] = Meteor.setTimeout(() => {
-                        this.recordEvent({timeStamp: performance.now(), type: 'stage.' + stage + '.start'});
-                        if (stage <= length) this.stage.set(stage);
-                        console.log('if stage yes:\t', stage, length, this.stage.get());
-                    }, delay);
-                } else {
-                    return this.timers[trial] = {
-                        [stage]: {
-                            ['stage.' + stage + '.start']: Meteor.setTimeout(() => {
-                                this.recordEvent({timeStamp: performance.now(), type: 'stage.' + stage + '.start'});
-                                if (stage <= length) this.stage.set(stage);
-                                console.log('if stage no:\t', stage, length, this.stage.get());
-                            }, delay)
-                        }
-                    }
-                }
-            }
+            this.clearTimers(this.timers, trial);
+
+            if (!this.timers[trial].hasOwnProperty(stage)) this.timers[trial][stage] = {};
+
+            return this.timers[trial][stage]['stage.' + stage + '.start'] = Meteor.setTimeout(() => {
+                this.recordEvent({timeStamp: performance.now(), type: 'stage.' + stage + '.start'});
+                if (stage <= length) this.stage.set(stage);
+            }, delay);
         }
     };
     this.nextTrial = (delay) => {
@@ -230,6 +221,7 @@ Template.trial.onCreated(function () {
             next = this.trial.get() + 1,
             session = this.session.get();
 
+        if (!this.timers[next][stage]) this.timers[next][stage] = {};
         if (!this.timers[next][stage]['next.trial']) this.timers[next][stage]['next.trial'] = Meteor.setTimeout(() => {
             if (next <= session.trials.length) {
                 // Meteor.call('mqttSend', session.device, 'board', {
@@ -395,10 +387,7 @@ Template.trialElement.helpers({
             trial = template.trial.get() + 1,
             name = type + '.' + i;
 
-        if (!template.timers[trial].hasOwnProperty(stage)) {
-            template.timers[trial][stage] = {};
-            console.log('timers:\t', template.timers, '\ntoggles:\t', template.toggles);
-        }
+        if (!template.timers[trial].hasOwnProperty(stage)) template.timers[trial][stage] = {};
         if (!template.timers[trial][stage][name + '.start']) {
             template.timers[trial][stage][name + '.start'] = Meteor.setTimeout(() => {
                 template.recordEvent({timeStamp: performance.now(), type: type + '.start'});

@@ -15,12 +15,20 @@ Meteor.startup(() => {
                 inputs: [
                     [{
                         conditions: [],
-                        correct: [{
-                            action: '+',
-                            delay: 0,
-                            specifications: {amount: 1},
-                            targets: ['stage']
-                        }],
+                        correct: [
+                            {
+                                action: '+',
+                                delay: 0,
+                                specifications: {amount: 1},
+                                targets: ['stage']
+                            },
+                            {
+                                action: "+",
+                                delay: 60000,
+                                specifications: {amount: 1},
+                                targets: ['trial']
+                            }
+                        ],
                         event: 'click',
                         incorrect: []
                     }],
@@ -35,7 +43,7 @@ Meteor.startup(() => {
                                 {
                                     comparison: '=',
                                     objects: [{name: 'stimuli', property: '0.orientation.value'}],
-                                    subjects: [{name: 'number', property: 90}]
+                                    subjects: [{name: 'number', property: 0}]
                                 }
                             ],
                             correct: [
@@ -88,7 +96,7 @@ Meteor.startup(() => {
                                 {
                                     comparison: '=',
                                     objects: [{name: 'stimuli', property: '0.orientation.value'}],
-                                    subjects: [{name: 'number', property: 0}]
+                                    subjects: [{name: 'number', property: 90}]
                                 }
                             ],
                             correct: [
