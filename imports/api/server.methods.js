@@ -128,8 +128,8 @@ if (Meteor.isServer) Meteor.methods({
 
                                 /** Device user's status updates to new pin readouts: */
                                 Meteor.call('updateUser', id, 'status.board.pins', 'set', pins);
-                                break;
                             }
+                            break;
                         case 'lights':
                         case 'reward':
                             if (message.context && message.context.trial) {

@@ -193,7 +193,15 @@ Template.trial.onCreated(function () {
             _.each(_.range(n, n - 2, -1), (trial) => {
                 if (timers[trial]) Meteor.clearTimeout(timers[trial]['trial.' + trial + '.iti']);
                 return _.each(timers[trial], (stage) =>
-                    _.each(_.values(stage), (timer) => Meteor.clearTimeout(timer)));
+                    _.each(stage, (timer, label) => {
+                        const whitelist = 'reward';
+                        if (!label.includes(whitelist)) {
+                            console.log('%c\t❌ CLEAR:\t' + label + '(' + timer + ')', 'background: red; color: white;');
+                            Meteor.clearTimeout(timer);
+                        } else {
+                            console.log('%c\t✔ KEEP:\t' + label + '(' + timer + ')', 'background: green; color: white;');
+                        }
+                    }));
             });
         }
     };
