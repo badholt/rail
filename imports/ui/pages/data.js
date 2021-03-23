@@ -56,33 +56,75 @@ Template.dataMenu.events({
             }).toString(),
             user = Meteor.users.findOne(template.data.user),
             filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '].xls',
-            headers = '\nTrial\tStage\tEvent\tTime\n',
+            //headers = '\nTrial No\tTrial Type\tOutcome\tStage\tEvent\tTime\n',
+            headers = ['Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
+                'Percentage Right', 'Percentage Bottom', 'Incorrect Response(s)', 'Correct Response(s)'],
+            events = [['stage'], ['stage', 'stimuli', 'click']],
             content = [
                 'Experiment\t' + experiment.title + '\n',
                 'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
                 'Subject\t' + subjects + '\n',
                 'Device\t' + device.profile.name + '\n',
-                'Experimenter\t' + user.profile.name + '\n',
-                headers
+                'Experimenter\t' + user.profile.name + '\n\n',
+                headers.join('\t') + '\n'
             ];
 
         _.each(template.data.trials, (id) => {
             const trial = Trials.findOne(id);
+            let correct = {};
 
-            content.push(trial.number + '\t');
+            if (trial.data[1].length > 0) {
+                const clicks = _.filter(trial.data[1], (e) => (e.type === 'click'));
 
-            _.each(trial.data, (stage, i) => {
-                content.push(i + 1);
+                content.push(trial.number + '\t');
 
-                _.each(stage, (e) => {
-                    const timestamp = moment(e.timeStamp).format('HH:mm:ss.SSS');
-                    content.push('\t' + e.type + '\t' + timestamp + '\t');
+                if (trial.stages[1][0] && trial.stages[1][0].orientation.value === 90) {
+                    content.push('V\t');
+
+                    if (clicks.length > 0) correct = _.groupBy(clicks, (c) => (c.clientX < (c.screenX / 2)));
+                } else {
+                    content.push('H\t');
+
+                    if (clicks.length > 0) correct = _.groupBy(clicks, (c) => (c.clientX > (c.screenX / 2)));
+                }
+
+                if (clicks.length > 0) {
+                    content.push((correct.hasOwnProperty('true')) ? '0\t' : '1\t');
+                } else {
+                    content.push('2\t');
+                }
+
+                _.each(trial.data, (stage, i) => {
+                    _.each(stage, (e) => {
+                        const selected = _.find(events[i], (s) => (e.type.includes(s)));
+
+                        if (selected) {
+                            //const timestamp = moment(e.timeStamp).format('HH:mm:ss.SSS');
+                            if (e.type !== 'click') content.push(e.timeStamp + '\t');
+                        }
+                    });
+
+                    if (_.contains(events[i], 'click')) {
+                        const f = correct['false'],
+                            t = correct['true'],
+                            e = (t && t[0]) ? t[0] : (f && f[0]) ? f[0] : 0;
+
+                        if (e) {
+                            const l = (e.clientX / e.screenX) * 100,
+                                r = (e.clientY / e.screenY) * 100;
+
+                            content.push(e.timeStamp + '\t' + l + '\t' + r);
+                        } else {
+                            content.push('\t\t');
+                        }
+
+                        content.push((f) ? '\t' + f.length : '\t' + 0);
+                        content.push((t) ? '\t' + t.length : '\t' + 0);
+                    }
                 });
 
                 content.push('\n');
-            });
-
-            content.push('\n');
+            }
         });
 
         saveAs(new Blob(content), filename);
@@ -379,13 +421,13 @@ Template.trialList.onCreated(function () {
                     session = _.flatten([groups[s]['session'], groups[s]['trial']]),
                     time = _.groupBy(_.compact(session), (e) => _.last(e.type.split('.'))),
                     types = _.map(stages, (stage, i) => _.map(stage, (e) =>
-                        (groups[i][e.type || e.sender] || []))),
+                        (groups[i]) ? (groups[i][e.type || e.sender] || []) : [])),
                     cells = _.flatten([[time['start']], ...types, [time['end'] || time ['abort']]], true);
 
                 /** Distribute events by timestamp rather than event: */
                 const events = _.flatten(trial.data),
                     es = _.omit(groups[s], _.pluck(stages[s], 'type' || 'sender'), ['session', 'trial']);
-                console.log(es);
+                // console.log(es);
                 if (es.click) counts.clicks += es.click.length;
 
                 let n = 0,
@@ -396,7 +438,6 @@ Template.trialList.onCreated(function () {
                     let event = events[n];
 
                     _.each(cell, (step, j, list) => {
-                        console.log(event, step);
                         if (event.type === 'click' && event.timeStamp <= step.timeStamp) {
                             list.splice(j, 0, event);
                         } else if (step.type.startsWith('audio')) {

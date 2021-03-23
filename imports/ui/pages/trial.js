@@ -62,6 +62,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
 
                     return elements;
                 },
+                'toggle': (d, s, t) => (template.toggles[t] = s.set),
                 'trial': (d, n) => template.nextTrial(d),
                 '<': (o, s) => (o < s),
                 '+': (d, s, t) => variables[t](d, s.amount),
@@ -99,6 +100,8 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
                     template.recordEvent({timeStamp: performance.now(), type: 'trial.' + trial + '.end'});
                     template.recordEvent({timeStamp: performance.now(), type: 'session.end'});
                     template.clearTimers(template.timers, trial + 1);
+                    //TODO: Either port session.device ID to turn off IR beam or consolidate FlowRouter reroute in nextTrial
+                    //Meteor.call('mqttSend', session.device, 'reward', {command: 'detect', detect: 'off'});
                     FlowRouter.go('/');
                 }, settings.session.delay + settings.session.duration);
             }
@@ -162,7 +165,10 @@ Template.trial.helpers({
             session = template.session.get();
 
         if (session) {
-            if (!template.started.get()) sessionTimers(session.settings, template);
+            if (!template.started.get()) {
+                sessionTimers(session.settings, template);
+                Meteor.call('mqttSend', session.device, 'reward', {command: 'detect', detect: 'on'});
+            }
             return session;
         }
     },
@@ -194,10 +200,10 @@ Template.trial.onCreated(function () {
                 if (timers[trial]) Meteor.clearTimeout(timers[trial]['trial.' + trial + '.iti']);
                 return _.each(timers[trial], (stage) =>
                     _.each(stage, (timer, label) => {
-                        const whitelist = 'reward';
+                        const whitelist = 'audio' || 'reward';
                         if (!label.includes(whitelist)) {
-                            console.log('%c\t❌ CLEAR:\t' + label + '(' + timer + ')', 'background: red; color: white;');
                             Meteor.clearTimeout(timer);
+                            console.log('%c\t❌ CLEAR:\t' + label + '(' + timer + ')', 'background: red; color: white;');
                         } else {
                             console.log('%c\t✔ KEEP:\t' + label + '(' + timer + ')', 'background: green; color: white;');
                         }
@@ -253,6 +259,7 @@ Template.trial.onCreated(function () {
                     this.trial.set(next);
                 } else {
                     this.recordEvent({timeStamp: performance.now(), type: 'session.end'});
+                    Meteor.call('mqttSend', session.device, 'reward', {command: 'detect', detect: 'off'});
                     console.log('%c| Session end:\t' + performance.now() + ' |', 'background: brown; color: white; font-size: 1.5em;');
                     FlowRouter.go('/');
                 }
@@ -325,7 +332,6 @@ Template.trialSVG.onRendered(function () {
      *  Thus, only devices should connect to MQTT and listen in on
      *  their own hardware output. */
     Meteor.call('mqttConnect', session.device);
-    Meteor.call('mqttSend', session.device, 'detect', {detect: 'on'});
     Meteor.call('updateTrial', session.trials[0], 'timeOrigin', 'set', performance.timeOrigin);
 });
 
