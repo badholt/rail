@@ -56,10 +56,9 @@ Template.dataMenu.events({
             }).toString(),
             user = Meteor.users.findOne(template.data.user),
             filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '].xls',
-            //headers = '\nTrial No\tTrial Type\tOutcome\tStage\tEvent\tTime\n',
-            headers = ['Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
-                'Percentage Right', 'Percentage Bottom', 'Incorrect Response(s)', 'Correct Response(s)'],
-            events = [['stage'], ['stage', 'stimuli', 'click']],
+            headers = ['Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Tone Start', 'IR Entry',
+                'Response', 'Incorrect Response(s)'],
+            events = [['stage.start'], ['stimuli.start', 'audio.wave.start', 'request.ir.entry', 'click']],
             content = [
                 'Experiment\t' + experiment.title + '\n',
                 'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
@@ -73,19 +72,18 @@ Template.dataMenu.events({
             const trial = Trials.findOne(id);
             let correct = {};
 
-            if (trial.data[1].length > 0) {
-                const clicks = _.filter(trial.data[1], (e) => (e.type === 'click'));
+            if (trial.data[1] && trial.data[1].length > 0) {
+                const clicks = _.filter(trial.data[1], (e) => (e.type === 'click')),
+                    width = 800; //TODO: Make part of device profile, or get screenwidth from click using OffsetX, PageX, or similar
 
                 content.push(trial.number + '\t');
 
                 if (trial.stages[1][0] && trial.stages[1][0].orientation.value === 90) {
                     content.push('V\t');
-
-                    if (clicks.length > 0) correct = _.groupBy(clicks, (c) => (c.clientX < (c.screenX / 2)));
+                    if (clicks.length > 0) correct = _.groupBy(clicks, (c) => (c.clientX < (width / 2)));
                 } else {
                     content.push('H\t');
-
-                    if (clicks.length > 0) correct = _.groupBy(clicks, (c) => (c.clientX > (c.screenX / 2)));
+                    if (clicks.length > 0) correct = _.groupBy(clicks, (c) => (c.clientX > (width / 2)));
                 }
 
                 if (clicks.length > 0) {
@@ -95,31 +93,26 @@ Template.dataMenu.events({
                 }
 
                 _.each(trial.data, (stage, i) => {
-                    _.each(stage, (e) => {
-                        const selected = _.find(events[i], (s) => (e.type.includes(s)));
+                    const p = ['request', 'ir'],
+                        groups = _.groupBy(stage, (e) => ((_.property(p)(e))
+                            ? p.join('.') + '.' + _.property(p)(e)
+                            : e.type.replace(/(\.?(re)?[\d]\.)+/ig, '.')));
 
-                        if (selected) {
-                            //const timestamp = moment(e.timeStamp).format('HH:mm:ss.SSS');
-                            if (e.type !== 'click') content.push(e.timeStamp + '\t');
+                    _.each(events[i], (g) => {
+                        if (groups[g]) {
+                            const e = groups[g][0];
+                            if (e.type !== 'click') content.push((e.timeStamp) + '\t');
+                        } else {
+                            content.push('\t');
                         }
                     });
 
                     if (_.contains(events[i], 'click')) {
-                        const f = correct['false'],
-                            t = correct['true'],
-                            e = (t && t[0]) ? t[0] : (f && f[0]) ? f[0] : 0;
+                        const c = correct['true'],
+                            f = correct['false'];
 
-                        if (e) {
-                            const l = (e.clientX / e.screenX) * 100,
-                                r = (e.clientY / e.screenY) * 100;
-
-                            content.push(e.timeStamp + '\t' + l + '\t' + r);
-                        } else {
-                            content.push('\t\t');
-                        }
-
-                        content.push((f) ? '\t' + f.length : '\t' + 0);
-                        content.push((t) ? '\t' + t.length : '\t' + 0);
+                        content.push((c) ? c[0].timeStamp + '\t' : '\t');
+                        content.push((f) ? f.length + '\t' : 0 + '\t');
                     }
                 });
 

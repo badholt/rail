@@ -236,11 +236,12 @@ Template.trial.onCreated(function () {
             session = this.session.get();
 
         if (!this.timers[next][stage]) this.timers[next][stage] = {};
+        //TODO Manage multiple next.trial timers
         if (!this.timers[next][stage]['next.trial']) this.timers[next][stage]['next.trial'] = Meteor.setTimeout(() => {
             if (next <= session.trials.length) {
                 // Meteor.call('mqttSend', session.device, 'board', {
                 //     command: 'pin', pins: 23, state: 'off',
-                //     context: {session: session._id, stage: stage, time: performance.now(), trial: (next - 1)}
+                //     context: {session: session._id, stage: stage, timeStamp: performance.now(), trial: (next - 1)}
                 // }, () => this.recordEvent({timeStamp: performance.now(), type: 'microscope.end'}));
 
                 /** Trials are indexed starting at 0, but the timers are referenced starting at Trial 1,
@@ -320,7 +321,7 @@ Template.trial.onCreated(function () {
             const timeStamp = performance.now();
             console.log('%c💬 ' + timer + '\t', 'color: orange; font-size: 1.5em; font-weight: 800;', timeStamp);
             return Meteor.call('mqttSend', device, topic, _.extend(_.omit(message, 'delay'), {
-                context: {session: id, stage: stage, time: timeStamp, trial: trial}
+                context: {session: id, stage: stage, timeStamp: timeStamp, trial: trial}
             }), () => this.recordEvent({timeStamp: timeStamp, type: timer + '.fired'}));
         }, delay);
     };
@@ -448,7 +449,7 @@ Template.trialSVG.events({
         processEvent(event, template, stage, trial);
         // Meteor.call('mqttSend', Meteor.userId(), 'board', {
         //     command: 'pin', pins: 23, state: 'on',
-        //     context: {session: data.trial.session, stage: stage, time: performance.now(), trial: trial}
+        //     context: {session: data.trial.session, stage: stage, timeStamp: performance.now(), trial: trial}
         // }, () => template.recordEvent({timeStamp: performance.now(), type: 'microscope.start'}));
     }
 });
@@ -469,8 +470,14 @@ Template.trialSVG.helpers({
             /** The first IR entry event is ignored, due to a power "blip" upon reward delivery. */
             if (1 < entry.length && triggered < entry.length) {
                 console.log('%c⚡ Trial ' + trial.number + ':\tIR entry ' + entry.length, 'color:red; font-size: 3em', performance.now());
-                processEvent({type: 'ir.entry', number: entry.length}, template.parent(), stage - 1, trial.number - 1);
+                //processEvent({type: 'ir.entry', number: entry.length}, template.parent(), stage - 1, trial.number - 1);
+                // TODO: Add timestamp to ir.entry event
+                const p = template.parent(),
+                    n = p.timers[trial.number][stage]['next.trial'];
 
+                Meteor.clearTimeout(n);
+                p.timers[trial.number][stage]['next.trial'] = null;
+                p.nextTrial(0);
                 /** By setting triggered to the updated length of detection events each time,
                  * each event is processed only once. */
                 template.triggered.set(entry.length);

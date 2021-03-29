@@ -141,8 +141,12 @@ if (Meteor.isServer) Meteor.methods({
 
                                     Meteor.call('updateTrial', trial, 'data.' + stage, 'push', {
                                         pins: message.pins,
-                                        request: _.extend(message.request, {timeStamp: message.context.time}),
-                                        timeStamp: message.context.timeStamp,
+                                        request: _.extend(message.request, {timeStamp: message.context.timeStamp}),
+                                        /** Timestamps t0 & t1 are in seconds since the epoch, and
+                                         *  message.context.timeStamp is in milliseconds since the
+                                         *  browser loaded. The following converts the timestamps
+                                         *  from the box to the box browser's frame of reference: */
+                                        timeStamp: (message['t1'] - message['t0']) * 1000 + message.context.timeStamp,
                                         status: message.status,
                                         type: message.sender
                                     });
