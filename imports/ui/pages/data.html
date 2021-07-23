@@ -11,11 +11,27 @@
         <a id="download" class="item">
             <i class="fitted download icon"></i>
         </a>
+        {{> dataDropdown}}
     </div>
 </template>
 
 <template name="dataCell">
 
+</template>
+
+<template name="dataDropdown">
+    <div id="templates" class="ui compact right attached search selection dropdown button">
+        <input type="hidden" name="template" value="shapingVI">
+        <i class="dropdown icon"></i>
+        <span class="text">Select Template</span>
+
+        <div class="menu">
+            <div class="item" data-value="shapingI">Shaping I</div>
+            <div class="item" data-value="shapingII">Shaping II</div>
+            <div class="item" data-value="shapingIV">Shaping IV</div>
+            <div class="item" data-value="shapingVI">Shaping VI</div>
+        </div>
+    </div>
 </template>
 
 <template name="dateCell">

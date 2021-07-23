@@ -44,11 +44,12 @@ Template.menu.helpers({
 });
 
 Template.menu.onCreated(function () {
-    const user = Meteor.user();
+    const user = Meteor.user(),
+        date = new Date(Date.now() - 1000 * 60 * 60 * 12);
 
     this.autorun(() => {
         if (user.profile.device) {
-            this.subscribe('sessions.device', user._id);
+            this.subscribe('sessions.today', date, user._id);
             Meteor.call('updateUser', user._id, 'status.active.session', 'set', '');
         } else {
             this.subscribe('experiments.user', user._id);

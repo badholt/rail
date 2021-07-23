@@ -50,78 +50,216 @@ Template.dataMenu.events({
         const date = moment(template.data.date),
             experiment = Experiments.findOne(template.data.experiment),
             device = Meteor.users.findOne(template.data.device),
+            getGroups = (stage, i) => {
+                const p = ['request', 'ir'];
+
+                return _.groupBy(stage, (e) => ((_.property(p)(e))
+                    ? p.join('.') + '.' + _.property(p)(e)
+                    : e.type.replace(/(\.?(re)?[\d]+\.)+/ig, '.')));
+            },
+            settings = template.$('#templates').dropdown('get value'),
             subjects = _.map(template.data.subjects, (id) => {
                 const subject = Subjects.findOne(id);
                 if (subject) return subject.identifier;
             }).toString(),
             user = Meteor.users.findOne(template.data.user),
-            filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '].xls',
-            headers = ['Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Tone Start', 'IR Entry',
-                'Response', 'Incorrect Response(s)'],
-            events = [['stage.start'], ['stimuli.start', 'audio.wave.start', 'request.ir.entry', 'click']],
-            content = [
-                'Experiment\t' + experiment.title + '\n',
-                'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-                'Subject\t' + subjects + '\n',
-                'Device\t' + device.profile.name + '\n',
-                'Experimenter\t' + user.profile.name + '\n\n',
-                headers.join('\t') + '\n'
-            ];
+            filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '].xls';
 
-        _.each(template.data.trials, (id) => {
-            const trial = Trials.findOne(id);
-            let correct = {};
+        let headers, events, content;
+        switch (settings) {
+            case 'shapingI':
+                headers = ['Trial No', 'Trial Start', 'Tone Start', 'Reward Start', 'IR Entry'],
+                    events = [['trial.start', 'audio.wave.start', 'reward.dispense.fired', 'request.ir.entry']],
+                    content = [
+                        'Experiment\t' + experiment.title + '\n',
+                        'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+                        'Subject\t' + subjects + '\n',
+                        'Device\t' + device.profile.name + '\n',
+                        'Experimenter\t' + user.profile.name + '\n\n',
+                        headers.join('\t') + '\n'
+                    ];
 
-            if (trial.data[1] && trial.data[1].length > 0) {
-                const clicks = _.filter(trial.data[1], (e) => (e.type === 'click')),
-                    width = 800; //TODO: Make part of device profile, or get screenwidth from click using OffsetX, PageX, or similar
+                _.each(template.data.trials, (id) => {
+                    const trial = Trials.findOne(id);
 
-                content.push(trial.number + '\t');
+                    content.push(trial.number + '\t');
 
-                if (trial.stages[1][0] && trial.stages[1][0].orientation.value === 90) {
-                    content.push('V\t');
-                    if (clicks.length > 0) correct = _.groupBy(clicks, (c) => (c.clientX < (width / 2)));
-                } else {
-                    content.push('H\t');
-                    if (clicks.length > 0) correct = _.groupBy(clicks, (c) => (c.clientX > (width / 2)));
-                }
+                    _.each(trial.data, (stage, i) => {
+                        const groups = getGroups(stage, i),
+                            ir = _.filter(groups['request.ir.entry'], (e) => {
+                                const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
+                                return (e.timeStamp - on.timeStamp) > 150;
+                            });
 
-                if (clicks.length > 0) {
-                    content.push((correct.hasOwnProperty('true')) ? '0\t' : '1\t');
-                } else {
-                    content.push('2\t');
-                }
-
-                _.each(trial.data, (stage, i) => {
-                    const p = ['request', 'ir'],
-                        groups = _.groupBy(stage, (e) => ((_.property(p)(e))
-                            ? p.join('.') + '.' + _.property(p)(e)
-                            : e.type.replace(/(\.?(re)?[\d]\.)+/ig, '.')));
-
-                    _.each(events[i], (g) => {
-                        if (groups[g]) {
-                            const e = groups[g][0];
-                            if (e.type !== 'click') content.push((e.timeStamp) + '\t');
-                        } else {
-                            content.push('\t');
-                        }
+                        _.each(events[i], (g) => ((g !== 'request.ir.entry')
+                            ? (content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t'))
+                            : (content.push((ir[0]) ? (ir[0].timeStamp || ir[0].request.timeStamp) + '\t' : '\t'))));
                     });
 
-                    if (_.contains(events[i], 'click')) {
-                        const c = correct['true'],
-                            f = correct['false'];
+                    content.push('\n');
+                });
 
-                        content.push((c) ? c[0].timeStamp + '\t' : '\t');
-                        content.push((f) ? f.length + '\t' : 0 + '\t');
+                break;
+            case 'shapingII':
+                headers = ['Trial No', 'Trial Start', 'Initial Poke', 'IR Entry'],
+                    events = [['cross.start', 'click', 'request.ir.entry']],
+                    content = [
+                        'Experiment\t' + experiment.title + '\n',
+                        'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+                        'Subject\t' + subjects + '\n',
+                        'Device\t' + device.profile.name + '\n',
+                        'Experimenter\t' + user.profile.name + '\n\n',
+                        headers.join('\t') + '\n'
+                    ];
+
+                _.each(template.data.trials, (id) => {
+                    const trial = Trials.findOne(id),
+                        clicks = _.filter(trial.data[0], (e) => (e.type === 'click'));
+
+                    if (clicks.length > 0) {
+                        _.each(trial.data, (stage, i) => {
+                            const groups = getGroups(stage, i),
+                                ir = _.filter(groups['request.ir.entry'], (e) => {
+                                    const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
+                                    return (e.timeStamp - on.timeStamp) > 150;
+                                });
+
+                            if (i === 0) content.push(trial.number + '\t');
+
+                            _.each(events[i], (g) => ((g !== 'request.ir.entry')
+                                ? (content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t'))
+                                : (content.push((ir[0]) ? (ir[0].timeStamp || ir[0].request.timeStamp) + '\t' : '\t'))));
+                        });
+
+                        content.push('\n');
                     }
                 });
 
-                content.push('\n');
-            }
-        });
+                break;
+            case 'shapingIV':
+                headers = ['Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'IR Entry',
+                    'Response', 'Incorrect Response(s)'],
+                    events = [['cross.start'], ['stimuli.start', 'request.ir.entry', 'click']],
+                    content = [
+                        'Experiment\t' + experiment.title + '\n',
+                        'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+                        'Subject\t' + subjects + '\n',
+                        'Device\t' + device.profile.name + '\n',
+                        'Experimenter\t' + user.profile.name + '\n\n',
+                        headers.join('\t') + '\n'
+                    ];
+
+                _.each(template.data.trials, (id) => {
+                    const trial = Trials.findOne(id);
+
+                    let correct = {};
+
+                    if (trial.data[1] && trial.data[1].length > 0) {
+                        const clicks = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY < 420)),
+                            width = 800; //TODO: Make part of device profile, or get screenwidth from click using OffsetX, PageX, or similar
+
+                        content.push(trial.number + '\t');
+
+                        if (trial.stages[1][0] && trial.stages[1][0].orientation.value === 0) {
+                            content.push('V\t');
+                            if (clicks.length > 0) correct = _.groupBy(clicks, (c) => (c.clientX < (width / 2)));
+                        } else {
+                            content.push('H\t');
+                            if (clicks.length > 0) correct = _.groupBy(clicks, (c) => (c.clientX > (width / 2)));
+                        }
+
+                        if (clicks.length > 0) {
+                            content.push((correct.hasOwnProperty('true')) ? '0\t' : '1\t');
+                        } else {
+                            content.push('2\t');
+                        }
+
+                        _.each(trial.data, (stage, i) => {
+                            const groups = getGroups(stage, i),
+                                ir = _.filter(groups['request.ir.entry'], (e) => {
+                                    const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
+                                    return (e.timeStamp - on.timeStamp) > 150;
+                                });
+
+                            _.each(events[i], (g) => {
+                                if (g === 'request.ir.entry') {
+                                    content.push((ir[0]) ? (ir[0].timeStamp || ir[0].request.timeStamp) + '\t' : '\t');
+                                } else if (g !== 'click') {
+                                    content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t');
+                                }
+                            });
+
+                            if (_.contains(events[i], 'click')) {
+                                const c = correct['true'],
+                                    f = correct['false'];
+
+                                content.push((c) ? c[0].timeStamp + '\t' : (f) ? f[0].timeStamp + '\t' : '\t');
+                                content.push((f) ? f.length + '\t' : 0 + '\t');
+                            }
+                        });
+
+                        content.push('\n');
+                    }
+                });
+
+                break;
+            case 'shapingVI':
+                headers = ['Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start',
+                    'Response', 'IR Entry'],
+                    events = [['cross.start'], ['stimuli.start', 'click', 'request.ir.entry']],
+                    content = [
+                        'Experiment\t' + experiment.title + '\n',
+                        'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+                        'Subject\t' + subjects + '\n',
+                        'Device\t' + device.profile.name + '\n',
+                        'Experimenter\t' + user.profile.name + '\n\n',
+                        headers.join('\t') + '\n'
+                    ];
+
+                _.each(template.data.trials, (id) => {
+                    const trial = Trials.findOne(id);
+
+                    if (trial.data[1] && trial.data[1].length > 0) {
+                        const clicks = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY < 420)),
+                            width = 800; //TODO: Make part of device profile, or get screenwidth from click using OffsetX, PageX, or similar
+
+                        content.push(trial.number + '\t');
+
+                        if (trial.stages[1][0] && trial.stages[1][0].orientation.value === 0) {
+                            content.push('V\t');
+                            content.push((clicks.length > 0) ? (clicks[0].clientX < (width / 2))
+                                ? '0\t' : '1\t' : '2\t');
+                        } else {
+                            content.push('H\t');
+                            content.push((clicks.length > 0) ? (clicks[0].clientX > (width / 2))
+                                ? '0\t' : '1\t' : '2\t');
+                        }
+
+                        _.each(trial.data, (stage, i) => {
+                            const groups = getGroups(stage, i),
+                                ir = _.filter(groups['request.ir.entry'], (e) => {
+                                    const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
+                                    return (e.timeStamp - on.timeStamp) > 150;
+                                });
+
+                            _.each(events[i], (g) => ((g !== 'request.ir.entry')
+                                ? (content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t'))
+                                : (content.push((ir[0]) ? (ir[0].timeStamp || ir[0].request.timeStamp) + '\t' : '\t'))));
+                        });
+
+                        content.push('\n');
+                    }
+                });
+
+                break;
+        }
 
         saveAs(new Blob(content), filename);
     }
+});
+
+Template.dataMenu.onRendered(function () {
+    this.$('#templates').dropdown();
 });
 
 Template.deviceCell.helpers({
@@ -142,11 +280,12 @@ Template.sessionsView.events({
 
 Template.sessionsView.helpers({
     filters() {
-        const filters = {
-            subjects: {subjects: {$all: [""]}}
-        };
+        const experiment = Template.currentData(),
+            filters = {
+                subjects: {subjects: {$all: [""]}}
+            };
 
-        return {};
+        return {"experiment": experiment._id};
     }
 });
 
@@ -420,7 +559,7 @@ Template.trialList.onCreated(function () {
                 /** Distribute events by timestamp rather than event: */
                 const events = _.flatten(trial.data),
                     es = _.omit(groups[s], _.pluck(stages[s], 'type' || 'sender'), ['session', 'trial']);
-                // console.log(es);
+
                 if (es.click) counts.clicks += es.click.length;
 
                 let n = 0,
@@ -491,6 +630,7 @@ Template.trialList.onRendered(function () {
 
 Template.trialsView.onCreated(function () {
     this.subscribe('sessions.single', this.data._id);
+    this.subscribe('subjects.session', this.data.subjects);
     this.subscribe('trials.session', this.data._id);
     this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': {$ne: false}}]});
 });

@@ -60,7 +60,7 @@ if (Meteor.isServer) Meteor.methods({
         stages: template.stages,
         users: (template.users) ? template.users : [Meteor.userId()]
     }),
-    'addTrial': (id, index, origin) => {
+    'addTrial': (id, index, number, origin) => {
         const session = Sessions.findOne(id),
             stages = session.settings.stages[index];
 
@@ -69,10 +69,11 @@ if (Meteor.isServer) Meteor.methods({
                 data: Array.from(stages, () => []),
                 date: new Date(),
                 experiment: session.experiment,
-                number: index + 1,
+                index: index,
+                number: number,
                 session: id,
                 stages: stages,
-                subject: 'MouseID',
+                subjects: session.subjects,
                 timeOrigin: origin,
             });
 

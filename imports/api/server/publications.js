@@ -39,6 +39,7 @@ Meteor.publish('sessions.experiment', (id, fields, limit, skip) => Sessions.find
     limit: limit
 }));
 Meteor.publish('sessions.single', (id) => Sessions.find(id));
+Meteor.publish('sessions.today', (date, id) => Sessions.find({date: {$gt: date}, device: id}));
 
 /**
  * Subjects Collection
@@ -48,6 +49,7 @@ Meteor.publish('sessions.single', (id) => Sessions.find(id));
  *  (2) subjects included in an experiment by experiment id */
 Meteor.publish('subjects', () => Subjects.find());
 Meteor.publish('subjects.experiment', (id) => Subjects.find({experiments: {$elemMatch: {$eq: id}}}));
+Meteor.publish('subjects.session', (ids) => Subjects.find({_id: {$in: ids}}));
 Meteor.publish('subjects.user', (id) => Subjects.find({users: {$elemMatch: {$eq: id}}}));
 
 /**

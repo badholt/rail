@@ -51,7 +51,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
                     template.responses.set(responses);
                 },
                 'number': (n) => (parseFloat(n)),
-                'stage': (d, n) => template.nextStage(d, n),
+                'stage': (d, i) => template.nextStage(d, i),
                 'stimuli': (p) => {
                     let elements = _.filter(session.settings.stages[trial][stage],
                         (element) => (element.type === 'stimuli'));
@@ -63,9 +63,9 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
                     return elements;
                 },
                 'toggle': (d, s, t) => (template.toggles[t] = s.set),
-                'trial': (d, n) => template.nextTrial(d),
+                'trial': (d, i, n) => template.nextTrial(d, i, n),
                 '<': (o, s) => (o < s),
-                '+': (d, s, t) => variables[t](d, s.amount),
+                '+': (d, s, t) => variables[t](d, s.amount, s.duplicate),
                 '=': (o, s) => (o === s)
             };
 
@@ -115,11 +115,10 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
             const pre = 'trial.' + n;
 
             if (template.timers[n] && !template.timers[n][pre + '.iti']) {
-
                 /** Sets timer for maximum trial duration: */
                 template.timers[n][pre + '.iti'] = Meteor.setTimeout(() => {
                     console.log('%c ' + pre + ' ITI end\t' + performance.now() + ' ', 'background: darkblue; color: white;');
-                    return template.nextTrial(0);
+                    return processEvent({type: 'iti.end'}, template, template.stage.get(), n - 1);
                 }, settings.session.iti);
                 console.log('%c ' + pre + ' ITI start\t' + performance.now() + ' ', 'background: blue; color: white;');
 
@@ -182,6 +181,7 @@ Template.trial.helpers({
 
 Template.trial.onCreated(function () {
     this.center = calculateCenter($(window).height(), $(window).width());
+    this.index = new ReactiveVar(0);
     this.responses = new ReactiveVar([]);
     this.session = new ReactiveVar();
     this.stage = new ReactiveVar(1);
@@ -200,7 +200,7 @@ Template.trial.onCreated(function () {
                 if (timers[trial]) Meteor.clearTimeout(timers[trial]['trial.' + trial + '.iti']);
                 return _.each(timers[trial], (stage) =>
                     _.each(stage, (timer, label) => {
-                        const whitelist = 'audio' || 'reward';
+                        const whitelist = 'audio' || 'lights' || 'reward';
                         if (!label.includes(whitelist)) {
                             Meteor.clearTimeout(timer);
                             console.log('%c\t❌ CLEAR:\t' + label + '(' + timer + ')', 'background: red; color: white;');
@@ -230,11 +230,12 @@ Template.trial.onCreated(function () {
             }, delay);
         }
     };
-    this.nextTrial = (delay) => {
+    this.nextTrial = (delay, increment, duplicate) => {
         const stage = this.stage.get(),
-            next = this.trial.get() + 1,
+            next = this.trial.get() + increment,
             session = this.session.get();
 
+        if (!this.timers[next]) this.timers[next] = {};
         if (!this.timers[next][stage]) this.timers[next][stage] = {};
         //TODO Manage multiple next.trial timers
         if (!this.timers[next][stage]['next.trial']) this.timers[next][stage]['next.trial'] = Meteor.setTimeout(() => {
@@ -253,8 +254,11 @@ Template.trial.onCreated(function () {
 
                 /** Proceed to next trial or exit: */
                 if (session.settings.session.duration || next < session.settings.stages.length) {
-                    Meteor.call('addTrial', session._id, next, performance.timeOrigin);
+                    const i = this.index.get();
 
+                    Meteor.call('addTrial', session._id, i, next + 1, performance.timeOrigin);
+
+                    if (!duplicate) this.index.set(i + 1);
                     this.responses.set([]);
                     this.stage.set(1);
                     this.trial.set(next);
@@ -477,7 +481,7 @@ Template.trialSVG.helpers({
 
                 Meteor.clearTimeout(n);
                 p.timers[trial.number][stage]['next.trial'] = null;
-                p.nextTrial(0);
+                p.nextTrial(0, 1, 0);
                 /** By setting triggered to the updated length of detection events each time,
                  * each event is processed only once. */
                 template.triggered.set(entry.length);

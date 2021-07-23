@@ -41,15 +41,3 @@ Template.crossForm.helpers({
         return Template.instance().parent(3).opened.get();
     }
 });
-
-Template.crossForm.onCreated(function () {
-    if (!this.data.span || !this.data.weight) {
-        const session = this.parent(5),
-            stages = session.stages.get();
-
-        stages[this.data.page][this.data.i].span = 75;
-        stages[this.data.page][this.data.i].weight = 20;
-        session.stages.set(stages);
-    }
-});
-
