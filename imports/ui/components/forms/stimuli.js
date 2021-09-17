@@ -6,12 +6,6 @@ import update from 'immutability-helper';
 import {calculateCenter, calculateWeights, generateBlacklist, generateVisuals} from '../../../api/client.methods';
 import {Template} from 'meteor/templating';
 
-Template.stimuliForm.helpers({
-    number() {
-        return Template.instance().parent(5).number;
-    }
-});
-
 Template.stimuliForm.events({
     'input input'(event, template) {
         const target = event.target || event.srcElement,
@@ -76,8 +70,13 @@ Template.stimuliForm.events({
 });
 
 Template.stimuliForm.helpers({
-    stimuli(index) {
-        return _.extend(this, {index: index, order: index + 1});
+    stimuli(stage) {
+        if (stage) {
+            const session = Template.instance().parent(5),
+                stages = session.stages.get();
+
+            return _.filter(stages[stage], (e) => (e.type === 'stimuli'));
+        }
     }
 });
 

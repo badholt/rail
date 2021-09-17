@@ -60,11 +60,11 @@
             {{/with}}
         </div>
 
-        <div id="stages" class="active title">
+        <div id="stages" class="title">
             <i class="dropdown icon"></i>
             <span class="ui inverted header">Stages</span>
         </div>
-        <div class="active content">
+        <div class="content">
             <div class="ui grey inverted top attached tabular menu">
                 {{#each stages}}
                     {{> stageItem (index @index)}}
@@ -116,10 +116,10 @@
 
 <template name="stagePage">
     {{#with forms element.type}}
-        <div id="{{../element.type}}-{{../i}}" class="title ui inverted segment">
+        <div id="{{../element.type}}-{{add 1 ../i}}" class="title ui inverted segment">
             <i class="dropdown icon"></i>
             <i class="grey link {{icon}} icon"></i>
-            {{title}}
+            {{title}} {{add 1 ../i}}
 
             <label class="ui big black top right attached label">
                 <i class="fitted grey link delete icon"></i>

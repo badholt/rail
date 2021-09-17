@@ -15,15 +15,15 @@ import {Sessions, Trials} from '../../api/collections';
 import {Template} from 'meteor/templating';
 
 export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
-    _.pick(e, 'clientX', 'clientY', 'timeStamp', 'screenX', 'screenY', 'target', 'type', 'which'),
-    (key, value) => (value instanceof Node) ? {
-        classes: value.classList,
-        id: value.id,
-        parent: {
-            classes: value.parentNode.classList,
-            id: value.parentNode.id
-        }
-    } : (value instanceof Window) ? 'Window' : value, ' ')),
+        _.pick(e, 'clientX', 'clientY', 'timeStamp', 'screenX', 'screenY', 'target', 'type', 'which'),
+        (key, value) => (value instanceof Node) ? {
+            classes: value.classList,
+            id: value.id,
+            parent: {
+                classes: value.parentNode.classList,
+                id: value.parentNode.id
+            }
+        } : (value instanceof Window) ? 'Window' : value, ' ')),
     conditionsMet = (input, variables) => _.every(input.conditions, (condition) =>
         _.every(condition.objects, (object) => {
             const o = variables[object.name](object.property);
@@ -53,8 +53,9 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
                 'number': (n) => (parseFloat(n)),
                 'stage': (d, i) => template.nextStage(d, i),
                 'stimuli': (p) => {
-                    let elements = _.filter(session.settings.stages[trial][stage],
-                        (element) => (element.type === 'stimuli'));
+                    let index = template.index.get(),
+                        elements = _.filter(session.settings.stages[index][stage],
+                            (element) => (element.type === 'stimuli'));
 
                     _.each(p.split('.'), (value) => {
                         if (elements) elements = elements[value];
@@ -90,6 +91,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
                 console.log('%c| Session start:\t' + performance.now() + ' |', 'background: brown; color: white; font-size: 1.5em;');
                 template.trial.set(0);
                 template.recordEvent({timeStamp: performance.now(), type: 'session.start'});
+                template.started.set(true);
             }, settings.session.delay);
 
             /** Sets timer for session duration: */
@@ -105,8 +107,6 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
                     FlowRouter.go('/');
                 }, settings.session.delay + settings.session.duration);
             }
-
-            template.started.set(true);
         }
     },
     trialTimers = (settings, n, template) => {
@@ -151,7 +151,11 @@ Template.trial.helpers({
                     if (!template.timers[n]) {
                         template.timers[n] = {};
                         console.log('%c| trial.' + n + ' start\t' + performance.now() + ' |', 'background: black; color: white; font-size: 1.5em;');
-                        trialTimers(settings, n, template);
+                        // trialTimers(settings, n, template);
+                        console.log(this.device, this._id, stage, n);
+                        Meteor.call('mqttSend', this.device, 'reward', {command: 'set'}, {
+                            context: {session: this._id, stage: stage, timeStamp: performance.now(), trial: n}
+                        }, () => template.recordEvent({timeStamp: performance.now(), type: 'set.context'}));
                     }
 
                     return trial;
@@ -297,11 +301,11 @@ Template.trial.onCreated(function () {
 
     this.timedAudio = (audio, delay, duration, name) => {
         const stage = this.stage.get(),
-            trial = this.trial.get() + 1;
-        const start = name + '.start',
+            trial = this.trial.get() + 1,
+            start = name + '.start',
             stop = name + '.stop';
 
-        if (!this.timers[trial][stage][start]) {
+        if (this.timers[trial][stage] && !this.timers[trial][stage][start]) {
             return Meteor.setTimeout(() => {
                 this.timers[trial][stage][start] = audio.toMaster().start();
                 console.log('%c🔊 ' + name + ' started\t', 'color: red; font-size: 1.5em; font-weight: 800;', performance.now());

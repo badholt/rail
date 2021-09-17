@@ -67,6 +67,57 @@ Template.dataMenu.events({
 
         let headers, events, content;
         switch (settings) {
+            case 'indices':
+                headers = ['Trial No', 'Trial Index'],
+                    content = [
+                        'Experiment\t' + experiment.title + '\n',
+                        'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+                        'Subject\t' + subjects + '\n',
+                        'Device\t' + device.profile.name + '\n',
+                        'Experimenter\t' + user.profile.name + '\n\n',
+                        headers.join('\t') + '\n'
+                    ];
+
+                _.each(template.data.trials, (id) => {
+                    const trial = Trials.findOne(id);
+
+                    content.push(trial.number + '\t');
+                    content.push(trial.index + '\t\n');
+                });
+
+                break;
+            case 'reward':
+                headers = ['Trial No', 'Dispense Time', 'Amount Dispensed'],
+                    content = [
+                        'Experiment\t' + experiment.title + '\n',
+                        'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+                        'Subject\t' + subjects + '\n',
+                        'Device\t' + device.profile.name + '\n',
+                        'Experimenter\t' + user.profile.name + '\n\n',
+                        headers.join('\t') + '\n'
+                    ];
+
+                _.each(template.data.trials, (id) => {
+                    const trial = Trials.findOne(id);
+                    let amount = 0,
+                        dispense = 0;
+
+                    _.each(trial.data, (stage, i) => {
+                        const groups = getGroups(stage, i);
+
+                        if (groups['reward']) _.each(groups['reward'], (e) => {
+                            if (e.request.amount) amount += e.request.amount;
+                            if (e.request.dispense) dispense += e.request.dispense;
+                        });
+                    });
+
+                    content.push(trial.number + '\t');
+                    content.push(dispense + '\t');
+                    content.push(amount + '\t');
+                    content.push('\n');
+                });
+
+                break;
             case 'shapingI':
                 headers = ['Trial No', 'Trial Start', 'Tone Start', 'Reward Start', 'IR Entry'],
                     events = [['trial.start', 'audio.wave.start', 'reward.dispense.fired', 'request.ir.entry']],
@@ -88,7 +139,7 @@ Template.dataMenu.events({
                         const groups = getGroups(stage, i),
                             ir = _.filter(groups['request.ir.entry'], (e) => {
                                 const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
-                                return (e.timeStamp - on.timeStamp) > 150;
+                                return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
                             });
 
                         _.each(events[i], (g) => ((g !== 'request.ir.entry')
@@ -121,7 +172,7 @@ Template.dataMenu.events({
                             const groups = getGroups(stage, i),
                                 ir = _.filter(groups['request.ir.entry'], (e) => {
                                     const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
-                                    return (e.timeStamp - on.timeStamp) > 150;
+                                    return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
                                 });
 
                             if (i === 0) content.push(trial.number + '\t');
@@ -178,7 +229,7 @@ Template.dataMenu.events({
                             const groups = getGroups(stage, i),
                                 ir = _.filter(groups['request.ir.entry'], (e) => {
                                     const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
-                                    return (e.timeStamp - on.timeStamp) > 150;
+                                    return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
                                 });
 
                             _.each(events[i], (g) => {
@@ -239,7 +290,7 @@ Template.dataMenu.events({
                             const groups = getGroups(stage, i),
                                 ir = _.filter(groups['request.ir.entry'], (e) => {
                                     const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
-                                    return (e.timeStamp - on.timeStamp) > 150;
+                                    return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
                                 });
 
                             _.each(events[i], (g) => ((g !== 'request.ir.entry')

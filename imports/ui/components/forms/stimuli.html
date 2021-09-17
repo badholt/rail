@@ -1,27 +1,21 @@
 <template name="stimuliForm">
     <form id="stimuli-form" class="ui inverted form">
-        <div class="inline field">
-            <label>No. of Stimuli</label>
-            <input type="number" name="number" placeholder="#1+" value="{{number}}">
-        </div>
-        {{#if number}}
-            <div class="ui divided inverted {{#if $gt number 1}}two{{else}}one{{/if}} column grid">
-                <div class="row">
-                    <div class="column">
-                        {{> stimulusForm (stimuli 1)}}
-                    </div>
+        <div class="ui divided inverted one column grid">
+            <div class="row">
+                <div class="column">
+                    {{> stimulusForm element=element n=(add 1 i)}}
                 </div>
             </div>
-        {{/if}}
+        </div>
     </form>
 </template>
 
 <template name="stimulusForm">
-    <form id="stimulus-form-{{order}}" class="ui inverted form">
+    <form id="stimulus-form-{{n}}" class="ui inverted form">
         <label class="ui big blue ribbon label">
-            <i class="{{#unless attend index}}disabled{{else}}yellow{{/unless}} link trophy icon"
-               title="{{#unless attend index}}un{{/unless}}attended stimulus"></i>
-            Stimulus {{order}}
+            <i class="{{#unless attend n}}disabled{{else}}yellow{{/unless}} link trophy icon"
+               title="{{#unless attend n}}un{{/unless}}attended stimulus"></i>
+            Stimulus {{n}}
         </label>
 
         <h5 class="blue header inverted sub ui">
@@ -52,8 +46,8 @@
                 </div>
                 <div class="inline field">
                     <div class="ui checked toggle checkbox">
-                        <input id="dynamic-grid-{{order}}" checked type="checkbox" tabindex="0" class="hidden">
-                        <label for="dynamic-grid-{{order}}">
+                        <input id="dynamic-grid-{{n}}" checked type="checkbox" tabindex="0" class="hidden">
+                        <label for="dynamic-grid-{{n}}">
                             {{#if checked 'grid'}}
                                 <span class="ui blue inverted sub header">Variable</span>
                             {{else}}
@@ -64,8 +58,8 @@
                 </div>
                 <div class="inline field">
                     <div class="ui toggle checkbox">
-                        <input id="weighted-grid-{{order}}" type="checkbox" tabindex="0" class="hidden">
-                        <label for="weighted-grid-{{order}}">
+                        <input id="weighted-grid-{{n}}" type="checkbox" tabindex="0" class="hidden">
+                        <label for="weighted-grid-{{n}}">
                             {{#if weighted element}}
                                 <span class="ui blue inverted sub header">
                                 Weighted
@@ -115,8 +109,8 @@
                 {{/if}}
                 <div class="field">
                     <div class="ui toggle checkbox">
-                        <input id="dynamic-contrast-{{order}}" type="checkbox" tabindex="0" class="hidden">
-                        <label for="dynamic-contrast-{{order}}">
+                        <input id="dynamic-contrast-{{n}}" type="checkbox" tabindex="0" class="hidden">
+                        <label for="dynamic-contrast-{{n}}">
                             {{#if checked 'contrast'}}
                                 <span class="ui blue inverted sub header">Variable</span>
                             {{else}}
