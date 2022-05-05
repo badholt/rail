@@ -2,14 +2,12 @@ import './client.methods';
 
 import _ from 'underscore';
 import moment from 'moment/moment';
+import * as mqtt from 'mqtt';
 
 import {Experiments, Sessions, Subjects, Templates, Trials} from './collections';
 import {Meteor} from 'meteor/meteor';
 
-// TODO: Use mqtt imports instead of require?
-const bound = Meteor.bindEnvironment((callback) => callback()),
-    clients = new Map(),
-    mqtt = require('mqtt');
+const clients = new Map();
 
 if (Meteor.isServer) Meteor.methods({
     'addExperiment': (fields) => {
@@ -85,19 +83,22 @@ if (Meteor.isServer) Meteor.methods({
         $push: {'profile.experiments': id}
     }),
     'countCollection': (collection) => Sessions.find().count(),
-    'mqttConnect': (id) => {
+    'mqttConnect': (id, options) => {
         /** If client already exists, reconnect: */
         if (clients.has(id)) {
             const client = clients.get(id);
-            client.reconnect();
+
+            if (client.reconnecting !== true && !client.connected) {
+//				console.log('\n\n\t - 2) END & RECONNECT -\n\n');
+//				console.log('\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting);
+				client.end();
+				client.reconnect();
+			}
         } else {
             /** If client does not exist for device, create a new client with its IP address: */
-            const device = Meteor.users.findOne(id),
-                client = mqtt.connect('mqtt://' + device.profile.address);
-            /** Configure client settings for this device: */
-            client.on('connect', () => client.subscribe('response'));
-
-            client.on('message', (topic, payload) => bound(() => {
+            const device = Meteor.users.findOne(id.replace('test_', '')),
+                client = mqtt.connect('mqtt://' + device.profile.address, options),
+				syncMessage = Meteor.bindEnvironment((topic, payload) => {
                 /** Instructs mqtt client on how to handle all incoming messages: */
                 if (topic === 'response') {
                     /** Messages concerning device information & status: */
@@ -110,7 +111,7 @@ if (Meteor.isServer) Meteor.methods({
                         case 'board':
                             if (message.board) {
                                 /** Information from Raspberry Pi command line output is extracted & stored in array: */
-                                const text = message['board']['pins'].split(/(?:[^.\\\s\w]+)(?:\+?\\n\s?\+?)?/igm),
+                                /* const text = message['board']['pins'].split(/(?:[^.\\\s\w]+)(?:\+?\\n\s?\+?)?/igm),
                                     cells = _.filter(text, (cell, i) =>
                                         i > 15 && i < (text.length - 16) && (i - 15) % 13),
                                     groups = _.chunk(cells, 6),
@@ -125,36 +126,43 @@ if (Meteor.isServer) Meteor.methods({
                                             voltage: pin[4].trim(),
                                             wpi: pin[1].trim()
                                         };
-                                    });
+                                    }); */
 
                                 /** Device user's status updates to new pin readouts: */
-                                Meteor.call('updateUser', id, 'status.board.pins', 'set', pins);
+                                Meteor.call('updateUser', id.replace('test_', ''), 'status.board.pins', 'set', message['board']);
                             }
                             break;
                         case 'lights':
                         case 'reward':
-                            if (message.context && message.context.trial) {
-                                const session = Sessions.findOne(message.context.session);
+						case 'sensor':
+                            if (message.context) {
+								if (message.context.device) {
+									Meteor.call('updateUser', message.context.device, 'status.message', 'set', message);
+								} else {
+									const context = (message.context.topic) ? message.context.topic.split('/') : '',
+									session = Sessions.findOne(context[1] || message.context.session);
 
-                                if (session) {
-                                    const stage = message.context.stage - 1,
-                                        trial = session.trials[message.context.trial - 1];
-
-                                    Meteor.call('updateTrial', trial, 'data.' + stage, 'push', {
-                                        pins: message.pins,
-                                        request: _.extend(message.request, {timeStamp: message.context.timeStamp}),
-                                        /** Timestamps t0 & t1 are in seconds since the epoch, and
-                                         *  message.context.timeStamp is in milliseconds since the
-                                         *  browser loaded. The following converts the timestamps
-                                         *  from the box to the box browser's frame of reference: */
-                                        timeStamp: (message['t1'] - message['t0']) * 1000 + message.context.timeStamp,
-                                        status: message.status,
-                                        type: message.sender
-                                    });
-                                }
-                            } else if (message.context && message.context.device) {
-                                Meteor.call('updateUser', message.context.device, 'status.message', 'set', message);
-                            }
+									if (session) {
+										const stage = (context[3] || message.context.stage) - 1,
+											trial = session.trials[(context[2] || message.context.trial) - 1],
+											timeStamp = (message['t1'] - message['t0']) * 1000 + message.context.timeStamp;
+console.log('\n', message, '\n', timeStamp);
+										Meteor.call('updateTrial', trial, 'data.' + stage, 'push', {
+											pins: message.pins,
+											request: _.extend(message.request, {timeStamp: message.context.timeStamp}),
+											/** Timestamps t0 & t1 are in seconds since the epoch, and
+											 *  message.context.timeStamp is in milliseconds since the
+											 *  browser loaded. The following converts the timestamps
+											 *  from the box to the box browser's frame of reference: */
+											t0: message['t0'],
+											t1: message['t1'],
+											timeStamp: timeStamp,
+											status: message.status,
+											type: message.sender
+										});
+									}
+								}
+							}
                             break;
                     }
                 } else if (topic === 'client') {
@@ -163,7 +171,7 @@ if (Meteor.isServer) Meteor.methods({
 
                     if (message.command) switch (message.command) {
                         case 'disconnect':
-                            client.end();
+                            client.end(true);
                             break;
                         case 'reconnect':
                             client.reconnect();
@@ -176,7 +184,18 @@ if (Meteor.isServer) Meteor.methods({
                             break;
                     }
                 }
-            }));
+            });
+			
+            /** Configure client settings for this device: */
+            client.on('connect', () => client.subscribe(['client', 'response'], {qos: 0}));
+//            client.on('reconnect', () => console.log('\n\n\t - ' + id + ' RECONNECT -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
+//            client.on('packetsend', (packet) => console.log(id + ' packet SENT', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n', packet, '\n'));
+ //           client.on('packetreceive', (packet) => console.log(id + ' packet RECEIVED', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n', packet, '\n'));
+//            client.on('end', () => console.log('\n\n\t - ' + id + ' END -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
+//            client.on('close', () => console.log('\n\n\t - ' + id + ' CLOSE -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
+//            client.on('offline', () => console.log('\n\n\t - ' + id + ' OFFLINE -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
+            client.on('error', (e) => console.log(e));
+            client.on('message', syncMessage);
 
             /** Add client to directory Map: */
             clients.set(id, client);
@@ -186,14 +205,33 @@ if (Meteor.isServer) Meteor.methods({
         if (clients.has(id)) {
             const client = clients.get(id);
 
-            if (!client.connected) client.reconnect();
-            client.publish(topic, JSON.stringify(message));
-        } else {
+			if (client.reconnecting !== true && !client.connected) {
+//				console.log('\n\n\t - 1) END & RECONNECT -\n\n');console.log(message);
+//				console.log('\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting);
+				client.end();
+				client.reconnect();
+			}
+			
+			client.publish(topic, JSON.stringify(message), {qos: 0}, (e) => {
+					if (!e) {
+						//console.log('\n1) SUCCESSFULLY PUBLISHED COMMAND:', message.command, '\n');
+						if (id.startsWith('test_')) client.end();
+					}
+				});
+        } else if (message.command !== 'disconnect') {
             /** Call 'mqttConnect' method to create mqtt client instance: */
-            Meteor.call('mqttConnect', id, (error) => {
+			const options = (!id.startsWith('test_')) ? {clientId: id} : {clientId: id, clean: false, keepalive: 0, reconnectPeriod: 0};
+
+            Meteor.call('mqttConnect', id, options, (error) => {
                 /** Now that a client exists for this device, publish message to its hosted mqtt server:  */
                 const client = clients.get(id);
-                if (!error) client.publish(topic, JSON.stringify(message));
+//				console.log('Created ' + id, clients.keys());
+                if (!error) client.publish(topic, JSON.stringify(message), {qos: 0}, (e) => {
+					if (!e) {
+						//console.log('\n2) SUCCESSFULLY PUBLISHED COMMAND:', message.command, '\n');
+						if (id.startsWith('test_') && message.detect !== 'on') client.end();
+					}
+				});
             });
         }
     },

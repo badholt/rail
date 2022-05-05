@@ -53,7 +53,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
                 'number': (n) => (parseFloat(n)),
                 'stage': (d, i) => template.nextStage(d, i),
                 'stimuli': (p) => {
-                    let index = template.index.get(),
+                    let index = template.getTrial(trial + 1).index,
                         elements = _.filter(session.settings.stages[index][stage],
                             (element) => (element.type === 'stimuli'));
 
@@ -70,7 +70,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
                 '=': (o, s) => (o === s)
             };
 
-        _.each(session.settings.inputs[stage], (input) => {
+        _.each(session.settings.inputs[stage - 1], (input) => {
             if (input.event === event.type) {
                 const correct = conditionsMet(input, variables);
                 _.each((correct) ? input.correct : input.incorrect, (action) =>
@@ -81,7 +81,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
 
         template.recordEvent(event);
     },
-    sessionTimers = (settings, template) => {
+    sessionTimers = (settings, template, device) => {
         console.log('%c Session renders:\t' + performance.now() + ' ', 'background: brown; color: white;');
         /** Sets Session-level timers: */
         if (settings) {
@@ -103,7 +103,9 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
                     template.recordEvent({timeStamp: performance.now(), type: 'session.end'});
                     template.clearTimers(template.timers, trial + 1);
                     //TODO: Either port session.device ID to turn off IR beam or consolidate FlowRouter reroute in nextTrial
-                    //Meteor.call('mqttSend', session.device, 'reward', {command: 'detect', detect: 'off'});
+                    Meteor.call('mqttSend', device, 'sensor', {command: 'detect', detect: 'off'}, () => {
+						Meteor.call('mqttSend', device, 'client', {command: 'disconnect'});
+					});
                     FlowRouter.go('/');
                 }, settings.session.delay + settings.session.duration);
             }
@@ -131,9 +133,14 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
 Template.trial.helpers({
     abort() {
         const user = Meteor.user();
-
+		
         if (user && user.status && user.status.active.session === '') {
-            Template.instance().recordEvent({timeStamp: performance.now(), type: 'session.abort'});
+			const template = Template.instance(),
+			session = template.session.get();
+console.log('ABORT!');
+			Meteor.call('mqttSend', session.device, 'sensor', {command: 'detect', detect: 'off'});
+			Meteor.call('mqttSend', session.device, 'client', {command: 'disconnect'});
+            template.recordEvent({timeStamp: performance.now(), type: 'session.abort'});
             FlowRouter.go('/');
         }
     },
@@ -145,17 +152,19 @@ Template.trial.helpers({
 
             if (n > 0) {
                 const id = trials[i],
-                    trial = Trials.findOne(id);
+                    trial = Trials.findOne(id),
+					topic = 'sensor/' + this._id + '/' + n + '/' + stage;
 
                 if (trial) {
                     if (!template.timers[n]) {
                         template.timers[n] = {};
                         console.log('%c| trial.' + n + ' start\t' + performance.now() + ' |', 'background: black; color: white; font-size: 1.5em;');
-                        // trialTimers(settings, n, template);
+                        trialTimers(settings, n, template);
                         console.log(this.device, this._id, stage, n);
-                        Meteor.call('mqttSend', this.device, 'reward', {command: 'set'}, {
-                            context: {session: this._id, stage: stage, timeStamp: performance.now(), trial: n}
-                        }, () => template.recordEvent({timeStamp: performance.now(), type: 'set.context'}));
+                        Meteor.call('mqttSend', this.device, 'reward', {command: 'set', context: {session: this._id, stage: stage, timeStamp: performance.now(), trial: n}},
+						() => template.recordEvent({timeStamp: performance.now(), type: 'set.context'}));
+						Meteor.call('mqttSend', this.device, topic, {command: 'set', context: {timeStamp: performance.now()}},
+						() => template.recordEvent({timeStamp: performance.now(), type: 'set.context'}));
                     }
 
                     return trial;
@@ -169,8 +178,13 @@ Template.trial.helpers({
 
         if (session) {
             if (!template.started.get()) {
-                sessionTimers(session.settings, template);
-                Meteor.call('mqttSend', session.device, 'reward', {command: 'detect', detect: 'on'});
+				const i = template.trial.get(),
+				stage = template.stage.get(),
+                n = i + 1,
+				topic = 'sensor/' + session._id + '/' + n + '/' + stage;console.log(stage, topic);
+
+                sessionTimers(session.settings, template, session.device);
+                Meteor.call('mqttSend', session.device, 'sensor', {command: 'detect', detect: 'on', context: {timeStamp: performance.now()}});
             }
             return session;
         }
@@ -268,7 +282,9 @@ Template.trial.onCreated(function () {
                     this.trial.set(next);
                 } else {
                     this.recordEvent({timeStamp: performance.now(), type: 'session.end'});
-                    Meteor.call('mqttSend', session.device, 'reward', {command: 'detect', detect: 'off'});
+                    Meteor.call('mqttSend', session.device, 'sensor', {command: 'detect', detect: 'off'}, ()=> {
+						Meteor.call('mqttSend', session.device, 'client', {command: 'disconnect'});
+					});
                     console.log('%c| Session end:\t' + performance.now() + ' |', 'background: brown; color: white; font-size: 1.5em;');
                     FlowRouter.go('/');
                 }
@@ -434,6 +450,10 @@ Template.trialElement.helpers({
 
 Template.trialElement.onCreated(function () {
     this.started = new ReactiveVar(0);
+});
+
+Template.trialElement.onRendered(function () {
+    Template.instance().started = new ReactiveVar(0);
 });
 
 Template.trialElements.helpers({

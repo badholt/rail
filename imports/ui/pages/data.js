@@ -137,10 +137,10 @@ Template.dataMenu.events({
 
                     _.each(trial.data, (stage, i) => {
                         const groups = getGroups(stage, i),
-                            ir = _.filter(groups['request.ir.entry'], (e) => {
+                            ir = _.filter(groups['request.ir.1'], (e) => {
                                 const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
                                 return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
-                            });
+                            });console.log(groups, ir);
 
                         _.each(events[i], (g) => ((g !== 'request.ir.entry')
                             ? (content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t'))
@@ -342,7 +342,7 @@ Template.sessionsView.helpers({
 
 Template.sessionsView.onCreated(function () {
     this.subscribe('subjects.experiment', this.data._id);
-    this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': {$ne: false}}]});
+    this.subscribe('users', {$or: [{_id: {$in: this.data.users}}, {'profile.device': {$ne: false}}]});
 
     autofill(window, $);
     buttons(window, $);
@@ -683,5 +683,5 @@ Template.trialsView.onCreated(function () {
     this.subscribe('sessions.single', this.data._id);
     this.subscribe('subjects.session', this.data.subjects);
     this.subscribe('trials.session', this.data._id);
-    this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': {$ne: false}}]});
+    this.subscribe('users', {$or: [{_id: this.data.user}, {_id: this.data.device}]});
 });

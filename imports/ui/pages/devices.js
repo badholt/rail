@@ -7,7 +7,6 @@ import {Template} from "meteor/templating";
 
 Template.deviceCard.events({
     'click .abort'(event, template) {
-        console.log(template);
         Meteor.call('updateUser', template.data._id, 'status.active.session', 'set', '');
     },
     'click .editable'(event, template) {
@@ -33,6 +32,7 @@ Template.deviceCard.events({
         });
     },
     'click #toggle-lights'(event, template) {
+		let lights = template.lights.get();
         const messages = [
             {command: "on", pins: [2]},
             {command: "on", pins: [3]},
@@ -42,57 +42,67 @@ Template.deviceCard.events({
             {command: "off", pins: [2, 3, 4]},
         ];
 
-        Meteor.call('mqttSend', template.data._id, 'lights',
-            _.extend(messages[template.lights], template.getContext()));
-        template.lights = (template.lights < messages.length) ? ++template.lights : 0;
+        Meteor.call('mqttSend', 'test_' + template.data._id, 'lights',
+            _.extend(messages[lights], template.getContext()));
+        template.lights.set((lights < messages.length) ? ++lights : 0);
     },
     'click #toggle-ir'(event, template) {
-        const messages = (template.ir)
+        const ir = template.ir.get(),
+		messages = (ir)
             ? {command: "detect", detect: "off"}
             : {command: "detect", detect: "on"};
-
-        Meteor.call('mqttSend', template.data._id, 'reward', _.extend(messages, template.getContext()));
-        template.ir = !template.ir;
+console.log(_.extend(messages, template.getContext()));
+        Meteor.call('mqttSend', 'test_' + template.data._id, 'sensor', _.extend(messages, template.getContext()));
+        template.ir.set(!ir);
     },
     'click #toggle-reward'(event, template) {
-        const messages = (template.reward)
+        const reward = template.reward.get(),
+		messages = (reward)
             ? {command: "off"}
             : {command: "on"};
 
-        Meteor.call('mqttSend', template.data._id, 'reward', _.extend(messages, template.getContext()));
-        template.reward = !template.reward;
+        Meteor.call('mqttSend', 'test_' + template.data._id, 'reward', _.extend(messages, template.getContext()));
+        template.reward.set(!reward);
     }
-});
-
-Template.deviceCard.onCreated(function () {
-    this.getContext = () => ({
-        context: {
-            device: this.data._id,
-            time: performance.now()
-        }
-    });
-    this.edit = new ReactiveVar('');
-    this.lights = 0;
-    this.reward = false;
-
-    Meteor.call('mqttConnect', this.data._id, (error) => {
-        if (!error) Meteor.call('mqttSend', this.data._id, 'board', {command: 'status'});
-    });
 });
 
 Template.deviceCard.helpers({
     color(status) {
         if (status) return (status.online) ? (!status.idle) ? 'green' : 'yellow' : 'red';
     },
+	ir() {
+		return Template.instance().ir.get();
+	},
+	lights() {
+		return Template.instance().lights.get();
+	},
     pi(board, profile) {
-        console.log(board, profile.device);
         return board;
-    }
+    },
+	reward() {
+		return Template.instance().reward.get();
+	}
 });
 
-Template.deviceCard.onDestroyed(function () {
-    Meteor.call('mqttSend', this.data._id, 'client', {command: 'disconnect'});
+Template.deviceCard.onCreated(function () {
+    this.getContext = () => ({
+        context: {
+            timeStamp: performance.now()
+        }
+    });
+    this.edit = new ReactiveVar('');
+	this.ir = new ReactiveVar(false);
+    this.lights = new ReactiveVar(0);
+    this.reward = new ReactiveVar(false);
+
+//    Meteor.call('mqttConnect', this.data._id, (error) => {
+//        if (!error) Meteor.call('mqttSend', this.data._id, 'board', {command: 'status'});
+//    });
 });
+
+/*Template.deviceCard.onDestroyed(function () {console.log('destroyed');
+    Meteor.call('mqttSend', 'test_' + this.data._id, 'client', {command: 'disconnect'});
+});*/
 
 Template.deviceCardMessage.onRendered(function () {
     const device = Template.instance().parent();
@@ -132,7 +142,6 @@ Template.editField.helpers({
 Template.piRow.events({
     'click'(e, template) {
         const device = Template.instance().parent(2);
-        console.log(device, template.data);
         // Meteor.call('updateUser', device.data._id, 'profile.components', 'push', {
         //     device: 'IR Sensor',
         //     mode: 'IN',
@@ -144,7 +153,6 @@ Template.piRow.events({
 
 Template.piRow.helpers({
     property(pairs) {
-        console.log(pairs);
         return _.map(pairs, (pair) => ({key: pair[0], value: pair[1]}));
     }
 });
