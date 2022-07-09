@@ -27,6 +27,7 @@ new Tabular.Table({
     extraFields: ['date', 'device', 'lastModified'],
     order: [[1, 'desc']],
     ordering: true,
+//	pub: "sessions.table",
     responsive: true,
     searching: false,
     throttleRefresh: 5000

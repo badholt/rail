@@ -95,10 +95,14 @@
         <i class="close icon"></i>
         <div class="header">
             <i class="icons">
-                <i class="{{#if $eq sender reward}}trophy{{else}}lightbulb{{/if}} icon"></i>
+                <i class="{{#if $eq sender 'reward'}}trophy{{else}}{{#if $eq sender 'sensor'}}sun{{else}}lightbulb{{/if}}{{/if}} icon"></i>
                 <i class="corner check icon"></i>
             </i>
-            {{sender}} (pin {{pins}}) turned {{#if status}}on{{else}}off as requested.{{/if}}
+			{{#unless $eq sender 'sensor'}}
+				{{sender}} (pin {{pins}}) turned {{#if status}}on{{else}}off{{/if}} as requested.
+			{{else}}
+				{{sender}} (pin {{pin}}) is {{request.ir}}
+			{{/unless}}
         </div>
     </div>
 </template>

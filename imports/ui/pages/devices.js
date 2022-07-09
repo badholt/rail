@@ -34,24 +34,20 @@ Template.deviceCard.events({
     'click #toggle-lights'(event, template) {
 		let lights = template.lights.get();
         const messages = [
-            {command: "on", pins: [2]},
-            {command: "on", pins: [3]},
-            {command: "on", pins: [4]},
-            {command: "off", pins: [2, 3, 4]},
-            {command: "on", pins: [2, 3, 4]},
-            {command: "off", pins: [2, 3, 4]},
+            {command: "on", pins: [3, 4]},
+            {command: "off", pins: [3, 4]}
         ];
 
         Meteor.call('mqttSend', 'test_' + template.data._id, 'lights',
             _.extend(messages[lights], template.getContext()));
-        template.lights.set((lights < messages.length) ? ++lights : 0);
+        template.lights.set((lights < messages.length - 1) ? ++lights : 0);
     },
     'click #toggle-ir'(event, template) {
         const ir = template.ir.get(),
 		messages = (ir)
             ? {command: "detect", detect: "off"}
             : {command: "detect", detect: "on"};
-console.log(_.extend(messages, template.getContext()));
+
         Meteor.call('mqttSend', 'test_' + template.data._id, 'sensor', _.extend(messages, template.getContext()));
         template.ir.set(!ir);
     },
@@ -87,6 +83,7 @@ Template.deviceCard.helpers({
 Template.deviceCard.onCreated(function () {
     this.getContext = () => ({
         context: {
+			device: this.data._id,
             timeStamp: performance.now()
         }
     });

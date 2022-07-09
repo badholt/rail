@@ -136,7 +136,7 @@ if (Meteor.isServer) Meteor.methods({
                         case 'reward':
 						case 'sensor':
                             if (message.context) {
-								if (message.context.device) {
+								if (message.context.device) {console.log('\n\t\t- TESTING -\n\t\t', message, '\n');
 									Meteor.call('updateUser', message.context.device, 'status.message', 'set', message);
 								} else {
 									const context = (message.context.topic) ? message.context.topic.split('/') : '',
@@ -190,7 +190,7 @@ console.log('\n', message, '\n', timeStamp);
             client.on('connect', () => client.subscribe(['client', 'response'], {qos: 0}));
 //            client.on('reconnect', () => console.log('\n\n\t - ' + id + ' RECONNECT -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
 //            client.on('packetsend', (packet) => console.log(id + ' packet SENT', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n', packet, '\n'));
- //           client.on('packetreceive', (packet) => console.log(id + ' packet RECEIVED', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n', packet, '\n'));
+//            client.on('packetreceive', (packet) => console.log(id + ' packet RECEIVED', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n', packet, '\n'));
 //            client.on('end', () => console.log('\n\n\t - ' + id + ' END -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
 //            client.on('close', () => console.log('\n\n\t - ' + id + ' CLOSE -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
 //            client.on('offline', () => console.log('\n\n\t - ' + id + ' OFFLINE -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
@@ -206,16 +206,16 @@ console.log('\n', message, '\n', timeStamp);
             const client = clients.get(id);
 
 			if (client.reconnecting !== true && !client.connected) {
-//				console.log('\n\n\t - 1) END & RECONNECT -\n\n');console.log(message);
-//				console.log('\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting);
+				console.log('\n\n\t - 1) END & RECONNECT -\n\n');console.log(message);
+				console.log('\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting);
 				client.end();
 				client.reconnect();
 			}
-			
+
 			client.publish(topic, JSON.stringify(message), {qos: 0}, (e) => {
 					if (!e) {
-						//console.log('\n1) SUCCESSFULLY PUBLISHED COMMAND:', message.command, '\n');
-						if (id.startsWith('test_')) client.end();
+						console.log('\n1) SUCCESSFULLY PUBLISHED COMMAND:', message.command, '\n');
+						if (id.startsWith('test_') && message.detect !== 'on') client.end();
 					}
 				});
         } else if (message.command !== 'disconnect') {
@@ -225,10 +225,10 @@ console.log('\n', message, '\n', timeStamp);
             Meteor.call('mqttConnect', id, options, (error) => {
                 /** Now that a client exists for this device, publish message to its hosted mqtt server:  */
                 const client = clients.get(id);
-//				console.log('Created ' + id, clients.keys());
+				console.log('Created ' + id, clients.keys());
                 if (!error) client.publish(topic, JSON.stringify(message), {qos: 0}, (e) => {
 					if (!e) {
-						//console.log('\n2) SUCCESSFULLY PUBLISHED COMMAND:', message.command, '\n');
+						console.log('\n2) SUCCESSFULLY PUBLISHED COMMAND:', message.command, '\n');
 						if (id.startsWith('test_') && message.detect !== 'on') client.end();
 					}
 				});

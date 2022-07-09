@@ -39,6 +39,9 @@ Meteor.publish('sessions.experiment', (id, fields, limit, skip) => Sessions.find
     limit: limit
 }));
 Meteor.publish('sessions.single', (id) => Sessions.find(id));
+Meteor.publish('sessions.table', (tableName, ids, fields) => Sessions.find({_id: {$in: ids}}, {
+    fields: {_id: 1, device: 1, subjects: 1, users: 1}
+}));
 Meteor.publish('sessions.today', (date, id) => Sessions.find({date: {$gt: date}, device: id}));
 
 /**

@@ -53,7 +53,7 @@ Template.dataMenu.events({
             getGroups = (stage, i) => {
                 const p = ['request', 'ir'];
 
-                return _.groupBy(stage, (e) => ((_.property(p)(e))
+                return _.groupBy(stage, (e) => ((_.property(p)(e) !== undefined)
                     ? p.join('.') + '.' + _.property(p)(e)
                     : e.type.replace(/(\.?(re)?[\d]+\.)+/ig, '.')));
             },
@@ -120,7 +120,7 @@ Template.dataMenu.events({
                 break;
             case 'shapingI':
                 headers = ['Trial No', 'Trial Start', 'Tone Start', 'Reward Start', 'IR Entry'],
-                    events = [['trial.start', 'audio.wave.start', 'reward.dispense.fired', 'request.ir.entry']],
+                    events = [['trial.start', 'audio.wave.start', 'reward.dispense.fired', 'request.ir.1']],
                     content = [
                         'Experiment\t' + experiment.title + '\n',
                         'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
@@ -138,13 +138,27 @@ Template.dataMenu.events({
                     _.each(trial.data, (stage, i) => {
                         const groups = getGroups(stage, i),
                             ir = _.filter(groups['request.ir.1'], (e) => {
-                                const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
-                                return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
-                            });console.log(groups, ir);
-
-                        _.each(events[i], (g) => ((g !== 'request.ir.entry')
-                            ? (content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t'))
-                            : (content.push((ir[0]) ? (ir[0].timeStamp || ir[0].request.timeStamp) + '\t' : '\t'))));
+								if (groups['audio.wave.start']) {
+									const tone = groups['audio.wave.start'][0];
+									return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false;
+								} else {
+									console.log('no tone: ', stage, i, groups['audio.wave.start']);
+								}
+                            });
+							
+							_.each(events[i], (g) => {
+								if (g !== 'request.ir.1' && groups[g]) {
+									_.each(groups[g], (e)=> {
+										content.push(e.timeStamp + '\t');
+									});
+								} else if (ir) {
+									_.each(ir, (e)=> {console.log(e);
+										content.push(e.timeStamp + '\t');
+									});
+								} else {
+									content.push('\t');
+								}
+							});
                     });
 
                     content.push('\n');
@@ -153,7 +167,7 @@ Template.dataMenu.events({
                 break;
             case 'shapingII':
                 headers = ['Trial No', 'Trial Start', 'Initial Poke', 'IR Entry'],
-                    events = [['cross.start', 'click', 'request.ir.entry']],
+                    events = [['cross.start', 'click', 'request.ir.1']],
                     content = [
                         'Experiment\t' + experiment.title + '\n',
                         'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
@@ -170,16 +184,30 @@ Template.dataMenu.events({
                     if (clicks.length > 0) {
                         _.each(trial.data, (stage, i) => {
                             const groups = getGroups(stage, i),
-                                ir = _.filter(groups['request.ir.entry'], (e) => {
-                                    const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
-                                    return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
-                                });
+                                ir = _.filter(groups['request.ir.1'], (e) => {
+									if (groups['audio.wave.start']) {
+										const tone = groups['audio.wave.start'][0];
+										return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false;
+									} else {
+										console.log('no tone: ', stage, i, groups['audio.wave.start']);
+									}
+								});
 
                             if (i === 0) content.push(trial.number + '\t');
 
-                            _.each(events[i], (g) => ((g !== 'request.ir.entry')
-                                ? (content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t'))
-                                : (content.push((ir[0]) ? (ir[0].timeStamp || ir[0].request.timeStamp) + '\t' : '\t'))));
+                            _.each(events[i], (g) => {
+								if (g !== 'request.ir.1' && groups[g]) {
+									_.each(groups[g], (e)=> {
+										content.push(e.timeStamp + '\t');
+									});
+								} else if (ir) {
+									_.each(ir, (e)=> {console.log(e);
+										content.push(e.timeStamp + '\t');
+									});
+								} else {
+									content.push('\t');
+								}
+							});
                         });
 
                         content.push('\n');
@@ -188,15 +216,15 @@ Template.dataMenu.events({
 
                 break;
             case 'shapingIV':
-                headers = ['Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'IR Entry',
-                    'Response', 'Incorrect Response(s)'],
-                    events = [['cross.start'], ['stimuli.start', 'request.ir.entry', 'click']],
+                headers = ['Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
+                     'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry'],
+                    events = [['cross.start'], ['stimuli.start', 'click']],
                     content = [
                         'Experiment\t' + experiment.title + '\n',
                         'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
                         'Subject\t' + subjects + '\n',
                         'Device\t' + device.profile.name + '\n',
-                        'Experimenter\t' + user.profile.name + '\n\n',
+                        'Experimenter\t' + user.profile.name + '\n\n\n',
                         headers.join('\t') + '\n'
                     ];
 
@@ -207,7 +235,8 @@ Template.dataMenu.events({
 
                     if (trial.data[1] && trial.data[1].length > 0) {
                         const clicks = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY < 420)),
-                            width = 800; //TODO: Make part of device profile, or get screenwidth from click using OffsetX, PageX, or similar
+						cross = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY > 420)),
+                        width = 800; //TODO: Make part of device profile, or get screenwidth from click using OffsetX, PageX, or similar
 
                         content.push(trial.number + '\t');
 
@@ -227,15 +256,13 @@ Template.dataMenu.events({
 
                         _.each(trial.data, (stage, i) => {
                             const groups = getGroups(stage, i),
-                                ir = _.filter(groups['request.ir.entry'], (e) => {
+                                ir = _.filter(groups['request.ir.1'], (e) => {
                                     const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
                                     return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
                                 });
 
                             _.each(events[i], (g) => {
-                                if (g === 'request.ir.entry') {
-                                    content.push((ir[0]) ? (ir[0].timeStamp || ir[0].request.timeStamp) + '\t' : '\t');
-                                } else if (g !== 'click') {
+								if (g !== 'click') {
                                     content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t');
                                 }
                             });
@@ -246,7 +273,14 @@ Template.dataMenu.events({
 
                                 content.push((c) ? c[0].timeStamp + '\t' : (f) ? f[0].timeStamp + '\t' : '\t');
                                 content.push((f) ? f.length + '\t' : 0 + '\t');
+                                content.push((cross) ? cross.length + '\t' : 0 + '\t');
                             }
+							
+							if (ir) {
+								_.each(ir, (e)=> {
+									content.push(e.timeStamp + '\t');
+								});
+							}
                         });
 
                         content.push('\n');
@@ -254,48 +288,72 @@ Template.dataMenu.events({
                 });
 
                 break;
-            case 'shapingVI':
-                headers = ['Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start',
-                    'Response', 'IR Entry'],
-                    events = [['cross.start'], ['stimuli.start', 'click', 'request.ir.entry']],
+			case 'shapingVI':
+                headers = ['Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
+                     'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry'],
+                    events = [['cross.start'], ['stimuli.start', 'click']],
                     content = [
                         'Experiment\t' + experiment.title + '\n',
                         'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
                         'Subject\t' + subjects + '\n',
                         'Device\t' + device.profile.name + '\n',
-                        'Experimenter\t' + user.profile.name + '\n\n',
+                        'Experimenter\t' + user.profile.name + '\n\n\n',
                         headers.join('\t') + '\n'
                     ];
 
                 _.each(template.data.trials, (id) => {
                     const trial = Trials.findOne(id);
 
+                    let correct = {};
+
                     if (trial.data[1] && trial.data[1].length > 0) {
                         const clicks = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY < 420)),
-                            width = 800; //TODO: Make part of device profile, or get screenwidth from click using OffsetX, PageX, or similar
+						cross = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY > 420)),
+                        width = 800; //TODO: Make part of device profile, or get screenwidth from click using OffsetX, PageX, or similar
 
                         content.push(trial.number + '\t');
 
                         if (trial.stages[1][0] && trial.stages[1][0].orientation.value === 0) {
                             content.push('V\t');
-                            content.push((clicks.length > 0) ? (clicks[0].clientX < (width / 2))
-                                ? '0\t' : '1\t' : '2\t');
+                            if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => (i < 1 && c.clientX < (width / 2)));
                         } else {
                             content.push('H\t');
-                            content.push((clicks.length > 0) ? (clicks[0].clientX > (width / 2))
-                                ? '0\t' : '1\t' : '2\t');
+                            if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => (i < 1 && c.clientX > (width / 2)));
+                        }
+
+                        if (clicks.length > 0) {console.log(correct);
+                            content.push((correct.hasOwnProperty('true')) ? '0\t' : '1\t');
+                        } else {
+                            content.push('2\t');
                         }
 
                         _.each(trial.data, (stage, i) => {
                             const groups = getGroups(stage, i),
-                                ir = _.filter(groups['request.ir.entry'], (e) => {
+                                ir = _.filter(groups['request.ir.1'], (e) => {
                                     const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
                                     return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
                                 });
 
-                            _.each(events[i], (g) => ((g !== 'request.ir.entry')
-                                ? (content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t'))
-                                : (content.push((ir[0]) ? (ir[0].timeStamp || ir[0].request.timeStamp) + '\t' : '\t'))));
+                            _.each(events[i], (g) => {
+								if (g !== 'click') {
+                                    content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t');
+                                }
+                            });
+
+                            if (_.contains(events[i], 'click')) {
+                                const c = correct['true'],
+                                    f = correct['false'];
+
+                                content.push((c) ? c[0].timeStamp + '\t' : (f) ? f[0].timeStamp + '\t' : '\t');
+                                content.push((f) ? f.length + '\t' : 0 + '\t');
+                                content.push((cross) ? cross.length + '\t' : 0 + '\t');
+                            }
+							
+							if (ir) {
+								_.each(ir, (e)=> {
+									content.push(e.timeStamp + '\t');
+								});
+							}
                         });
 
                         content.push('\n');

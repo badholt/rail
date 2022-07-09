@@ -2,3 +2,7 @@
 .meteor/local
 node_modules/
 private/
+.vs/ProjectSettings.json
+.vs/rail/v17/.suo
+.vs/slnx.sqlite
+.vs/VSWorkspaceState.json
