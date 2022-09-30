@@ -1,14 +1,54 @@
 import './devices.html';
 
 import _ from 'underscore';
+import moment from 'moment/moment';
 
 import {Meteor} from 'meteor/meteor';
+import {Sessions, Subjects} from '../../api/collections';
 import {Template} from "meteor/templating";
 
-Template.deviceCard.events({
+Template.deviceActivity.events({
     'click .abort'(event, template) {
-        Meteor.call('updateUser', template.data._id, 'status.active.session', 'set', '');
+        Meteor.call('updateUser', template.parent().data._id, 'status.active.session', 'set', '');
+    }
+});
+
+Template.deviceActivity.helpers({
+    name(date, subjects) {
+        let t = moment(date).format('ddd HH:mm');
+        
+        _.each(subjects, (id, i) => {
+            const subject = Subjects.findOne(id);
+            if (subject) {
+                t += (i > 0) ? '& ' : ' - ';
+                t += subject.identifier;
+            }
+        });
+
+        return t;
     },
+	remaining(session) {
+		const t = moment(session.date),
+		finish = t.add(session.settings.session.duration, 'ms').fromNow(true);
+
+		return finish + ' remaining';
+	},
+    session(id) {
+        if (id) return Sessions.findOne(id);
+    }
+});
+
+Template.deviceActivity.onCreated(function () {
+	this.autorun(() => {
+		const id = Template.currentData(),
+        session = Sessions.findOne(id);
+
+        if (id) this.subscribe('sessions.single', id);
+        if (session) this.subscribe('subjects.session', session.subjects);
+    });
+});
+
+Template.deviceCard.events({
     'click .editable'(event, template) {
         template.edit.set(event.currentTarget.title);
 
@@ -128,6 +168,55 @@ Template.devicePanel.onCreated(function () {
         /** Subscribe to devices and authorized users: */
         this.subscribe('users', {'profile.device': {$ne: false}});
     });
+});
+
+Template.deviceQueue.events({
+    'click .delete'(event, template) {
+        console.log(this._id, this.trials);
+        if (this.trials) {
+            Meteor.call('removeTrials', this.trials, (error, result) => {
+                if (!error && this._id) Meteor.call('removeSession', this._id);
+            });
+        } else if (this._id) {
+            Meteor.call('removeSession', this._id);
+        }
+    },
+    'click .queue .header'(event, template) {
+        const open = template.open.get();
+        template.open.set(!open);
+    }
+});
+
+Template.deviceQueue.helpers({
+    name(date, subjects) {
+        let t = moment(date).format('ddd HH:mm');
+        
+        _.each(subjects, (id, i) => {
+            const subject = Subjects.findOne(id);
+            if (subject) {
+                t += (i > 0) ? '& ' : ' - ';
+                t += subject.identifier;
+            }
+        });
+
+        return t;
+    },
+    open() {
+        return Template.instance().open.get();
+    },
+    sessions(id) {
+        return Sessions.find({$and: [{device: id}, {$or: [{trials: {$size: 1}}, {trials: []}]}]});
+    }
+});
+
+Template.deviceQueue.onCreated(function () {
+    const device = Template.currentData(),
+        date = new Date(Date.now() - 1000 * 60 * 60 * 12);
+
+    this.autorun(() => {
+        this.subscribe('sessions.today', date, device._id);
+    });
+    this.open = new ReactiveVar(false);
 });
 
 Template.editField.helpers({

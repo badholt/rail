@@ -7,7 +7,7 @@ import * as mqtt from 'mqtt';
 import {Experiments, Sessions, Subjects, Templates, Trials} from './collections';
 import {Meteor} from 'meteor/meteor';
 
-const clients = new Map();
+export const clients = new Map();
 
 if (Meteor.isServer) Meteor.methods({
     'addExperiment': (fields) => {
@@ -83,15 +83,42 @@ if (Meteor.isServer) Meteor.methods({
         $push: {'profile.experiments': id}
     }),
     'countCollection': (collection) => Sessions.find().count(),
+    'updateClient': (id, command) => {
+		if (clients.has(id)) {
+            const client = clients.get(id);
+
+            if (command === 'end') {
+				client.end();
+			} else if (command === 'connect') {
+				client.reconnect();
+			}
+        }
+    },
+    'getClients': () => {
+		const ids = clients.keys();
+
+		clients.forEach((value, key) => {
+			const id = key.replace('test_', ''),
+			client = _.pick(value, 'options', 'connected', 'disconnecting', 'nextId', 'reconnecting', 'disconnected', '_deferredReconnect');
+			console.log(key, id, client);
+			Meteor.users.update({_id: id}, {
+				$set: {'status.client': client}
+			});//TODO: multiple clients per box
+		});
+    },
     'mqttConnect': (id, options) => {
         /** If client already exists, reconnect: */
         if (clients.has(id)) {
             const client = clients.get(id);
 
             if (client.reconnecting !== true && !client.connected) {
-//				console.log('\n\n\t - 2) END & RECONNECT -\n\n');
-//				console.log('\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting);
-				client.end();
+				console.log('\n\n\t - 2) END & RECONNECT -\n\n');
+				console.log('\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting);
+				const t = false;
+				client.end(true, {}, () => {
+					t = true;
+				});
+				console.log(client.connected, t);
 				client.reconnect();
 			}
         } else {
@@ -135,7 +162,7 @@ if (Meteor.isServer) Meteor.methods({
                         case 'lights':
                         case 'reward':
 						case 'sensor':
-                            if (message.context) {
+                            if (message.context) {//TODO: Check Box 4 & 5 for difference from Box 3
 								if (message.context.device) {console.log('\n\t\t- TESTING -\n\t\t', message, '\n');
 									Meteor.call('updateUser', message.context.device, 'status.message', 'set', message);
 								} else {
@@ -146,7 +173,7 @@ if (Meteor.isServer) Meteor.methods({
 										const stage = (context[3] || message.context.stage) - 1,
 											trial = session.trials[(context[2] || message.context.trial) - 1],
 											timeStamp = (message['t1'] - message['t0']) * 1000 + message.context.timeStamp;
-console.log('\n', message, '\n', timeStamp);
+//console.log('\n', message, '\n', timeStamp);
 										Meteor.call('updateTrial', trial, 'data.' + stage, 'push', {
 											pins: message.pins,
 											request: _.extend(message.request, {timeStamp: message.context.timeStamp}),
@@ -188,10 +215,10 @@ console.log('\n', message, '\n', timeStamp);
 			
             /** Configure client settings for this device: */
             client.on('connect', () => client.subscribe(['client', 'response'], {qos: 0}));
-//            client.on('reconnect', () => console.log('\n\n\t - ' + id + ' RECONNECT -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
+            client.on('reconnect', () => console.log('\n\n\t - ' + id + ' RECONNECT -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
 //            client.on('packetsend', (packet) => console.log(id + ' packet SENT', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n', packet, '\n'));
 //            client.on('packetreceive', (packet) => console.log(id + ' packet RECEIVED', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n', packet, '\n'));
-//            client.on('end', () => console.log('\n\n\t - ' + id + ' END -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
+            client.on('end', () => console.log('\n\n\t - ' + id + ' END -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
 //            client.on('close', () => console.log('\n\n\t - ' + id + ' CLOSE -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
 //            client.on('offline', () => console.log('\n\n\t - ' + id + ' OFFLINE -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
             client.on('error', (e) => console.log(e));
@@ -206,8 +233,8 @@ console.log('\n', message, '\n', timeStamp);
             const client = clients.get(id);
 
 			if (client.reconnecting !== true && !client.connected) {
-				console.log('\n\n\t - 1) END & RECONNECT -\n\n');console.log(message);
-				console.log('\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting);
+				console.log('\n\n\t - 1) END & RECONNECT -\n\n');
+				console.log('\nclient:\t\t' + client.id + '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting);
 				client.end();
 				client.reconnect();
 			}
@@ -225,7 +252,7 @@ console.log('\n', message, '\n', timeStamp);
             Meteor.call('mqttConnect', id, options, (error) => {
                 /** Now that a client exists for this device, publish message to its hosted mqtt server:  */
                 const client = clients.get(id);
-				console.log('Created ' + id, clients.keys());
+				console.log('Created ' + id, clients.keys(), client);
                 if (!error) client.publish(topic, JSON.stringify(message), {qos: 0}, (e) => {
 					if (!e) {
 						console.log('\n2) SUCCESSFULLY PUBLISHED COMMAND:', message.command, '\n');
@@ -240,6 +267,8 @@ console.log('\n', message, '\n', timeStamp);
             $pull: {templates: id}
         }, {multi: true});
     }),
+    'removeSession': (id) => Sessions.remove({_id: id}),
+    'removeTrials': (ids) => Trials.remove({_id: {$in: ids}}),
     'removeUser': (username, id) => Meteor.users.update({'profile.username': username}, {
         $pull: {'profile.experiments': id}
     }),

@@ -15,16 +15,10 @@
         {{#if status.message}}{{>deviceCardMessage (status.message)}}{{/if}}
 
         {{#with status.active.session}}
-            <div class="ui attached green icon message">
-                <i class="notched circle loading icon"></i>
-
-                <div class="content">
-                    <div class="header">Active Session</div>
-                </div>
-
-                <i class="large abort close icon"></i>
-            </div>
+            {{> deviceActivity}}
         {{/with}}
+
+        {{> deviceQueue}}
 
         <div class="content">
             <i class="{{color status}} large right floated circle icon"></i>
@@ -88,6 +82,66 @@
     </div>
 
     {{> deviceModal}}
+</template>
+
+<template name="deviceActivity">
+    {{#with session this}}
+    	<div class="ui attached green icon message">
+    		<div class="content">
+    			<div class="header">
+                    <i class="notched circle loading icon"></i>
+    				Active Session
+
+                    <div class="ui mini horizontal labels">
+                        <label class="ui basic green label">
+                            {{name date subjects}}
+                        </label>
+                        <label class="ui green label">
+                            {{remaining this}}
+                            <span class="detail">
+                                <i class="redo icon"></i>
+                                {{getLength trials}}
+                            </span>
+                        </label>
+                    </div>
+    			</div>
+    		</div>
+
+    		<i class="large abort close icon"></i>
+    	</div>
+    {{/with}}
+</template>
+
+<template name="deviceQueue">
+    <a class="queue ui attached black icon message">
+        <div class="content">
+            <div class="header">
+                <i class="stopwatch icon"></i>
+                Session Queue
+
+                <span class="right floated">
+                    {{#if open}}
+                        <i class="triangle up link icon"></i>
+                    {{else}}
+                        <i class="triangle down link icon"></i>
+                    {{/if}}
+                </span>
+            </div>
+
+            {{#if open}}
+                <div class="ui mini horizontal labels">
+                    {{#each sessions _id}}
+                        <label class="ui basic label">
+                            {{name date subjects}}
+                            <i class="delete icon"></i>
+                        </label>
+                    {{else}}
+                        <label class="ui disabled basic fluid black label">Empty</label>
+                    {{/each}}
+                </div>
+            {{/if}}
+        </div>
+    </a>
 </template>
 
 <template name="deviceCardMessage">

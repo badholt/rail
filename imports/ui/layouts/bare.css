@@ -10,4 +10,5 @@ body, html, #main-panel {
 #main-panel.nocturnal {
     cursor: crosshair;
     /*cursor: none;*/
+    overflow: hidden;
 }

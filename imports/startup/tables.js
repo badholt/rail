@@ -11,6 +11,13 @@ new Tabular.Table({
     buttons: ['colvis', 'copy', 'csv', 'excel', 'print'],
     name: "Sessions",
     collection: Sessions,
+/* 	columnDefs: [ {
+		targets: 0,
+		data: null,
+		defaultContent: '',
+		orderable: false,
+		className: 'select-checkbox'
+	}], */
     columns: [
         {data: 'subjects', title: 'Subject(s)', tmpl: Meteor.isClient && Template.subjectsCell},
         {data: 'date', title: 'Date & Time', tmpl: Meteor.isClient && Template.dateCell},
@@ -25,11 +32,26 @@ new Tabular.Table({
         {data: 'user', title: 'User', tmpl: Meteor.isClient && Template.userCell}
     ],
     extraFields: ['date', 'device', 'lastModified'],
-    order: [[1, 'desc']],
-    ordering: true,
-//	pub: "sessions.table",
+//  order: [[1, 'desc']],
+//  ordering: true,
+   	pub: "sessions.table",
+	language: {
+		select: {
+			rows: {
+				_: "%d Sessions selected",
+				0: "Click a row to select a Session",
+				1: "1 Session selected"
+			}
+		}
+	},
     responsive: true,
     searching: false,
+	select: {
+		className: 'active',
+		info: true,
+		style: 'multi+shift',
+		toggleable: true
+	},
     throttleRefresh: 5000
 });
 

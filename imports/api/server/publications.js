@@ -40,7 +40,8 @@ Meteor.publish('sessions.experiment', (id, fields, limit, skip) => Sessions.find
 }));
 Meteor.publish('sessions.single', (id) => Sessions.find(id));
 Meteor.publish('sessions.table', (tableName, ids, fields) => Sessions.find({_id: {$in: ids}}, {
-    fields: {_id: 1, device: 1, subjects: 1, users: 1}
+    fields: {_id: 1, date: 1, device: 1, lastModified: 1, subjects: 1, users: 1},
+	sort: {date: -1} // Is sorting each page, not entire collection
 }));
 Meteor.publish('sessions.today', (date, id) => Sessions.find({date: {$gt: date}, device: id}));
 

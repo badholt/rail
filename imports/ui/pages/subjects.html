@@ -27,13 +27,13 @@
 </template>
 
 <template name="subjectCard">
-    <div class="ui green card">
+    <div class="ui {{#if user users}}green{{else}}grey{{/if}} card">
         <div class="center aligned content">
-            <i class="left floated grey link edit icon"></i>
+            {{#if user users}}<i class="left floated grey link edit icon"></i>{{/if}}
             <i class="right floated grey link balance scale icon"></i>
 
             <div class="ui tiny icon header">
-                <i class="green inverted large circular paw icon"></i>
+                <i class="{{#if user users}}green{{else}}grey{{/if}} inverted large circular paw icon"></i>
 
                 {{identifier}}
 

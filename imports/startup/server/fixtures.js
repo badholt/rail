@@ -1,9 +1,10 @@
 import '/imports/api/server.methods';
 
+import {clients} from '/imports/api/server.methods';
 import {Meteor} from 'meteor/meteor';
 import {Templates} from '/imports/api/collections';
 
-Meteor.startup(() => {
+Meteor.startup(() => {console.log(clients);
     process.env.ROOT_URL = 'http://redirect.railpage.org';
 
     if (Templates.find().count() === 0) {

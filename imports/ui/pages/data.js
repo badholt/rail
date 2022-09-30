@@ -47,144 +47,116 @@ Template.data.onCreated(function () {
 
 Template.dataMenu.events({
     'click #download'(event, template) {
-        const date = moment(template.data.date),
-            experiment = Experiments.findOne(template.data.experiment),
-            device = Meteor.users.findOne(template.data.device),
-            getGroups = (stage, i) => {
-                const p = ['request', 'ir'];
+		const print = (date, device, experiment, filename, getGroups, session, settings, subjects, user) => {
+			let headers, events, content;
+			switch (settings) {
+				case 'indices':
+					headers = ['Trial No', 'Trial Index'],
+						content = [
+							'Experiment\t' + experiment.title + '\n',
+							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+							'Subject\t' + subjects + '\n',
+							'Device\t' + device.profile.name + '\n',
+							'Experimenter\t' + user.profile.name + '\n'							
+						];
 
-                return _.groupBy(stage, (e) => ((_.property(p)(e) !== undefined)
-                    ? p.join('.') + '.' + _.property(p)(e)
-                    : e.type.replace(/(\.?(re)?[\d]+\.)+/ig, '.')));
-            },
-            settings = template.$('#templates').dropdown('get value'),
-            subjects = _.map(template.data.subjects, (id) => {
-                const subject = Subjects.findOne(id);
-                if (subject) return subject.identifier;
-            }).toString(),
-            user = Meteor.users.findOne(template.data.user),
-            filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '].xls';
+					_.each(session.trials, (id) => {
+						const trial = Trials.findOne(id);
 
-        let headers, events, content;
-        switch (settings) {
-            case 'indices':
-                headers = ['Trial No', 'Trial Index'],
-                    content = [
-                        'Experiment\t' + experiment.title + '\n',
-                        'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-                        'Subject\t' + subjects + '\n',
-                        'Device\t' + device.profile.name + '\n',
-                        'Experimenter\t' + user.profile.name + '\n\n',
-                        headers.join('\t') + '\n'
-                    ];
+						if (trial.number === 1) {
+							content.push('Time Origin\t' + trial.timeOrigin + '\n\n');
+							content.push(headers.join('\t') + '\n');
+						}
+						
+						content.push(trial.number + '\t');
+						content.push(trial.index + '\t\n');
+					});
 
-                _.each(template.data.trials, (id) => {
-                    const trial = Trials.findOne(id);
+					break;
+				case 'responses':
+					headers = ['Trial No'],
+						content = [
+							'Experiment\t' + experiment.title + '\n',
+							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+							'Subject\t' + subjects + '\n',
+							'Device\t' + device.profile.name + '\n',
+							'Experimenter\t' + user.profile.name + '\n'
+						];
+					const height = 600, width = 800;
 
-                    content.push(trial.number + '\t');
-                    content.push(trial.index + '\t\n');
-                });
-
-                break;
-            case 'reward':
-                headers = ['Trial No', 'Dispense Time', 'Amount Dispensed'],
-                    content = [
-                        'Experiment\t' + experiment.title + '\n',
-                        'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-                        'Subject\t' + subjects + '\n',
-                        'Device\t' + device.profile.name + '\n',
-                        'Experimenter\t' + user.profile.name + '\n\n',
-                        headers.join('\t') + '\n'
-                    ];
-
-                _.each(template.data.trials, (id) => {
-                    const trial = Trials.findOne(id);
-                    let amount = 0,
-                        dispense = 0;
-
-                    _.each(trial.data, (stage, i) => {
-                        const groups = getGroups(stage, i);
-
-                        if (groups['reward']) _.each(groups['reward'], (e) => {
-                            if (e.request.amount) amount += e.request.amount;
-                            if (e.request.dispense) dispense += e.request.dispense;
-                        });
-                    });
-
-                    content.push(trial.number + '\t');
-                    content.push(dispense + '\t');
-                    content.push(amount + '\t');
-                    content.push('\n');
-                });
-
-                break;
-            case 'shapingI':
-                headers = ['Trial No', 'Trial Start', 'Tone Start', 'Reward Start', 'IR Entry'],
-                    events = [['trial.start', 'audio.wave.start', 'reward.dispense.fired', 'request.ir.1']],
-                    content = [
-                        'Experiment\t' + experiment.title + '\n',
-                        'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-                        'Subject\t' + subjects + '\n',
-                        'Device\t' + device.profile.name + '\n',
-                        'Experimenter\t' + user.profile.name + '\n\n',
-                        headers.join('\t') + '\n'
-                    ];
-
-                _.each(template.data.trials, (id) => {
-                    const trial = Trials.findOne(id);
-
-                    content.push(trial.number + '\t');
-
-                    _.each(trial.data, (stage, i) => {
-                        const groups = getGroups(stage, i),
-                            ir = _.filter(groups['request.ir.1'], (e) => {
-								if (groups['audio.wave.start']) {
-									const tone = groups['audio.wave.start'][0];
-									return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false;
-								} else {
-									console.log('no tone: ', stage, i, groups['audio.wave.start']);
-								}
-                            });
-							
-							_.each(events[i], (g) => {
-								if (g !== 'request.ir.1' && groups[g]) {
-									_.each(groups[g], (e)=> {
-										content.push(e.timeStamp + '\t');
-									});
-								} else if (ir) {
-									_.each(ir, (e)=> {console.log(e);
-										content.push(e.timeStamp + '\t');
-									});
-								} else {
-									content.push('\t');
-								}
+					_.each(session.trials, (id) => {
+						const trial = Trials.findOne(id),
+							clicks = _.map(trial.data, (stage, i) => {
+								return _.filter(stage, (e) => (e.type === 'click'));
 							});
-                    });
 
-                    content.push('\n');
-                });
+						if (trial.number === 1) {
+							content.push('Time Origin\t' + trial.timeOrigin + '\n\n');
+							content.push(headers.join('\t') + '\n');
+						}
+						
+						content.push(trial.number + '\t');
+						
+						_.each(clicks, (stage, i) => _.each(stage, (e, j) => {
+							content.push(((e.clientY > 420) ? 'm\t' : (e.clientX < (width / 2)) ? 'l\t' : 'r\t') + e.timeStamp + '\t');
+						}));
+						
+						content.push('\n');
+					});
 
-                break;
-            case 'shapingII':
-                headers = ['Trial No', 'Trial Start', 'Initial Poke', 'IR Entry'],
-                    events = [['cross.start', 'click', 'request.ir.1']],
-                    content = [
-                        'Experiment\t' + experiment.title + '\n',
-                        'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-                        'Subject\t' + subjects + '\n',
-                        'Device\t' + device.profile.name + '\n',
-                        'Experimenter\t' + user.profile.name + '\n\n',
-                        headers.join('\t') + '\n'
-                    ];
+					break;
+				case 'reward':
+					headers = ['Trial No', 'Dispense Time', 'Amount Dispensed'],
+						content = [
+							'Experiment\t' + experiment.title + '\n',
+							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+							'Subject\t' + subjects + '\n',
+							'Device\t' + device.profile.name + '\n',
+							'Experimenter\t' + user.profile.name + '\n\n',
+							headers.join('\t') + '\n'
+						];
 
-                _.each(template.data.trials, (id) => {
-                    const trial = Trials.findOne(id),
-                        clicks = _.filter(trial.data[0], (e) => (e.type === 'click'));
+					_.each(session.trials, (id) => {
+						const trial = Trials.findOne(id);
+						let amount = 0,
+							dispense = 0;
 
-                    if (clicks.length > 0) {
-                        _.each(trial.data, (stage, i) => {
-                            const groups = getGroups(stage, i),
-                                ir = _.filter(groups['request.ir.1'], (e) => {
+						_.each(trial.data, (stage, i) => {
+							const groups = getGroups(stage, i);
+
+							if (groups['reward']) _.each(groups['reward'], (e) => {
+								if (e.request.amount) amount += e.request.amount;
+								if (e.request.dispense) dispense += e.request.dispense;
+							});
+						});
+
+						content.push(trial.number + '\t');
+						content.push(dispense + '\t');
+						content.push(amount + '\t');
+						content.push('\n');
+					});
+
+					break;
+				case 'shapingI':
+					headers = ['Trial No', 'Trial Start', 'Tone Start', 'Reward Start', 'IR Entry'],
+						events = [['trial.start', 'audio.wave.start', 'reward.dispense.fired', 'request.ir.1']],
+						content = [
+							'Experiment\t' + experiment.title + '\n',
+							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+							'Subject\t' + subjects + '\n',
+							'Device\t' + device.profile.name + '\n',
+							'Experimenter\t' + user.profile.name + '\n\n',
+							headers.join('\t') + '\n'
+						];
+
+					_.each(session.trials, (id) => {
+						const trial = Trials.findOne(id);
+
+						content.push(trial.number + '\t');
+
+						_.each(trial.data, (stage, i) => {
+							const groups = getGroups(stage, i),
+								ir = _.filter(groups['request.ir.1'], (e) => {
 									if (groups['audio.wave.start']) {
 										const tone = groups['audio.wave.start'][0];
 										return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false;
@@ -192,178 +164,282 @@ Template.dataMenu.events({
 										console.log('no tone: ', stage, i, groups['audio.wave.start']);
 									}
 								});
+								
+								_.each(events[i], (g) => {
+									if (g !== 'request.ir.1' && groups[g]) {
+										_.each(groups[g], (e)=> {
+											content.push(e.timeStamp + '\t');
+										});
+									} else if (ir) {
+										_.each(ir, (e)=> {console.log(e);
+											content.push(e.timeStamp + '\t');
+										});
+									} else {
+										content.push('\t');
+									}
+								});
+						});
 
-                            if (i === 0) content.push(trial.number + '\t');
+						content.push('\n');
+					});
 
-                            _.each(events[i], (g) => {
-								if (g !== 'request.ir.1' && groups[g]) {
-									_.each(groups[g], (e)=> {
+					break;
+				case 'shapingII':
+					headers = ['Trial No', 'Trial Start', 'Initial Poke', 'IR Entry'],
+						events = [['cross.start', 'click', 'request.ir.1']],
+						content = [
+							'Experiment\t' + experiment.title + '\n',
+							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+							'Subject\t' + subjects + '\n',
+							'Device\t' + device.profile.name + '\n',
+							'Experimenter\t' + user.profile.name + '\n\n',
+							headers.join('\t') + '\n'
+						];
+
+					_.each(session.trials, (id) => {
+						const trial = Trials.findOne(id),
+							clicks = _.filter(trial.data[0], (e) => (e.type === 'click'));
+
+						if (clicks.length > 0) {
+							_.each(trial.data, (stage, i) => {
+								const groups = getGroups(stage, i),
+									ir = _.filter(groups['request.ir.1'], (e) => {
+										if (groups['audio.wave.start']) {
+											const tone = groups['audio.wave.start'][0];
+											return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false;
+										} else {
+											console.log('no tone: ', stage, i, groups['audio.wave.start']);
+										}
+									});
+
+								if (i === 0) content.push(trial.number + '\t');
+
+								_.each(events[i], (g) => {
+									if (g !== 'request.ir.1' && groups[g]) {
+										_.each(groups[g], (e)=> {
+											content.push(e.timeStamp + '\t');
+										});
+									} else if (ir) {
+										_.each(ir, (e)=> {console.log(e);
+											content.push(e.timeStamp + '\t');
+										});
+									} else {
+										content.push('\t');
+									}
+								});
+							});
+
+							content.push('\n');
+						}
+					});
+
+					break;
+				case 'shapingIV':
+					headers = ['Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
+						 'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry'],
+						events = [['cross.start'], ['stimuli.start', 'click']],
+						content = [
+							'Experiment\t' + experiment.title + '\n',
+							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+							'Subject\t' + subjects + '\n',
+							'Device\t' + device.profile.name + '\n',
+							'Experimenter\t' + user.profile.name + '\n\n\n',
+							headers.join('\t') + '\n'
+						];
+
+					_.each(session.trials, (id) => {
+						const trial = Trials.findOne(id);
+
+						let correct = {};
+
+						if (trial.data[1] && trial.data[1].length > 0) {
+							const clicks = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY < 420)),
+							cross = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY > 420)),
+							width = 800; //TODO: Make part of device profile, or get screenwidth from click using OffsetX, PageX, or similar
+
+							content.push(trial.number + '\t');
+
+							if (trial.stages[1][0] && trial.stages[1][0].orientation.value === 0) {
+								content.push('V\t');
+								if (clicks.length > 0) correct = _.groupBy(clicks, (c) => (c.clientX < (width / 2)));
+							} else {
+								content.push('H\t');
+								if (clicks.length > 0) correct = _.groupBy(clicks, (c) => (c.clientX > (width / 2)));
+							}
+
+							if (clicks.length > 0) {
+								content.push((correct.hasOwnProperty('true')) ? '0\t' : '1\t');
+							} else {
+								content.push('2\t');
+							}
+
+							_.each(trial.data, (stage, i) => {
+								const groups = getGroups(stage, i),
+									ir = _.filter(groups['request.ir.1'], (e) => {
+										const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
+										return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
+									});
+
+								_.each(events[i], (g) => {
+									if (g !== 'click') {
+										content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t');
+									}
+								});
+
+								if (_.contains(events[i], 'click')) {
+									const c = correct['true'],
+										f = correct['false'];
+
+									content.push((c) ? c[0].timeStamp + '\t' : (f) ? f[0].timeStamp + '\t' : '\t');
+									content.push((f) ? f.length + '\t' : 0 + '\t');
+									content.push((cross) ? cross.length + '\t' : 0 + '\t');
+								}
+								
+								if (ir) {
+									_.each(ir, (e)=> {
 										content.push(e.timeStamp + '\t');
 									});
-								} else if (ir) {
-									_.each(ir, (e)=> {console.log(e);
-										content.push(e.timeStamp + '\t');
-									});
-								} else {
-									content.push('\t');
 								}
 							});
-                        });
 
-                        content.push('\n');
-                    }
-                });
+							content.push('\n');
+						}
+					});
 
-                break;
-            case 'shapingIV':
-                headers = ['Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
-                     'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry'],
-                    events = [['cross.start'], ['stimuli.start', 'click']],
-                    content = [
-                        'Experiment\t' + experiment.title + '\n',
-                        'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-                        'Subject\t' + subjects + '\n',
-                        'Device\t' + device.profile.name + '\n',
-                        'Experimenter\t' + user.profile.name + '\n\n\n',
-                        headers.join('\t') + '\n'
-                    ];
+					break;
+				case 'shapingVI':
+					headers = ['Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
+						 'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry'],
+						events = [['cross.start'], ['stimuli.start', 'click']],
+						content = [
+							'Experiment\t' + experiment.title + '\n',
+							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+							'Subject\t' + subjects + '\n',
+							'Device\t' + device.profile.name + '\n',
+							'Experimenter\t' + user.profile.name + '\n\n\n',
+							headers.join('\t') + '\n'
+						];
 
-                _.each(template.data.trials, (id) => {
-                    const trial = Trials.findOne(id);
+					_.each(session.trials, (id) => {
+						const trial = Trials.findOne(id);console.log(session, id, trial);
 
-                    let correct = {};
+						let correct = {};
 
-                    if (trial.data[1] && trial.data[1].length > 0) {
-                        const clicks = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY < 420)),
-						cross = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY > 420)),
-                        width = 800; //TODO: Make part of device profile, or get screenwidth from click using OffsetX, PageX, or similar
+						if (trial.data[1] && trial.data[1].length > 0) {
+							const clicks = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY < 420)),
+							cross = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY > 420)),
+							width = 800; //TODO: Make part of device profile, or get screenwidth from click using OffsetX, PageX, or similar
 
-                        content.push(trial.number + '\t');
+							content.push(trial.number + '\t');
 
-                        if (trial.stages[1][0] && trial.stages[1][0].orientation.value === 0) {
-                            content.push('V\t');
-                            if (clicks.length > 0) correct = _.groupBy(clicks, (c) => (c.clientX < (width / 2)));
-                        } else {
-                            content.push('H\t');
-                            if (clicks.length > 0) correct = _.groupBy(clicks, (c) => (c.clientX > (width / 2)));
-                        }
-
-                        if (clicks.length > 0) {
-                            content.push((correct.hasOwnProperty('true')) ? '0\t' : '1\t');
-                        } else {
-                            content.push('2\t');
-                        }
-
-                        _.each(trial.data, (stage, i) => {
-                            const groups = getGroups(stage, i),
-                                ir = _.filter(groups['request.ir.1'], (e) => {
-                                    const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
-                                    return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
-                                });
-
-                            _.each(events[i], (g) => {
-								if (g !== 'click') {
-                                    content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t');
-                                }
-                            });
-
-                            if (_.contains(events[i], 'click')) {
-                                const c = correct['true'],
-                                    f = correct['false'];
-
-                                content.push((c) ? c[0].timeStamp + '\t' : (f) ? f[0].timeStamp + '\t' : '\t');
-                                content.push((f) ? f.length + '\t' : 0 + '\t');
-                                content.push((cross) ? cross.length + '\t' : 0 + '\t');
-                            }
-							
-							if (ir) {
-								_.each(ir, (e)=> {
-									content.push(e.timeStamp + '\t');
-								});
+							if (trial.stages[1][0] && trial.stages[1][0].orientation.value === 0) {
+								content.push('V\t');
+								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => (i < 1 && c.clientX < (width / 2)));
+							} else {
+								content.push('H\t');
+								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => (i < 1 && c.clientX > (width / 2)));
 							}
-                        });
 
-                        content.push('\n');
-                    }
-                });
-
-                break;
-			case 'shapingVI':
-                headers = ['Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
-                     'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry'],
-                    events = [['cross.start'], ['stimuli.start', 'click']],
-                    content = [
-                        'Experiment\t' + experiment.title + '\n',
-                        'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-                        'Subject\t' + subjects + '\n',
-                        'Device\t' + device.profile.name + '\n',
-                        'Experimenter\t' + user.profile.name + '\n\n\n',
-                        headers.join('\t') + '\n'
-                    ];
-
-                _.each(template.data.trials, (id) => {
-                    const trial = Trials.findOne(id);
-
-                    let correct = {};
-
-                    if (trial.data[1] && trial.data[1].length > 0) {
-                        const clicks = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY < 420)),
-						cross = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY > 420)),
-                        width = 800; //TODO: Make part of device profile, or get screenwidth from click using OffsetX, PageX, or similar
-
-                        content.push(trial.number + '\t');
-
-                        if (trial.stages[1][0] && trial.stages[1][0].orientation.value === 0) {
-                            content.push('V\t');
-                            if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => (i < 1 && c.clientX < (width / 2)));
-                        } else {
-                            content.push('H\t');
-                            if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => (i < 1 && c.clientX > (width / 2)));
-                        }
-
-                        if (clicks.length > 0) {console.log(correct);
-                            content.push((correct.hasOwnProperty('true')) ? '0\t' : '1\t');
-                        } else {
-                            content.push('2\t');
-                        }
-
-                        _.each(trial.data, (stage, i) => {
-                            const groups = getGroups(stage, i),
-                                ir = _.filter(groups['request.ir.1'], (e) => {
-                                    const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
-                                    return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
-                                });
-
-                            _.each(events[i], (g) => {
-								if (g !== 'click') {
-                                    content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t');
-                                }
-                            });
-
-                            if (_.contains(events[i], 'click')) {
-                                const c = correct['true'],
-                                    f = correct['false'];
-
-                                content.push((c) ? c[0].timeStamp + '\t' : (f) ? f[0].timeStamp + '\t' : '\t');
-                                content.push((f) ? f.length + '\t' : 0 + '\t');
-                                content.push((cross) ? cross.length + '\t' : 0 + '\t');
-                            }
-							
-							if (ir) {
-								_.each(ir, (e)=> {
-									content.push(e.timeStamp + '\t');
-								});
+							if (clicks.length > 0) {console.log(correct);
+								content.push((correct.hasOwnProperty('true')) ? '0\t' : '1\t');
+							} else {
+								content.push('2\t');
 							}
-                        });
 
-                        content.push('\n');
-                    }
-                });
+							_.each(trial.data, (stage, i) => {
+								const groups = getGroups(stage, i),
+									ir = _.filter(groups['request.ir.1'], (e) => {
+										const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
+										return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
+									});
 
-                break;
-        }
+								_.each(events[i], (g) => {
+									if (g !== 'click') {
+										content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t');
+									}
+								});
 
-        saveAs(new Blob(content), filename);
+								if (_.contains(events[i], 'click')) {
+									const c = correct['true'],
+										f = correct['false'];
+
+									content.push((c) ? c[0].timeStamp + '\t' : (f) ? f[0].timeStamp + '\t' : '\t');
+									content.push((f) ? f.length + '\t' : 0 + '\t');
+									content.push((cross) ? cross.length + '\t' : 0 + '\t');
+								}
+								
+								if (ir) {
+									_.each(ir, (e)=> {
+										content.push(e.timeStamp + '\t');
+									});
+								}
+							});
+
+							content.push('\n');
+						}
+					});
+
+					break;
+			}
+
+			saveAs(new Blob(content), filename);
+		};
+		
+		if (template.data.date) {
+            const date = moment(template.data.date),
+			experiment = Experiments.findOne(template.data.experiment),
+			device = Meteor.users.findOne(template.data.device),
+			getGroups = (stage, i) => {
+				const p = ['request', 'ir'];
+
+				return _.groupBy(stage, (e) => ((_.property(p)(e) !== undefined)
+					? p.join('.') + '.' + _.property(p)(e)
+					: e.type.replace(/(\.?(re)?[\d]+\.)+/ig, '.')));
+			},
+			settings = template.$('#templates').dropdown('get value'),
+			subjects = _.map(template.data.subjects, (id) => {
+				const subject = Subjects.findOne(id);
+				if (subject) return subject.identifier;
+			}).toString(),
+			user = Meteor.users.findOne(template.data.user),
+			filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '].xls';
+			
+			print(date, device, experiment, filename, getGroups, template.data, settings, subjects, user);
+		} else {
+			const table = template.parent().$('table').DataTable(),
+			selected = table.rows('.active').data(),
+			ids = _.pluck(selected, '_id');
+
+			_.each(ids, (id)=> {
+				Meteor.subscribe('sessions.single', id, {
+					onReady: function () {
+						Meteor.subscribe('trials.session', id, {
+							onReady: function () {
+								const session = Sessions.findOne(id),
+								date = moment(session.date),
+								device = Meteor.users.findOne(session.device),
+								getGroups = (stage, i) => {
+									const p = ['request', 'ir'];
+
+									return _.groupBy(stage, (e) => ((_.property(p)(e) !== undefined)
+										? p.join('.') + '.' + _.property(p)(e)
+										: e.type.replace(/(\.?(re)?[\d]+\.)+/ig, '.')));
+								},
+								settings = template.$('#templates').dropdown('get value'),
+								subjects = _.map(session.subjects, (id) => {
+									const subject = Subjects.findOne(id);
+									if (subject) return subject.identifier;
+								}).toString(),
+								user = Meteor.users.findOne(session.user),
+								filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '].xls';
+								
+								print(date, device, template.data, filename, getGroups, session, settings, subjects, user);
+							}
+						});
+					},
+				});
+			});
+		}
     }
 });
 
@@ -382,8 +458,10 @@ Template.sessionsView.events({
         const prev = template.parent().session.get(),
             table = template.$('table').DataTable(),
             session = table.row(event.currentTarget).data();
-
-        if (prev !== session._id) template.parent().session.set(session._id);
+		const selected = table.rows('.active').data(),
+			ids = _.pluck(selected, '_id');
+console.log(selected, ids);
+        //if (prev !== session._id) template.parent().session.set(session._id);
     }
 });
 

@@ -13,7 +13,41 @@
         </div>
 
         <button class="ui black fluid button" type="submit">Save</button>
+		
+		{{> clientList}}
     </form>
+</template>
+
+<template name="clientList">
+	<div id="clients" class="ui compact segments">
+		{{#each users}}
+			<div class="ui black inverted segment">
+				{{#if status.client.connected}}
+					<i class="green circle icon"></i>
+				{{/if}}
+				
+				{{#if status.client.disconnected}}
+					<i class="red circle icon"></i>
+				{{/if}}
+				
+				{{status.client.options.clientId}}
+				
+				<br>
+				{{#if status.client.disconnecting}}
+					<i class="red loading notched circle icon"></i> Disconnecting
+				{{/if}}
+				
+				{{#if status.client.reconnecting}}
+					<i class="green loading notched circle icon"></i> Reconnecting
+				{{/if}}
+				
+				<div class="ui mini buttons">
+					<button id="connect-{{status.client.options.clientId}}" class="ui black button" type="button" value="{{status.client.options.clientId}}">Connect</button>
+					<button id="disconnect-{{status.client.options.clientId}}" class="ui black button" type="button" value="{{status.client.options.clientId}}">Disconnect</button>
+				</div>
+			</div>
+		{{/each}}
+	</div>
 </template>
 
 <template name="templateList">

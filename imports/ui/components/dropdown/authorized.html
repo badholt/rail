@@ -2,7 +2,7 @@
     <select id="authorized" class="ui black labels multiple search selection dropdown"
             multiple name="users">
         {{#each user users}}
-            {{#if authorized profile}}
+            {{#if authorized _id}}
                 <option selected value="{{profile.username}}">{{profile.name}}</option>
             {{else}}
                 <option value="{{profile.username}}">{{profile.name}}</option>

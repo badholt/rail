@@ -4,11 +4,11 @@ import {Meteor} from "meteor/meteor";
 import {Template} from "meteor/templating";
 
 Template.authorizedDropdown.helpers({
-    authorized(profile) {
-        return _.contains(profile.experiments, Template.instance().data._id);
+    authorized(id) {
+        return _.contains(Template.instance().data.users, id);
     },
     user(users) {
-        return Meteor.users.find({_id: {$in: users}});
+        return Meteor.users.find({'profile.device': false});
     }
 });
 

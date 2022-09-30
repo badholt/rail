@@ -21,7 +21,10 @@ Template.subjectCard.events({
 Template.subjectCard.helpers({
     experiment(ids) {
         return Experiments.find({_id: {$in: ids}});
-    }
+    },
+	user(ids) {
+		return _.contains(ids, Meteor.userId());
+	}
 });
 
 Template.subjectCard.onCreated(function () {
@@ -90,7 +93,15 @@ Template.subjectPanel.helpers({
 });
 
 Template.subjectPanel.onCreated(function () {
-    console.log(this, Template.instance().parent(3));
-    this.autorun(() => this.subscribe('subjects.user', Meteor.userId()));
+    this.autorun(() => {
+		const user = Meteor.user({fields: {_id: 1, profile: 1}});
+
+		if (user) {
+			this.subscribe('subjects.user', user._id);
+			
+			_.each(user.profile.experiments, (i) => (this.subscribe('subjects.experiment', i)));
+		}
+	});
+	
     this.edit = new ReactiveVar('');
 });

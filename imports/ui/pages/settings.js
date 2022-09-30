@@ -7,6 +7,30 @@ import {Template} from 'meteor/templating';
 import {Meteor} from 'meteor/meteor';
 import {Templates} from "../../api/collections";
 
+Template.clientList.events({
+    'click .button[id^=connect]'(e, template) {
+		const id = e.target.value;
+        console.log('connect', id, e, template);
+		Meteor.call('updateClient', id, 'connect');
+    },
+    'click .button[id^=disconnect]'(e, template) {
+		const id = e.target.value;
+        console.log('disconnect', id, e, template);
+		Meteor.call('updateClient', id, 'end');
+    }
+});
+
+Template.clientList.helpers({
+	users() {
+		return Meteor.users.find({'profile.device': {$type: 'string'}});
+	}
+});
+
+Template.clientList.onCreated(function () {
+    this.autorun(() => this.subscribe('users', {'profile.device': {$type: 'string'}}));
+	Meteor.call('getClients');
+});
+
 Template.settingsForm.events({
     'submit .form'(e, template) {
         e.preventDefault();
@@ -17,14 +41,6 @@ Template.settingsForm.events({
 
         Meteor.call('updateExperiment', this, values);
     }
-});
-
-
-Template.settingsForm.onCreated(function () {
-    this.autorun(() => {
-        /** Subscribe to devices and authorized users: */
-        this.subscribe('users', {$or: [{_id: {$in: this.users}}, {'profile.device': {$ne: false}}]});
-    });
 });
 
 Template.settingsForm.onRendered(function () {

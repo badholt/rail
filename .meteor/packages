@@ -23,7 +23,7 @@ dburles:collection-helpers
 less
 raix:handlebar-helpers
 spacebars
-underscore@1.0.10
+underscore
 
 
 # [ NAVIGATION ]
@@ -51,4 +51,4 @@ useraccounts:semantic-ui
 
 
 # [ DEVELOPMENT UTILITIES ]
-meteortoys:allthings
+# meteortoys:allthings
