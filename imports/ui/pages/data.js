@@ -106,7 +106,7 @@ Template.dataMenu.events({
 
 					break;
 				case 'reward':
-					headers = ['Trial No', 'Dispense Time', 'Amount Dispensed'],
+					headers = ['Trial No', 'Dispense Time', 'Amount Dispensed', 'TimeStamp'],
 						content = [
 							'Experiment\t' + experiment.title + '\n',
 							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
@@ -119,7 +119,8 @@ Template.dataMenu.events({
 					_.each(session.trials, (id) => {
 						const trial = Trials.findOne(id);
 						let amount = 0,
-							dispense = 0;
+							dispense = 0,
+							timeStamps = [];
 
 						_.each(trial.data, (stage, i) => {
 							const groups = getGroups(stage, i);
@@ -127,12 +128,14 @@ Template.dataMenu.events({
 							if (groups['reward']) _.each(groups['reward'], (e) => {
 								if (e.request.amount) amount += e.request.amount;
 								if (e.request.dispense) dispense += e.request.dispense;
+								if (e.request.dispense && e.timeStamp) timeStamps.push(e.timeStamp);
 							});
 						});
 
 						content.push(trial.number + '\t');
 						content.push(dispense + '\t');
 						content.push(amount + '\t');
+						_.each(timeStamps, (timeStamp, i) => (content.push(timeStamp + '\t')));
 						content.push('\n');
 					});
 

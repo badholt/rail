@@ -40,11 +40,20 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
                 'count': (p) => {
                     const data = template.getTrial(trial + 1).data,
 					f = _.filter(data[stage - 1], (e) => {
-                        const u = update(variables, {event: {$set: (p) => (e[p])}});
+                        const u = update(variables, {event: {$set: (p) => (e[p])}}); // Count can filter other events like iti.end
                         return conditionsMet(p, u);
-                    });
+                    });console.log("COUNT", p, f);
 
 					return f.length;
+                }, // need to keep track of what event is referenced so that timeStamps can be compared
+                'data': (p) => {
+                    const data = template.getTrial(trial + 1).data,
+                    f = _.pluck(_.filter(data[stage - 1], (e) => {
+                        const u = update(variables, {event: {$set: (p) => (e[p])}});
+                        return conditionsMet(p, u);
+                    }), p.value);console.log("DATA", data, p.value, f, f[p.index]);
+
+                    return f[p.index];
                 },
                 'event': (p) => (event[p]),
                 'insert': (d, s, t) => {
@@ -65,6 +74,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
 
                     return elements;
                 },
+                'string': (s) => (s.toString()),
                 'style': (d, s, t) => (template.timers[trial + 1][stage - 1][t + '.style'] = Meteor.setTimeout(() => ($(t).css(s.css)), d) && template.recordEvent({timeStamp: performance.now(), type: t + '.style', css: s.css})),
                 'toggle': (d, s, t) => (template.toggles[t] = s.set),
                 'trial': (d, i, n) => template.nextTrial(d, i, n),
@@ -75,7 +85,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
 
         _.each(session.settings.inputs[stage - 1], (input) => {
             if (input.event === event.type) {
-                const correct = conditionsMet(input, variables);
+                const correct = conditionsMet(input, variables);console.log("CORRECT", correct, input, event);
                 _.each((correct) ? input.correct : input.incorrect, (action) =>
                     _.each(action.targets, (target) =>
                         variables[action.action](action.delay, action.specifications, target)));
@@ -124,7 +134,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
                 /** Sets timer for maximum trial duration: */
                 template.timers[n][pre + '.iti'] = Meteor.setTimeout(() => {
                     //console.log('%c ' + pre + ' ITI end\t' + performance.now() + ' ', 'background: darkblue; color: white;');
-                    return processEvent({type: 'iti.end'}, template, template.stage.get(), n - 1);
+                    return processEvent({timeStamp: performance.now(), type: 'iti.end'}, template, template.stage.get(), n - 1);
                 }, settings.session.iti);
                 //console.log('%c ' + pre + ' ITI start\t' + performance.now() + ' ', 'background: blue; color: white;');
 
@@ -267,55 +277,56 @@ console.log('NEXT STAGE', stage);
 
         if (!this.timers[next]) this.timers[next] = {};
         if (!this.timers[next][stage]) this.timers[next][stage] = {};
-        //TODO Manage multiple next.trial timers
+        // TODO: Manage multiple next.trial timers (Verify always set timer / removal of if-else's else doesn't mess things up)
+        // A next trial timer will now always override any previous next trial timers after clearing them
         if (this.timers[next][stage]['next.trial']) {
             const previous = this.timers[next][stage]['next.trial'];
-                
-            Meteor.clearTimeout(previous);
+
+            Meteor.clearTimeout(previous);console.log("CLEAR", previous, delay, increment, duplicate);
             this.timers[next][stage]['next.trial'] = null;
-        } else {
-            this.timers[next][stage]['next.trial'] = Meteor.setTimeout(() => {
-                if (next <= session.trials.length) {
-                    // Meteor.call('mqttSend', session.device, 'board', {
-                    //     command: 'pin', pins: 23, state: 'off',
-                    //     context: {session: session._id, stage: stage, timeStamp: performance.now(), trial: (next - 1)}
-                    // }, () => this.recordEvent({timeStamp: performance.now(), type: 'microscope.end'}));
-
-                    /** Trials are indexed starting at 0, but the timers are referenced starting at Trial 1,
-                     *  so clearing timers for "next" actually clears the most recent trial. */
-                    this.clearTimers(this.timers, next);
-                    // TODO: Shutdown sequence, reset state of lights, etc.
-                    this.recordEvent({timeStamp: performance.now(), type: 'trial.' + next + '.end'});
-                    //console.log('%c| trial.' + next + ' end\t' + performance.now() + ' |', 'background: darkgrey; color: white;');
-
-                    /** Proceed to next trial or exit: */
-                    if (session.settings.session.duration || next < session.settings.stages.length) {
-                        const i = this.index.get();
-
-                        Meteor.call('addTrial', session._id, i, next + 1, performance.timeOrigin);
-
-                        if (!duplicate) {
-                            this.index.set(i + 1);
-                        } else {
-                            const nt = Trials.find({index: i}).count();
-                            if (nt > duplicate - 1) this.index.set(i + 1);
-                        }
-                        
-                        this.responses.set([]);
-                        this.stage.set(1);
-                        this.trial.set(next);
-                    } else {
-                        this.recordEvent({timeStamp: performance.now(), type: 'session.end'});
-    					Meteor.call('mqttSend', session.device, 'lights', {command: 'off', pins: [4]});
-                        Meteor.call('mqttSend', session.device, 'sensor', {command: 'detect', detect: 'off'}, ()=> {
-    						Meteor.call('mqttSend', session.device, 'client', {command: 'disconnect'});
-    					});
-                        console.log('%c| Session end:\t' + performance.now() + ' |', 'background: brown; color: white; font-size: 1.5em;');
-                        FlowRouter.go('/');
-                    }
-                }
-            }, delay);
         }
+
+        this.timers[next][stage]['next.trial'] = Meteor.setTimeout(() => {
+            if (next <= session.trials.length) {
+                // Meteor.call('mqttSend', session.device, 'board', {
+                //     command: 'pin', pins: 23, state: 'off',
+                //     context: {session: session._id, stage: stage, timeStamp: performance.now(), trial: (next - 1)}
+                // }, () => this.recordEvent({timeStamp: performance.now(), type: 'microscope.end'}));
+
+                /** Trials are indexed starting at 0, but the timers are referenced starting at Trial 1,
+                 *  so clearing timers for "next" actually clears the most recent trial. */
+                this.clearTimers(this.timers, next);
+                // TODO: Shutdown sequence, reset state of lights, etc.
+                this.recordEvent({timeStamp: performance.now(), type: 'trial.' + next + '.end'});
+                //console.log('%c| trial.' + next + ' end\t' + performance.now() + ' |', 'background: darkgrey; color: white;');
+
+                /** Proceed to next trial or exit: */
+                if (session.settings.session.duration || next < session.settings.stages.length) {
+                    const i = this.index.get();
+
+                    Meteor.call('addTrial', session._id, i, next + 1, performance.timeOrigin);
+
+                    if (!duplicate) {
+                        this.index.set(i + 1);
+                    } else {
+                        const nt = Trials.find({index: i}).count();
+                        if (nt > duplicate - 1) this.index.set(i + 1);
+                    }
+                    
+                    this.responses.set([]);
+                    this.stage.set(1);
+                    this.trial.set(next);
+                } else {
+                    this.recordEvent({timeStamp: performance.now(), type: 'session.end'});
+					Meteor.call('mqttSend', session.device, 'lights', {command: 'off', pins: [4]});
+                    Meteor.call('mqttSend', session.device, 'sensor', {command: 'detect', detect: 'off'}, ()=> {
+						Meteor.call('mqttSend', session.device, 'client', {command: 'disconnect'});
+					});
+                    console.log('%c| Session end:\t' + performance.now() + ' |', 'background: brown; color: white; font-size: 1.5em;');
+                    FlowRouter.go('/');
+                }
+            }
+        }, delay);
     };
     this.recordEvent = (event) => {
         const number = this.trial.get() + 1,
@@ -513,12 +524,15 @@ Template.trialSVG.helpers({
     },
     ir(stage, trial) {
         const data = trial.data[stage - 1],
-            prereq = _.some(data, (element) => (element.type === 'click'));
+            prereq = _.some(data, (element) => (element.type === 'click' || element.type === 'iti.end'));
+
+            //TODO: ITI.end added but may interfere in later paradigms; IR handling in ShII vs. ShIV;
+            //TODO: Move timestamp filter to processEvent condition //make sure IR events prior to ITI end are not counted b/c is clearing timers but not preceding trial
 
         if (prereq) {
             const groups = _.groupBy(_.filter(data, (element) => (element.request && (element.request.ir === 1 || element.request.reward === "off"))), (element) => (element.type)),
 			entry = (groups['sensor']) ? _.filter(groups['sensor'], (e) => {
-				if (groups['reward']) {
+				if (groups['reward']) {console.log(groups['reward']);
 					const trigger = groups['reward'][0];
 					return (trigger) ? (e.timeStamp - trigger.timeStamp) > 200 : false;
 				} else {
@@ -532,14 +546,15 @@ Template.trialSVG.helpers({
             /** The first IR entry event is ignored, due to a power "blip" upon reward delivery. */
             if (0 < entry.length && triggered < entry.length) {
                 console.log('%c⚡ Trial ' + trial.number + ':\tIR entry ' + entry.length, 'color:red; font-size: 3em', performance.now());
-                processEvent({type: 'ir.entry', number: entry.length}, template.parent(), stage, trial.number - 1);
-                // TODO: Add timestamp to ir.entry event
+                processEvent({number: entry.length, timeStamp: entry[0]['timeStamp'], type: 'ir.entry'}, template.parent(), stage, trial.number - 1);
+
   //              const p = template.parent(),
   //                  n = p.timers[trial.number][stage]['next.trial'];
 
   //              Meteor.clearTimeout(n);
   //              p.timers[trial.number][stage]['next.trial'] = null;
   //              p.nextTrial(0, 1, 0);
+
                 /** By setting triggered to the updated length of detection events each time,
                  * each event is processed only once. */
                 template.triggered.set(entry.length);
