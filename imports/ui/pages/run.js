@@ -87,7 +87,7 @@ Template.sessionSetup.onCreated(function () {
                 subjects = _.map(form[id], (subject) => this.cipher[subject]);
             console.log(id, this.cipher, form, subjects);
 
-            Meteor.call('generateTrials', inputs, session, stages, (error, trials) => {
+            if (subjects.length > 0) Meteor.call('generateTrials', inputs, session, stages, (error, trials) => {
                 console.log(error, trials);
                 if (!error) Meteor.call('addSession', device, experiment,
                     inputs, session, subjects, trials, (error, session) => {

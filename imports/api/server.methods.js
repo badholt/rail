@@ -114,7 +114,7 @@ if (Meteor.isServer) Meteor.methods({
             if (client.reconnecting !== true && !client.connected) {
 				console.log('\n\n\t - 2) END & RECONNECT -\n\n');
 				console.log('\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting);
-				const t = false;
+				let t = false;
 				client.end(true, {}, () => {
 					t = true;
 				});
