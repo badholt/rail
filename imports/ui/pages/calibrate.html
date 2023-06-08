@@ -1,0 +1,145 @@
+<template name="calibrate">
+    {{#with elements currentUser.status.active.calibration}}
+        <svg id="cross-preview" height="100%" width="100%">
+            <text x="20" y="20" style="fill: #f2711c;">{{screen.width}}</text>
+            <text x="10" y="20" style="fill: #2185d0; writing-mode: tb; text-orientation: sideways; -webkit-text-orientation: sideways;">{{screen.height}}</text>
+                {{> cross}}
+        </svg>
+    {{else}}
+        {{return}}
+    {{/with}}
+</template>
+
+<template name="screenCalibrationForm">
+    <form id="calibration-form" class="ui inverted form">
+        <label>Offset <span class="ui mini horizontal label">% from center</span></label>
+        <div class="two fields">
+            <div class="field">
+                <div class="ui inverted transparent input">
+                    <div class="ui mini orange right pointing label">
+                        x
+                    </div>
+                    <input type="number" name="offset-x" placeholder="0.0"
+                           value="{{offset.x}}" max="1.0" min="-1.0" step="0.1">
+                </div>
+            </div>
+            <div class="field">
+                <div class="ui inverted transparent input">
+                    <div class="ui mini blue right pointing label">
+                        y
+                    </div>
+                    <input type="number" name="offset-y" placeholder="0.0"
+                           value="{{offset.y}}" max="1.0" min="-1.0" step="0.1">
+                </div>
+            </div>
+        </div>
+
+        <div class="two fields">
+            <div class="field">
+                <label>
+                    Span (Size)
+                    <span class="ui mini horizontal label">pixels</span>
+                </label>
+                <input type="number" name="span"
+                       placeholder="#" value="{{span}}">
+            </div>
+            <div class="field">
+                <label>
+                    Weight (Thickness)
+                    <span class="ui mini horizontal label">pixels</span>
+                </label>
+                <input type="number" name="weight"
+                       placeholder="#" value="{{weight}}">
+            </div>
+        </div>
+    </form>
+</template>
+
+<template name="screenCalibrationModal">
+    <div id="modal-calibrate-{{profile.username}}" class="ui basic modal">
+        <div class="header">Calibrate Screen for {{profile.name}}</div>
+        <div class="content">
+            <svg id="cross-preview" style="{{#with screen}}height: {{height}}; width: {{width}};{{/with}}background: #1b1c1d; border-left-color: #2185d0; border-top-color: #f2711c; display: block; margin: 0 auto 1.5em auto;">
+                <text x="20" y="20" style="fill: #f2711c;">{{screen.width}}</text>
+                <text x="10" y="20" style="fill: #2185d0; writing-mode: tb; text-orientation: sideways; -webkit-text-orientation: sideways;">{{screen.height}}</text>
+                {{> cross (element)}}
+            </svg>
+            {{> screenCalibrationForm (element)}}
+        </div>
+
+        <div class="actions">
+            <button class="ui left floated black icon button">
+                <i class="add icon"></i>
+            </button>
+            <div class="ui black icon buttons">
+                <button class="ui button">
+                    <i class="left arrow icon"></i>
+                </button>
+                <button class="ui button">
+                    <i class="up arrow icon"></i>
+                </button>
+                <button class="ui button">
+                    <i class="down arrow icon"></i>
+                </button>
+                <button class="ui button">
+                    <i class="right arrow icon"></i>
+                </button>
+            </div>
+
+            <button class="ui positive right labeled icon button">Save to {{profile.name}}<i class="checkmark icon"></i></button>
+        </div>
+    </div>
+</template>
+
+<template name="waterCalibrationForm">
+    <div id="water-calibration-form" class="ui inverted form">
+        <div class="two fields">
+            <div class="field">
+                <div class="ui right labeled input">
+                    <label for="amount" class="ui blue right pointing mini label">Offset:</label>
+                    <input name="amount" step="0.001" type="number" value="{{amount}}">
+                    <span class="ui mini label">mL</span>
+                </div>
+            </div>
+
+            <div class="field">
+                <div class="ui right labeled input">
+                    <label for="rate" class="ui blue right pointing mini label">Rate:</label>
+                    <input name="rate" min="0" step="0.001" type="number" value="{{rate}}">
+                    <span class="ui mini label">mL/s</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template name="waterCalibrationModal">
+    <div id="modal-calibrate-{{profile.username}}" class="ui basic modal">
+        <div class="header">Calibrate Water for {{profile.name}}</div>
+        <div class="content">
+            {{> waterCalibrationForm (settings)}}
+        </div>
+
+        <div class="actions">
+            <button class="ui left floated black icon button">
+                <i class="add icon"></i>
+            </button>
+            <div class="ui black icon buttons">
+                <button class="ui button">
+                    <i class="left arrow icon"></i>
+                </button>
+                <button class="ui button">
+                    <i class="up arrow icon"></i>
+                </button>
+                <button class="ui button">
+                    <i class="down arrow icon"></i>
+                </button>
+                <button class="ui button">
+                    <i class="right arrow icon"></i>
+                </button>
+            </div>
+
+            <button class="ui positive right labeled icon button">Save to {{profile.name}}<i class="checkmark icon"></i></button>
+        </div>
+    </div>
+</template>
