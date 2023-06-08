@@ -10,6 +10,10 @@ import {Meteor} from 'meteor/meteor';
 import {ReactiveVar} from 'meteor/reactive-var';
 import {Template} from 'meteor/templating';
 
+Template.calibrationWindow.onCreated(function () {
+    FlowRouter.go('/calibrate');
+});
+
 Template.menu.events({
     'click .ui.menu > a.item'(event, template) {
         const item = $('.tabular.menu .active.item').get(0);
@@ -50,6 +54,7 @@ Template.menu.onCreated(function () {
     this.autorun(() => {
         if (user.profile.device) {
             this.subscribe('sessions.today', date, user._id);
+            this.subscribe('users', {'_id': user._id});
             Meteor.call('updateUser', user._id, 'status.active.session', 'set', '');
         } else {
             this.subscribe('experiments.user', user._id);

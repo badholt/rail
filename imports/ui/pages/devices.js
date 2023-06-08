@@ -1,8 +1,10 @@
 import './devices.html';
+import './calibrate';
 
 import _ from 'underscore';
 import moment from 'moment/moment';
 
+import {renderCross} from '../components/cross';
 import {Meteor} from 'meteor/meteor';
 import {Sessions, Subjects} from '../../api/collections';
 import {Template} from "meteor/templating";
@@ -49,6 +51,14 @@ Template.deviceActivity.onCreated(function () {
 });
 
 Template.deviceCard.events({
+    'click a[id^=calibrate-screen]'(event, template) {
+        template.calibrate.set('screenCalibrationModal');
+        return template.data;
+    },
+    'click a[id^=calibrate-water]'(event, template) {
+        template.calibrate.set('waterCalibrationModal');
+        return template.data;
+    },
     'click .editable'(event, template) {
         template.edit.set(event.currentTarget.title);
 
@@ -103,6 +113,9 @@ Template.deviceCard.events({
 });
 
 Template.deviceCard.helpers({
+    calibrate() {
+        return Template.instance().calibrate.get();
+    },
     color(status) {
         if (status) return (status.online) ? (!status.idle) ? 'green' : 'yellow' : 'red';
     },
@@ -121,6 +134,7 @@ Template.deviceCard.helpers({
 });
 
 Template.deviceCard.onCreated(function () {
+    this.calibrate = new ReactiveVar(false);
     this.getContext = () => ({
         context: {
 			device: this.data._id,

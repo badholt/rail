@@ -18,6 +18,10 @@
             {{else}}
                 {{#each session}}
                     {{> sessionWindow}}
+                {{else}}
+                    {{#if currentUser.status.active.calibration}}
+                        {{> calibrationWindow}}
+                    {{/if}}
                 {{/each}}
             {{/unless}}
 
@@ -39,6 +43,13 @@
             </div>
         {{/if}}
     </div>
+</template>
+
+<template name="calibrationWindow">
+    <a class="active item" href="{{link}}" tabindex="0">
+        <i class="inverted pink tag icon"></i>
+        Calibrate {{currentUser.profile.name}}
+    </a>
 </template>
 
 <template name="sessionWindow">

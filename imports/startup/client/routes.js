@@ -1,5 +1,6 @@
 import '/imports/ui/layouts/bare';
 import '/imports/ui/layouts/frame';
+import '/imports/ui/pages/calibrate';
 import '/imports/ui/pages/create';
 import '/imports/ui/pages/data';
 import '/imports/ui/pages/devices';
@@ -19,6 +20,13 @@ FlowRouter.route('/', {
     name: 'home',
     action() {
         BlazeLayout.render('frame', {main: 'home'});
+    },
+});
+
+FlowRouter.route('/calibrate', {
+    name: 'calibrate',
+    action() {
+        BlazeLayout.render('bare', {main: 'calibrate'});
     },
 });
 

@@ -2,7 +2,6 @@ import './cross.html';
 
 import _ from "underscore";
 import {getContainer, renderCross} from '../cross';
-
 import {Template} from "meteor/templating";
 
 Template.crossForm.events({

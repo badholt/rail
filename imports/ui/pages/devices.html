@@ -40,9 +40,25 @@
             </h1>
 
             <div class="description">
-                <div class="ui mini message">{{profile.device}}</div>
+                <a id="calibrate-screen-{{profile.username}}" class="ui black mini icon message">
+                    <i class="inverted link expand icon"></i>
+                    {{#with profile.calibration.screen.[0].offset}}
+                        <span class="header">Calibrated for offset {<span style="color: #f2711c;">{{x}}</span>, <span style="color: #2185d0;">{{y}}</span>}</span>
+                    {{/with}}
+                </a>
 
-                <div id="pins-{{profile.username}}" class="ui icon list mini message">
+                <a id="calibrate-water-{{profile.username}}" class="ui blue mini icon message">
+                    <i class="link tint icon"></i>
+                    {{#with profile.calibration.water}}
+                        <span class="header">Calibrated for {<span style="color: #f2711c;">{{amount}}</span>} mL offset & {<span style="color: #f2711c;">{{rate}}</span>} mL/s flowrate</span>
+                    {{/with}}
+                </a>
+
+                {{#if calibrate}}
+                    {{> Template.dynamic template=calibrate}}
+                {{/if}}
+
+                <!-- <div id="pins-{{profile.username}}" class="ui icon list mini message">
                     <i class="link microchip icon"></i>
 
                     <div class="content">
@@ -64,7 +80,7 @@
 
                 {{#if pi status.board profile}}
                     {{> piModal}}
-                {{/if}}
+                {{/if}} -->
             </div>
         </div>
 

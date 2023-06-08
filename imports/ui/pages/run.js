@@ -86,7 +86,7 @@ Template.sessionSetup.onCreated(function () {
             const device = this.cipher[id],
                 subjects = _.map(form[id], (subject) => this.cipher[subject]);
             console.log(id, this.cipher, form, subjects);
-
+console.log(device, inputs, session, stages); //TODO add offsets
             if (subjects.length > 0) Meteor.call('generateTrials', inputs, session, stages, (error, trials) => {
                 console.log(error, trials);
                 if (!error) Meteor.call('addSession', device, experiment,
