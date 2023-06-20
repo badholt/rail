@@ -28,6 +28,7 @@ Accounts.onCreateUser(function (profile, user) {
     } else {
         user.profile = {
             address: '127.0.0.1',
+            calibration: {},
             components: [],
             device: true,
             name: profile.profile.name,

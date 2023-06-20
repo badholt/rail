@@ -5,18 +5,20 @@ import {getContainer, renderCross} from '../components/cross';
 
 Template.calibrate.helpers({
     elements(elements) {
-    	renderCross('#cross-preview', elements[0]);
-        return elements[0];
-    },
-    return() {
-    	FlowRouter.go('/');
+    	if (elements) {
+            renderCross('#cross-preview', elements[0]);
+            return elements[0];
+        }
     }
 });
 
 Template.calibrate.onCreated(function () {
-	this.autorun(() => {
-        this.subscribe('users', {'_id': Meteor.userId});
-    });
+	this.autorun(() => this.subscribe('users', {'_id': Meteor.userId()}));
+});
+
+Template.calibrationView.onDestroyed(function () {
+    const calibration = Meteor.user().status.active.calibration;
+    if (!calibration) FlowRouter.go('/');
 });
 
 Template.screenCalibrationForm.events({
@@ -88,7 +90,7 @@ Template.screenCalibrationModal.onRendered(function () {
             },
             onHidden: function() {
                 Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', false);
-                device.calibrate.set(false);
+                device.calibrating.set(false);
             }
         })
         .modal('show');

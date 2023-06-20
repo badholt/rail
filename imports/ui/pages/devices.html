@@ -40,22 +40,55 @@
             </h1>
 
             <div class="description">
-                <a id="calibrate-screen-{{profile.username}}" class="ui black mini icon message">
-                    <i class="inverted link expand icon"></i>
-                    {{#with profile.calibration.screen.[0].offset}}
-                        <span class="header">Calibrated for offset {<span style="color: #f2711c;">{{x}}</span>, <span style="color: #2185d0;">{{y}}</span>}</span>
-                    {{/with}}
-                </a>
+                {{#with profile.calibration.screen}}
+                    <a id="calibrate-screen-{{../profile.username}}" class="ui black mini icon message">
+                        <i class="link expand icon"></i>
 
-                <a id="calibrate-water-{{profile.username}}" class="ui blue mini icon message">
-                    <i class="link tint icon"></i>
-                    {{#with profile.calibration.water}}
-                        <span class="header">Calibrated for {<span style="color: #f2711c;">{{amount}}</span>} mL offset & {<span style="color: #f2711c;">{{rate}}</span>} mL/s flowrate</span>
-                    {{/with}}
-                </a>
+                        <div class="content">                            
+                            <div class="ui inverted list">
+                                {{#each this}}
+                                    <div class="item" value="+">
+                                        {{type}} offset by {<span style="color: #f2711c;">{{offset.x}}</span>, <span style="color: #2185d0;">{{offset.y}}</span>}
+                                    </div>
+                                {{/each}}
+                            </div>
+                        </div>
+                    </a>
+                {{else}}
+                    <div class="ui inverted placeholder segment">
+                        <h5 class="ui image header">
+                            <i class="expand icon"></i>
+                            <span class="content">
+                                No screen configured
+                            </span>
+                        </h5>
+                    </div>
+                {{/with}}
 
-                {{#if calibrate}}
-                    {{> Template.dynamic template=calibrate}}
+                {{#with profile.calibration.water}}
+                    <a id="calibrate-water-{{../profile.username}}" class="ui blue mini icon message">
+                        <i class="link tint icon"></i>
+
+                        <div class="content">
+                            <div class="ui list">
+                                <div class="item" value="+"><b>Dispense amount</b> offset by <span style="color: #f2711c;">{{amount}}</span> mL</div>
+                                <div class="item" value="+"><b>Flowrate</b> offset by <span style="color: #f2711c;">{{rate}}</span> mL/s</div>
+                            </div>
+                        </div>
+                    </a>
+                {{else}}
+                    <div class="ui inverted placeholder segment">
+                        <h5 class="ui image header">
+                            <i class="tint icon"></i>
+                            <span class="content">
+                                No water reward configured
+                            </span>
+                        </h5>
+                    </div>
+                {{/with}}
+
+                {{#if calibrating}}
+                    {{> Template.dynamic template=calibrating}}
                 {{/if}}
 
                 <!-- <div id="pins-{{profile.username}}" class="ui icon list mini message">

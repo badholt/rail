@@ -52,11 +52,11 @@ Template.deviceActivity.onCreated(function () {
 
 Template.deviceCard.events({
     'click a[id^=calibrate-screen]'(event, template) {
-        template.calibrate.set('screenCalibrationModal');
+        template.calibrating.set('screenCalibrationModal');
         return template.data;
     },
     'click a[id^=calibrate-water]'(event, template) {
-        template.calibrate.set('waterCalibrationModal');
+        template.calibrating.set('waterCalibrationModal');
         return template.data;
     },
     'click .editable'(event, template) {
@@ -113,8 +113,8 @@ Template.deviceCard.events({
 });
 
 Template.deviceCard.helpers({
-    calibrate() {
-        return Template.instance().calibrate.get();
+    calibrating() {
+        return Template.instance().calibrating.get();
     },
     color(status) {
         if (status) return (status.online) ? (!status.idle) ? 'green' : 'yellow' : 'red';
@@ -134,7 +134,7 @@ Template.deviceCard.helpers({
 });
 
 Template.deviceCard.onCreated(function () {
-    this.calibrate = new ReactiveVar(false);
+    this.calibrating = new ReactiveVar(false);
     this.getContext = () => ({
         context: {
 			device: this.data._id,

@@ -1,13 +1,15 @@
 <template name="calibrate">
     {{#with elements currentUser.status.active.calibration}}
-        <svg id="cross-preview" height="100%" width="100%">
-            <text x="20" y="20" style="fill: #f2711c;">{{screen.width}}</text>
-            <text x="10" y="20" style="fill: #2185d0; writing-mode: tb; text-orientation: sideways; -webkit-text-orientation: sideways;">{{screen.height}}</text>
-                {{> cross}}
-        </svg>
-    {{else}}
-        {{return}}
+        {{> calibrationView}}
     {{/with}}
+</template>
+
+<template name="calibrationView">    
+    <svg id="cross-preview" height="100%" width="100%">
+        <text x="20" y="20" style="fill: #f2711c;">{{screen.width}}</text>
+        <text x="10" y="20" style="fill: #2185d0; writing-mode: tb; text-orientation: sideways; -webkit-text-orientation: sideways;">{{screen.height}}</text>
+        {{> cross}}
+    </svg>
 </template>
 
 <template name="screenCalibrationForm">

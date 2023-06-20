@@ -88,3 +88,7 @@ Meteor.publish('trials.session', (id) => Trials.find({session: id}, {sort: {numb
  * Returns:
  *  (1) user profile(s) and status(es) within requested parameters TODO: Reduce security gap */
 Meteor.publish('users', (params) => Meteor.users.find(params, {fields: {lastModified: 1, profile: 1, status: 1}}));
+Meteor.publish('users.user', (field) => {
+    const key = 'status.active.' + field;
+    return Meteor.users.find(Meteor.userId(), {fields: {[key]: 1}});
+});

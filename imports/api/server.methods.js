@@ -8,6 +8,20 @@ import {Experiments, Sessions, Subjects, Templates, Trials} from './collections'
 import {Meteor} from 'meteor/meteor';
 
 export const clients = new Map();
+const clientClosed = (n) => ('\v\x1b[45;97m Connection Closed, reasonCode: ' + n + ' \x1b[39;49m\v\r'),
+status = (client, id, title) => {
+    const statuses = ['connected', 'disconnecting', 'reconnecting'];
+    let status = '\n\x1b[43;30m ' + id + ' \x1b[0m  \x1b[33m' + title + '\n\x1b[33m━━━━━';
+    
+    _.each(statuses, (s) => {
+        const color = (client[s]) ? ';32' : ';37',
+        tabs = (s !== 'disconnecting') ? '\t\t' : '\t';
+
+        status +='\n⦿ ' + s + ':' + tabs + '\x1b[1' + color + 'm' + client[s] + '\x1b[22;39m';
+    });
+
+    return status + '\x1b[22m\n\x1b[33m━━━━━\n';
+};
 
 if (Meteor.isServer) Meteor.methods({
     'addExperiment': (fields) => {
@@ -88,7 +102,7 @@ if (Meteor.isServer) Meteor.methods({
             const client = clients.get(id);
 
             if (command === 'end') {
-				client.end();
+				client.end(false, {reasonCode: 4}, () => console.log(clientClosed(4)));
 			} else if (command === 'connect') {
 				client.reconnect();
 			}
@@ -112,19 +126,16 @@ if (Meteor.isServer) Meteor.methods({
             const client = clients.get(id);
 
             if (client.reconnecting !== true && !client.connected) {
-				console.log('\n\n\t - 2) END & RECONNECT -\n\n');
-				console.log('\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting);
-				let t = false;
-				client.end(true, {}, () => {
-					t = true;
+				client.end(false, {reasonCode: 5}, () => {
+                    console.log(clientClosed(5));
+                    client.reconnect();
 				});
-				console.log(client.connected, t);
-				client.reconnect();
 			}
         } else {
             /** If client does not exist for device, create a new client with its IP address: */
             const device = Meteor.users.findOne(id.replace('test_', '')),
-                client = mqtt.connect('mqtt://' + device.profile.address, options),
+                // client = mqtt.connect('mqtt://' + device.profile.address, options),
+                client = mqtt.connect( _.extend(options, {host: 'ws://' + device.profile.address + ':8080/mqtt', hostname: device.profile.address})),
 				syncMessage = Meteor.bindEnvironment((topic, payload) => {
                 /** Instructs mqtt client on how to handle all incoming messages: */
                 if (topic === 'response') {
@@ -173,7 +184,7 @@ if (Meteor.isServer) Meteor.methods({
 										const stage = (context[3] || message.context.stage) - 1,
 											trial = session.trials[(context[2] || message.context.trial) - 1],
 											timeStamp = (message['t1'] - message['t0']) * 1000 + message.context.timeStamp;
-//console.log('\n', message, '\n', timeStamp);
+
 										Meteor.call('updateTrial', trial, 'data.' + stage, 'push', {
 											pins: message.pins,
 											request: _.extend(message.request, {timeStamp: message.context.timeStamp}),
@@ -198,7 +209,7 @@ if (Meteor.isServer) Meteor.methods({
 
                     if (message.command) switch (message.command) {
                         case 'disconnect':
-                            client.end(true);
+                            client.end(false, {reasonCode: 6}, () => console.log(clientClosed(6)));
                             break;
                         case 'reconnect':
                             client.reconnect();
@@ -215,13 +226,13 @@ if (Meteor.isServer) Meteor.methods({
 			
             /** Configure client settings for this device: */
             client.on('connect', () => client.subscribe(['client', 'response'], {qos: 0}));
-            client.on('reconnect', () => console.log('\n\n\t - ' + id + ' RECONNECT -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
-//            client.on('packetsend', (packet) => console.log(id + ' packet SENT', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n', packet, '\n'));
-//            client.on('packetreceive', (packet) => console.log(id + ' packet RECEIVED', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n', packet, '\n'));
-            client.on('end', () => console.log('\n\n\t - ' + id + ' END -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
-//            client.on('close', () => console.log('\n\n\t - ' + id + ' CLOSE -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
-//            client.on('offline', () => console.log('\n\n\t - ' + id + ' OFFLINE -\n\n', '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting + '\n'));
-            client.on('error', (e) => console.log(e));
+            client.on('reconnect', () => console.log(status(client, id, 'RECONNECT')));
+//            client.on('packetsend', (packet) => console.log(status(client, id, 'SENT'), packet));
+//            client.on('packetreceive', (packet) => console.log(status(client, id, 'RECEIVED'), packet));
+            client.on('end', () => console.log(status(client, id, 'END')));
+//            client.on('close', () => console.log(status(client, id, 'CLOSE')));
+//            client.on('offline', () => console.log(status(client, id, 'OFFLINE')));
+            client.on('error', (e) => console.log('\n\n\x1b[91m━━━━━', e, '━━━━━\x1b[39m\n'));
             client.on('message', syncMessage);
 
             /** Add client to directory Map: */
@@ -233,30 +244,39 @@ if (Meteor.isServer) Meteor.methods({
             const client = clients.get(id);
 
 			if (client.reconnecting !== true && !client.connected) {
-				console.log('\n\n\t - 1) END & RECONNECT -\n\n');
-				console.log('\nclient:\t\t' + client.id + '\nconnected:\t\t', client.connected, '\ndisconnecting:\t', client.disconnecting, '\nreconnecting:\t', client.reconnecting);
-				client.end();
-				client.reconnect();
+                client.end(false, {reasonCode: 1}, ()=> {
+                    console.log(clientClosed(1));
+                    client.reconnect();
+                });
 			}
 
 			client.publish(topic, JSON.stringify(message), {qos: 0}, (e) => {
-					if (!e) {
-						console.log('\n1) SUCCESSFULLY PUBLISHED COMMAND:', message.command, '\n');
-						if (id.startsWith('test_') && message.detect !== 'on') client.end();
-					}
-				});
+                if (!e) {
+                    console.log('\n⦿ \x1b[33mEstablished\x1b[0;39;49m client \x1b[43;30m ' + id + ' \x1b[39;49m publishes: \x1b[7;33m', message.command, '\x1b[27;39;49m');
+					if (id.startsWith('test_') && message.detect && message.detect !== 'on') client.end(false, {reasonCode: 2}, () => console.log(clientClosed(2)));
+				}
+			});
         } else if (message.command !== 'disconnect') {
             /** Call 'mqttConnect' method to create mqtt client instance: */
-			const options = (!id.startsWith('test_')) ? {clientId: id} : {clientId: id, clean: false, keepalive: 0, reconnectPeriod: 0};
+			const options = {
+                clientId: id,
+                clean: false,
+                connectTimeout: 10 * 1000,
+                keepalive: 60,
+                protocolId: 'MQTT',
+                protocolVersion: 4,
+                reconnectPeriod: 1000,
+                rejectUnauthorized: false
+            };
 
             Meteor.call('mqttConnect', id, options, (error) => {
                 /** Now that a client exists for this device, publish message to its hosted mqtt server:  */
                 const client = clients.get(id);
-				console.log('Created ' + id, clients.keys(), client);
+				console.log('\x1b[93m━━━━━\n\x1b[93mCreated client \x1b[103;30m ' + id, '\x1b[39;49m\n\x1b[33mUpdated clients list: ', clients.keys(), '\x1b[39;49m\n\x1b[93m━━━━━');
                 if (!error) client.publish(topic, JSON.stringify(message), {qos: 0}, (e) => {
 					if (!e) {
-						console.log('\n2) SUCCESSFULLY PUBLISHED COMMAND:', message.command, '\n');
-						if (id.startsWith('test_') && message.detect !== 'on') client.end();
+						console.log('\n⦿ \x1b[93mNew\x1b[39;49m client \x1b[103;30m ' + id + ' \x1b[39;49m publishes: \x1b[103;30m', message.command, '\x1b[39;49m');
+						if (id.startsWith('test_') && message.detect && message.detect !== 'on') client.end(false, {reasonCode: 3}, () => console.log(clientClosed(3)));
 					}
 				});
             });

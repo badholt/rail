@@ -1,5 +1,6 @@
 import './menu.html';
 import './profile.html';
+import '../pages/calibrate';
 
 import '/imports/api/collections';
 import '/imports/ui/components/profile';
@@ -54,8 +55,9 @@ Template.menu.onCreated(function () {
     this.autorun(() => {
         if (user.profile.device) {
             this.subscribe('sessions.today', date, user._id);
-            this.subscribe('users', {'_id': user._id});
+            this.subscribe('users.user', 'calibration');
             Meteor.call('updateUser', user._id, 'status.active.session', 'set', '');
+            // this.subscribe('users.user', 'session');
         } else {
             this.subscribe('experiments.user', user._id);
             this.tabs = new ReactiveVar({});
@@ -64,6 +66,7 @@ Template.menu.onCreated(function () {
 });
 
 Template.sessionWindow.onCreated(function () {
+    //TODO: Handle multiple Sessions in the queue (ready at once)
     Meteor.call('updateUser', this.data.device, 'status.active.session', 'set', this.data._id);
     FlowRouter.go('/session/' + this.data._id);
 });
