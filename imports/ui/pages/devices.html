@@ -44,24 +44,26 @@
                     <a id="calibrate-screen-{{../profile.username}}" class="ui black mini icon message">
                         <i class="link expand icon"></i>
 
-                        <div class="content">                            
+                        <div class="content">                      
                             <div class="ui inverted list">
-                                {{#each this}}
+                                {{#with cross}}
                                     <div class="item" value="+">
-                                        {{type}} offset by {<span style="color: #f2711c;">{{offset.x}}</span>, <span style="color: #2185d0;">{{offset.y}}</span>}
+                                        <b>cross</b> offset by {<span style="color: #f2711c;">{{offset.x}}</span>, <span style="color: #2185d0;">{{offset.y}}</span>}
                                     </div>
-                                {{/each}}
+                                {{/with}}
                             </div>
                         </div>
                     </a>
                 {{else}}
                     <div class="ui inverted placeholder segment">
-                        <h5 class="ui image header">
-                            <i class="expand icon"></i>
-                            <span class="content">
-                                No screen configured
-                            </span>
-                        </h5>
+                        <a id="calibrate-screen-{{../profile.username}}">
+                            <h5 class="ui inverted image header">
+                                <i class="expand icon"></i>
+                                <span class="content">
+                                    No screen configured
+                                </span>
+                            </h5>
+                        </a>
                     </div>
                 {{/with}}
 
@@ -78,12 +80,14 @@
                     </a>
                 {{else}}
                     <div class="ui inverted placeholder segment">
-                        <h5 class="ui image header">
-                            <i class="tint icon"></i>
-                            <span class="content">
-                                No water reward configured
-                            </span>
-                        </h5>
+                        <a id="calibrate-water-{{../profile.username}}">
+                            <h5 class="ui inverted image header">
+                                <i class="tint icon"></i>
+                                <span class="content">
+                                    No water reward configured
+                                </span>
+                            </h5>
+                        </a>
                     </div>
                 {{/with}}
 

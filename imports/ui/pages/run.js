@@ -80,18 +80,28 @@ Template.sessionSetup.onCreated(function () {
         const form = $('#device-form').form('get values'),
             devices = form.devices.split(','),
             experiment = this.parent().getExperiment()._id;
-        console.log(stages);
 
         if (devices) _.each(devices, (id) => {
-            const device = this.cipher[id],
+            const deviceId = this.cipher[id],
+                device = Meteor.users.findOne(deviceId),
                 subjects = _.map(form[id], (subject) => this.cipher[subject]);
-            console.log(id, this.cipher, form, subjects);
-console.log(device, inputs, session, stages); //TODO add offsets
+
+            stages = _.map(stages, (stage)=> _.map(stage, (el)=> {
+                if (el.type === 'cross') {
+                    const cross = device.profile.calibration.screen['cross'];
+                    el.offset.x += cross.offset.x;
+                    el.offset.y += cross.offset.y;
+                } else if (el.type === 'reward') {
+                    _.each(el.commands, (command)=> {
+                        command.amount += device.profile.calibration.water.amount;
+                    });
+                }
+                return el;
+            }));
+
             if (subjects.length > 0) Meteor.call('generateTrials', inputs, session, stages, (error, trials) => {
-                console.log(error, trials);
-                if (!error) Meteor.call('addSession', device, experiment,
+                if (!error) Meteor.call('addSession', deviceId, experiment,
                     inputs, session, subjects, trials, (error, session) => {
-                        console.log(error, session, performance.timeOrigin, performance.now());
                         if (!error) Meteor.call('addTrial', session, 0, 1, Date.now(), () => {
                             /** A submission success message appears for 5 seconds: */
                             // this.success.set(true);
