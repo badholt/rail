@@ -40,84 +40,104 @@
             </h1>
 
             <div class="description">
-                {{#with profile.calibration.screen}}
-                    <a id="calibrate-screen-{{../profile.username}}" class="ui black mini icon message">
-                        <i class="link expand icon"></i>
+                {{#unless status.active.session}}
+                    {{#with profile.calibration.screen}}
+                        <a id="calibrate-screen-{{../profile.username}}" class="ui black mini icon message">
+                            <i class="link expand icon"></i>
 
-                        <div class="content">                      
-                            <div class="ui inverted list">
-                                {{#with cross}}
-                                    <div class="item" value="+">
-                                        <b>cross</b> offset by {<span style="color: #f2711c;">{{offset.x}}</span>, <span style="color: #2185d0;">{{offset.y}}</span>}
-                                    </div>
-                                {{/with}}
+                            <div class="content">                      
+                                <div class="ui inverted list">
+                                    {{#with cross}}
+                                        <div class="item" value="+">
+                                            <b>cross</b> offset by {<span style="color: #f2711c;">{{offset.x}}</span>, <span style="color: #2185d0;">{{offset.y}}</span>}
+                                        </div>
+                                    {{/with}}
+                                </div>
                             </div>
-                        </div>
-                    </a>
-                {{else}}
-                    <div class="ui inverted placeholder segment">
-                        <a id="calibrate-screen-{{../profile.username}}">
-                            <h5 class="ui inverted image header">
-                                <i class="expand icon"></i>
-                                <span class="content">
-                                    No screen configured
-                                </span>
-                            </h5>
                         </a>
-                    </div>
-                {{/with}}
+                    {{else}}
+                        <div class="ui inverted placeholder segment">
+                            <a id="calibrate-screen-{{../profile.username}}">
+                                <h5 class="ui inverted image header">
+                                    <i class="expand icon"></i>
+                                    <span class="content">
+                                        No screen configured
+                                    </span>
+                                </h5>
+                            </a>
+                        </div>
+                    {{/with}}
 
-                {{#with profile.calibration.water}}
-                    <a id="calibrate-water-{{../profile.username}}" class="ui blue mini icon message">
-                        <i class="link tint icon"></i>
+                    {{#with profile.calibration.water}}
+                        <a id="calibrate-water-{{../profile.username}}" class="ui blue mini icon message">
+                            <i class="link tint icon"></i>
+
+                            <div class="content">
+                                <div class="ui list">
+                                    <div class="item" value="+"><b>Dispense amount</b> offset by <span style="color: #f2711c;">{{amount}}</span> mL</div>
+                                    <div class="item" value="+"><b>Flowrate</b> offset by <span style="color: #f2711c;">{{rate}}</span> mL/s</div>
+                                </div>
+                            </div>
+                        </a>
+                    {{else}}
+                        <div class="ui inverted placeholder segment">
+                            <a id="calibrate-water-{{../profile.username}}">
+                                <h5 class="ui inverted image header">
+                                    <i class="tint icon"></i>
+                                    <span class="content">
+                                        No water reward configured
+                                    </span>
+                                </h5>
+                            </a>
+                        </div>
+                    {{/with}}
+
+                    {{#if calibrating}}
+                        {{> Template.dynamic template=calibrating}}
+                    {{/if}}
+
+                    <!-- <div id="pins-{{profile.username}}" class="ui icon list mini message">
+                        <i class="link microchip icon"></i>
 
                         <div class="content">
-                            <div class="ui list">
-                                <div class="item" value="+"><b>Dispense amount</b> offset by <span style="color: #f2711c;">{{amount}}</span> mL</div>
-                                <div class="item" value="+"><b>Flowrate</b> offset by <span style="color: #f2711c;">{{rate}}</span> mL/s</div>
+                            <div class="header">Assigned Pins</div>
+
+                            <div class="ui mini labels list">
+                                {{#each profile.components}}
+                                    <label class="ui {{color ../status}} label">
+                                        {{pin}}
+                                        <span class="detail">{{device}}</span>
+                                        <span class="detail">{{mode}}</span>
+                                    </label>
+                                {{else}}
+                                    <label class="ui {{color ../status}} label">None</label>
+                                {{/each}}
                             </div>
                         </div>
-                    </a>
+                    </div>
+
+                    {{#if pi status.board profile}}
+                        {{> piModal}}
+                    {{/if}} -->
                 {{else}}
-                    <div class="ui inverted placeholder segment">
-                        <a id="calibrate-water-{{../profile.username}}">
-                            <h5 class="ui inverted image header">
-                                <i class="tint icon"></i>
-                                <span class="content">
-                                    No water reward configured
-                                </span>
-                            </h5>
-                        </a>
+                    <div class="ui disabled inverted placeholder segment">
+                        <h5 class="ui image header">
+                            <i class="expand icon"></i>
+                            <span class="content">
+                                Screen calibration disabled
+                            </span>
+                        </h5>
                     </div>
-                {{/with}}
 
-                {{#if calibrating}}
-                    {{> Template.dynamic template=calibrating}}
-                {{/if}}
-
-                <!-- <div id="pins-{{profile.username}}" class="ui icon list mini message">
-                    <i class="link microchip icon"></i>
-
-                    <div class="content">
-                        <div class="header">Assigned Pins</div>
-
-                        <div class="ui mini labels list">
-                            {{#each profile.components}}
-                                <label class="ui {{color ../status}} label">
-                                    {{pin}}
-                                    <span class="detail">{{device}}</span>
-                                    <span class="detail">{{mode}}</span>
-                                </label>
-                            {{else}}
-                                <label class="ui {{color ../status}} label">None</label>
-                            {{/each}}
-                        </div>
+                    <div class="ui disabled inverted placeholder segment">
+                        <h5 class="ui image header">
+                            <i class="tint icon"></i>
+                            <span class="content">
+                                Water calibration disabled
+                            </span>
+                        </h5>
                     </div>
-                </div>
-
-                {{#if pi status.board profile}}
-                    {{> piModal}}
-                {{/if}} -->
+                {{/unless}}
             </div>
         </div>
 

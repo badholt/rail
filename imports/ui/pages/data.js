@@ -140,6 +140,116 @@ Template.dataMenu.events({
 					});
 
 					break;
+				case 'settings':
+					headers = ['Stage', 'Rule', 'Event'],
+					content = [
+						'Experiment\t' + experiment.title + '\n',
+						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+						'Subject\t' + subjects + '\n',
+						'Device\t' + device.profile.name + '\n',
+						'Experimenter\t' + user.profile.name + '\n\n'
+					];
+
+					content.push('Session\n');
+
+					_.each(session.settings.session, (value, key) => {
+						content.push(key + '\t' + value + '\n');
+					});
+
+					const compare = (condition, indent) => {
+						_.each(condition.objects, (object, o) => {
+							_.times(indent, () => content.push('\t'));
+							content.push(object.name);
+
+							if (_.isObject(object.property)) {
+								content.push('\n');
+
+								_.each(object.property, (value, key) => {
+									if (key !== 'conditions') {
+										_.times(indent + 1, () => content.push('\t'));
+										content.push(key + '\t' + value + '\n');
+									} else {
+										_.each(object.property.conditions, (c) => compare(c, indent + 1));
+										content.push('\n');
+									}
+								});
+							} else {
+								content.push('\t' + object.property + '\n');
+							}
+						});
+
+						_.times(indent, () => content.push('\t'));
+						content.push(condition.comparison + '\n');
+
+						_.each(condition.subjects, (subject, s) => {
+							_.times(indent, () => content.push('\t'));
+							content.push(subject.name);
+
+							if (_.isObject(subject.property)) {
+								content.push('\n');
+								
+								_.each(subject.property, (value, key) => {
+									if (key !== 'conditions') {
+										_.times(indent + 1, () => content.push('\t'));
+										content.push(key + '\t' + value + '\n');
+									} else {
+										_.each(subject.property.conditions, (c) => compare(c, indent + 1));
+										content.push('\n');
+									}
+								});
+							} else {
+								content.push('\t' + subject.property + '\n');
+							}
+						});
+					},
+					properties = (target, indent) => {
+						if (_.isObject(target)) {
+							_.each(target, (value, key) => {
+								_.times(indent, () => content.push('\t'));
+								content.push(key);
+
+								if (!_.isObject(value)) {
+									content.push('\t' + value + '\n');
+								} else {
+									content.push('\n');
+									properties(value, indent + 1);
+								}
+							});
+						} else {
+							_.times(indent, () => content.push('\t'));
+							content.push(target + '\n');
+						}
+					};
+
+					content.push('\n' + headers.join('\t'));
+
+					_.each(session.settings.inputs, (stage, i) => _.each(stage, (rule, j) => {
+						content.push('\n' + (i + 1) + '\t' + (j + 1) + '\t' + rule.event + '\n');
+						content.push((rule.conditions.length > 0) ? '\t\tConditions:\n' : '\t\tConditions:\n\t\t\tAlways\n');
+						_.each(rule.conditions, (condition, k) => compare(condition, 3));
+
+						if (rule.correct.length > 0) {
+							content.push('\t\tIf conditions met:\n');
+							_.each(rule.correct, (correct, k) => {
+								_.each(correct.targets, (target, l) => {
+									content.push('\t\t\tAfter ' + correct.delay + ' ms\t' + correct.action + '\t' + (target.type || target) + '\n');
+									if (_.isObject(target)) properties(_.omit(target, 'type'), 6);
+								});
+								_.each(correct.specifications, (value, key) => content.push('\t\t\t\t\t' + key + '\t' + value + '\n'));
+							});
+						}
+						
+						if (rule.incorrect.length > 0) {
+							content.push('\t\tIf conditions not met:\n');
+							_.each(rule.incorrect, (incorrect, k) => {
+								_.each(incorrect.targets, (target, l) => {
+									content.push('\t\t\tAfter ' + incorrect.delay + ' ms\t' + incorrect.action + '\t' + (target.type || target) + '\n');
+								});
+							});
+						}
+					}));
+
+					break;
 				case 'shapingI':
 					headers = ['Trial No', 'Trial Start', 'Tone Start', 'Reward Start', 'IR Entry'],
 						events = [['trial.start', 'audio.wave.start', 'reward.dispense.fired', 'request.ir.1']],
