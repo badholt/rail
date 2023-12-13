@@ -11,13 +11,13 @@ export const clients = new Map();
 const clientClosed = (n) => ('\v\x1b[45;97m Connection Closed, reasonCode: ' + n + ' \x1b[39;49m\v\r'),
 status = (client, id, title) => {
     const statuses = ['connected', 'disconnecting', 'reconnecting'];
-    let status = '\n\x1b[43;30m ' + id + ' \x1b[0m  \x1b[33m' + title + '\n\x1b[33m━━━━━';
+    let status = '\n\x1b[43;30m ' + id + ' \x1b[0m  \x1b[33m' + title + '\n\x1b[33m━━━━━\x1b[39;49m';
     
     _.each(statuses, (s) => {
         const color = (client[s]) ? ';32' : ';37',
         tabs = (s !== 'disconnecting') ? '\t\t' : '\t';
 
-        status +='\n⦿ ' + s + ':' + tabs + '\x1b[1' + color + 'm' + client[s] + '\x1b[22;39m';
+        status +='\n\x1b[33m⦿ ' + s + ':\x1b[39;49m' + tabs + '\x1b[1' + color + 'm' + client[s] + '\x1b[22;39m';
     });
 
     return status + '\x1b[22m\n\x1b[33m━━━━━\n';
@@ -114,7 +114,6 @@ if (Meteor.isServer) Meteor.methods({
 		clients.forEach((value, key) => {
 			const id = key.replace('test_', ''),
 			client = _.pick(value, 'options', 'connected', 'disconnecting', 'nextId', 'reconnecting', 'disconnected', '_deferredReconnect');
-			console.log(key, id, client);
 			Meteor.users.update({_id: id}, {
 				$set: {'status.client': client}
 			});//TODO: multiple clients per box
@@ -174,7 +173,7 @@ if (Meteor.isServer) Meteor.methods({
                         case 'reward':
 						case 'sensor':
                             if (message.context) {//TODO: Check Box 4 & 5 for difference from Box 3
-								if (message.context.device) {console.log('\n\t\t- TESTING -\n\t\t', message, '\n');
+								if (message.context.device) {
 									Meteor.call('updateUser', message.context.device, 'status.message', 'set', message);
 								} else {
 									const context = (message.context.topic) ? message.context.topic.split('/') : '',
@@ -252,7 +251,7 @@ if (Meteor.isServer) Meteor.methods({
 
 			client.publish(topic, JSON.stringify(message), {qos: 0}, (e) => {
                 if (!e) {
-                    console.log('\n⦿ \x1b[33mEstablished\x1b[0;39;49m client \x1b[43;30m ' + id + ' \x1b[39;49m publishes: \x1b[7;33m', message.command, '\x1b[27;39;49m');
+                    console.log('\n⦿ \x1b[33mEstablished\x1b[0;39;49m client \x1b[43;30m ' + id + ' \x1b[39;49m publishes: \x1b[7;33m', message.command, '\x1b[27;39;49m', ' to \x1b[7;33m', topic, '\x1b[27;39;49m');
 					if (id.startsWith('test_') && message.detect && message.detect !== 'on') client.end(false, {reasonCode: 2}, () => console.log(clientClosed(2)));
 				}
 			});

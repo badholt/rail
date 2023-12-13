@@ -1,5 +1,6 @@
 import './calibrate.html';
 import '/imports/ui/components/cross';
+import '/imports/ui/components/dropdown/offset';
 
 import {getContainer, renderCross} from '../components/cross';
 
@@ -60,6 +61,7 @@ Template.screenCalibrationModal.helpers({
 
 Template.screenCalibrationModal.onCreated(function () {
     const calibration = this.data.profile.calibration;
+    this.cipher = {}; // For dropdown decryption
     this.elements = new ReactiveVar((calibration.screen) ? calibration.screen : {cross: {
         "offset": {
             "x": 0,
@@ -69,6 +71,7 @@ Template.screenCalibrationModal.onCreated(function () {
         "weight": 10
     }});
     this.screen = new ReactiveVar({height: "480px", width: "800px"});
+    this.templateId = new ReactiveVar(_.last(this.data.templates));
 });
 
 Template.screenCalibrationModal.onRendered(function () {
@@ -104,7 +107,9 @@ Template.waterCalibrationForm.events({
 
             switch (target.name) {
                 case 'amount':
-                case 'rate':
+                case 'dispense':
+                case 'intercept':
+                case 'slope':
                     settings[target.name] = value;
                     break;
             }
@@ -124,8 +129,10 @@ Template.waterCalibrationModal.helpers({
 Template.waterCalibrationModal.onCreated(function () {
     const calibration = this.data.profile.calibration;
     this.settings = new ReactiveVar((calibration.water) ? calibration.water : {
-        "amount": 0.001,
-        "rate": 0.10
+        "amount": 0,
+        "intercept": 0.0687, // Original water curve value, tailored to best-fit Box 3
+        "dispense": 0,
+        "slope": 5.57 // Original water curve value, tailored to best-fit Box 3
     });
 });
 
@@ -140,7 +147,7 @@ Template.waterCalibrationModal.onRendered(function () {
                 Meteor.call('updateUser', device.data._id, 'profile.calibration.water', 'set', settings.get());
             },
             onShow: function() {
-                Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', settings.get());
+                Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', {water: settings.get()});
             },
             onHidden: function() {
                 Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', false);

@@ -27,7 +27,7 @@
                 <i class="large black link right floated video icon"></i>
             </a>
 
-            <a href="http://{{profile.address}}:8080" target="_blank">
+            <a href="http://{{profile.address}}:8082" target="_blank">
                 <i class="large black link right floated sliders icon"></i>
             </a>
 
@@ -75,7 +75,7 @@
                             <div class="content">
                                 <div class="ui list">
                                     <div class="item" value="+"><b>Dispense amount</b> offset by <span style="color: #f2711c;">{{amount}}</span> mL</div>
-                                    <div class="item" value="+"><b>Flowrate</b> offset by <span style="color: #f2711c;">{{rate}}</span> mL/s</div>
+                                    <div class="item" value="+"><b>Dispense time</b> offset by <span style="color: #f2711c;">{{dispense}}</span> s</div>
                                 </div>
                             </div>
                         </a>
@@ -218,7 +218,7 @@
 </template>
 
 <template name="deviceCardMessage">
-    <div class="ui mini success message">
+    <div class="ui attached mini success message">
         <i class="close icon"></i>
         <div class="header">
             <i class="icons">

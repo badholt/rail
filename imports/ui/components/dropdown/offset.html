@@ -1,0 +1,10 @@
+<template name="offsetDropdown">
+    <select id="offsets" class="ui labeled search selection dropdown" name="template">
+        {{#each templates}}
+            <option class="item" value="{{encrypt _id}}">
+                {{#if author}}{{> profileAvatar author}} {{/if}}{{#if name}}{{name}}{{/if}}
+                {{#with offset stages 'cross'}}<div class="ui right floated mini orange label">Offset {{x}}, {{y}}</div>{{/with}}
+            </option>
+        {{/each}}
+    </select>
+</template>

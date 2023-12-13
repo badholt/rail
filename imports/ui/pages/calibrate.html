@@ -14,25 +14,29 @@
 
 <template name="screenCalibrationForm">
     <form id="calibration-form" class="ui inverted form">
-        <label>Offset <span class="ui mini horizontal label">% from center</span></label>
-        <div class="two fields">
-            <div class="field">
-                <div class="ui inverted transparent input">
-                    <div class="ui mini orange right pointing label">
-                        x
+        <div style="border: 1px solid #f2711c; border-radius: 5px; padding: 5px 10px; margin-top: -10px; margin-bottom: 10px;">
+            <label>Offset <span class="ui mini horizontal label">% from center</span></label>
+            <div class="two fields">
+                <div class="field">
+                    <div class="ui inverted transparent input">
+                        <div class="ui mini orange right pointing label">
+                            x
+                        </div>
+                        <input type="number" name="offset-x" placeholder="0.0"
+                               value="{{offset.x}}" max="1.0" min="-1.0" step="0.1">
                     </div>
-                    <input type="number" name="offset-x" placeholder="0.0"
-                           value="{{offset.x}}" max="1.0" min="-1.0" step="0.1">
                 </div>
-            </div>
-            <div class="field">
-                <div class="ui inverted transparent input">
-                    <div class="ui mini blue right pointing label">
-                        y
+                <div class="field">
+                    <div class="ui inverted transparent input">
+                        <div class="ui mini blue right pointing label">
+                            y
+                        </div>
+                        <input type="number" name="offset-y" placeholder="0.0"
+                               value="{{offset.y}}" max="1.0" min="-1.0" step="0.1">
                     </div>
-                    <input type="number" name="offset-y" placeholder="0.0"
-                           value="{{offset.y}}" max="1.0" min="-1.0" step="0.1">
                 </div>
+
+                <i class="ui circular inverted orange link warning icon" style="position: absolute; top: 22px; left: -20px;" title="This will modify the offset already applied by the template!"></i>
             </div>
         </div>
 
@@ -70,23 +74,7 @@
         </div>
 
         <div class="actions">
-            <button class="ui left floated black icon button">
-                <i class="add icon"></i>
-            </button>
-            <div class="ui black icon buttons">
-                <button class="ui button">
-                    <i class="left arrow icon"></i>
-                </button>
-                <button class="ui button">
-                    <i class="up arrow icon"></i>
-                </button>
-                <button class="ui button">
-                    <i class="down arrow icon"></i>
-                </button>
-                <button class="ui button">
-                    <i class="right arrow icon"></i>
-                </button>
-            </div>
+            {{> offsetDropdown}}
 
             <button class="ui positive right labeled icon button">Save to {{profile.name}}<i class="checkmark icon"></i></button>
         </div>
@@ -96,19 +84,42 @@
 <template name="waterCalibrationForm">
     <div id="water-calibration-form" class="ui inverted form">
         <div class="two fields">
-            <div class="field">
+            <div class="disabled field" style="border: 1px solid #f2711c; border-radius: 5px; padding: 10px; margin-top: -10px;">
                 <div class="ui right labeled input">
-                    <label for="amount" class="ui blue right pointing mini label">Offset:</label>
+                    <label for="amount" class="ui blue right pointing mini label">Amount Offset:</label>
                     <input name="amount" step="0.001" type="number" value="{{amount}}">
                     <span class="ui mini label">mL</span>
                 </div>
+
+                <i class="ui circular inverted orange link warning icon" style="position: absolute; top: 5px; left: -20px;" title="This will modify the initial water reward amount calculated using the water curve!"></i>
             </div>
 
-            <div class="field">
+            <div class="field" style="border: 1px solid #f2711c; border-radius: 5px; padding: 10px; margin-top: -10px;">
                 <div class="ui right labeled input">
-                    <label for="rate" class="ui blue right pointing mini label">Rate:</label>
-                    <input name="rate" min="0" step="0.001" type="number" value="{{rate}}">
-                    <span class="ui mini label">mL/s</span>
+                    <label for="dispense" class="ui blue right pointing mini label">Time Offset:</label>
+                    <input name="dispense" min="0" step="0.001" type="number" value="{{dispense}}">
+                    <span class="ui mini label">s</span>
+                </div>
+
+                <i class="ui circular inverted orange link warning icon" style="position: absolute; top: 5px; right: -25px;" title="This will modify the dispense time specified by any template!"></i>
+            </div>
+        </div>
+        <div class="disabled inline fields">
+            <label>Water Curve:  <label class="ui black label">f(x) = </label></label>
+
+            <div class="field">
+                <div class="ui left labeled input">
+                    <label for="slope" class="ui blue right pointing label">slope (m)</label>
+                    <input name="slope" step="0.001" type="number" value="{{slope}}">
+                </div>
+            </div>
+
+            <label><label class="ui black label"> * x + </label></label>
+
+            <div class="field">
+                <div class="ui left labeled input">
+                    <label for="intercept" class="ui blue right pointing label">intercept (b)</label>
+                    <input name="intercept" step="0.001" type="number" value="{{intercept}}">
                 </div>
             </div>
         </div>
@@ -123,24 +134,6 @@
         </div>
 
         <div class="actions">
-            <button class="ui left floated black icon button">
-                <i class="add icon"></i>
-            </button>
-            <div class="ui black icon buttons">
-                <button class="ui button">
-                    <i class="left arrow icon"></i>
-                </button>
-                <button class="ui button">
-                    <i class="up arrow icon"></i>
-                </button>
-                <button class="ui button">
-                    <i class="down arrow icon"></i>
-                </button>
-                <button class="ui button">
-                    <i class="right arrow icon"></i>
-                </button>
-            </div>
-
             <button class="ui positive right labeled icon button">Save to {{profile.name}}<i class="checkmark icon"></i></button>
         </div>
     </div>

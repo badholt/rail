@@ -19,9 +19,9 @@
                 {{#each session}}
                     {{> sessionWindow}}
                 {{else}}
-                    {{#if currentUser.status.active.calibration}}
+                    {{#with currentUser.status.active.calibration}}
                         {{> calibrationWindow}}
-                    {{/if}}
+                    {{/with}}
                 {{/each}}
             {{/unless}}
 

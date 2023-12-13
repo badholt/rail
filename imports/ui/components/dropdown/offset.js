@@ -1,15 +1,15 @@
-/** components/template.js
- *  Dropdown menu for available experiment templates
+/** components/offset.js
+ *  Dropdown menu for previewing offsets in all available experiment templates
  * * * * * * * */
-import './template.html';
+import './offset.html';
 
 import {Meteor} from "meteor/meteor";
 import {Template} from 'meteor/templating';
 import {Templates} from '../../../api/collections';
 
-Template.templateDropdown.helpers({
+Template.offsetDropdown.helpers({
     encrypt(id) {
-        const cipher = Template.instance().parent(2).cipher;
+        const cipher = Template.instance().parent().cipher;
 
         if (cipher) {
             const stored = _.find(_.invert(cipher), (value, key) => key === id),
@@ -19,29 +19,32 @@ Template.templateDropdown.helpers({
             return encrypted;
         }
     },
+    offset (stages, type) {
+        const element = _.find(_.flatten(stages), (element) => (element.type === type));
+        return element.offset;
+    },
     templates() {
-        return Templates.find({}, {sort: {name: 1}});
+        return Templates.find({ "stages": { "$elemMatch": { "$elemMatch": { "type": "cross" }}}}, {sort: {name: 1}});
     }
 });
 
-Template.templateDropdown.onCreated(function () {
+Template.offsetDropdown.onCreated(function () {
     /** Subscribes to all experiments accessible with user permissions,
      *  recomputes when user ID changes (i.e. login/logout) */
     this.autorun(() => this.subscribe('templates.user', Meteor.userId()));
 });
 
-Template.templateDropdown.onRendered(function () {
-    const form = Template.instance().parent(2),
-        template = form.templateId.get(),
+Template.offsetDropdown.onRendered(function () {
+    const form = Template.instance().parent();
+    console.log(form);
+    const template = form.templateId.get(),
         stored = _.find(_.invert(form.cipher), (value, key) => key === template);
 
-    $('#templates')
+    $('#offsets')
         .dropdown({
             action: 'activate',
             onChange: (value) => {
                 const id = form.cipher[value];
-
-                if (form.page) form.page.set(0);
                 form.templateId.set(id);
             }
         })

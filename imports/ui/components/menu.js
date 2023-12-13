@@ -12,7 +12,7 @@ import {ReactiveVar} from 'meteor/reactive-var';
 import {Template} from 'meteor/templating';
 
 Template.calibrationWindow.onCreated(function () {
-    FlowRouter.go('/calibrate');
+    if (this.data.cross) FlowRouter.go('/calibrate');
 });
 
 Template.menu.events({

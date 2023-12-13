@@ -18,7 +18,7 @@ Template.deviceActivity.events({
 Template.deviceActivity.helpers({
     name(date, subjects) {
         let t = moment(date).format('ddd HH:mm');
-        
+
         _.each(subjects, (id, i) => {
             const subject = Subjects.findOne(id);
             if (subject) {

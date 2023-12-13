@@ -126,9 +126,12 @@ Template.dataMenu.events({
 							const groups = getGroups(stage, i);
 
 							if (groups['reward']) _.each(groups['reward'], (e) => {
-								if (e.request.amount) amount += e.request.amount;
-								if (e.request.dispense) dispense += e.request.dispense;
-								if (e.request.dispense && e.timeStamp) timeStamps.push(e.timeStamp);
+								if (e.request.dispense) {
+									amount += ((e.request.dispense - device.profile.calibration.water.intercept) / device.profile.calibration.water.slope);
+									dispense += e.request.dispense;
+
+									if (e.timeStamp) timeStamps.push(e.timeStamp);
+								}
 							});
 						});
 
