@@ -23,6 +23,7 @@ export const getContainer = (selector) => {
             max = (span > weight) ? span : weight,
             x = (1 + settings.offset.x) * center.x,
             y = (1 + settings.offset.y) * center.y;
+            //TODO: Only use above calculation for calibration; need translation for trial
 
         /** Fixation Cross: */
         cross.attr('x', (d, i) => i % 2 > 0 ? x - (span / 2) : x - (weight / 2));

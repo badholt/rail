@@ -3,7 +3,7 @@
 
     {{#with session}}
         {{#with data settings stage trials}}
-            {{> trialSVG stage=stage trial=this}}
+            {{> trialSVG inputs=../settings.inputs stage=stage trial=this}}
         {{/with}}
     {{/with}}
 </template>

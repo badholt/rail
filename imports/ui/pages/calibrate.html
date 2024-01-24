@@ -68,9 +68,11 @@
             <svg id="cross-preview" style="{{#with screen}}height: {{height}}; width: {{width}};{{/with}}background: #1b1c1d; border-left-color: #2185d0; border-top-color: #f2711c; display: block; margin: 0 auto 1.5em auto;">
                 <text x="20" y="20" style="fill: #f2711c;">{{screen.width}}</text>
                 <text x="10" y="20" style="fill: #2185d0; writing-mode: tb; text-orientation: sideways; -webkit-text-orientation: sideways;">{{screen.height}}</text>
-                {{> cross (element)}}
+                {{#with template}}
+                    {{> cross (element template)}}
+                {{/with}}
             </svg>
-            {{> screenCalibrationForm (element)}}
+            {{> screenCalibrationForm (element template)}}
         </div>
 
         <div class="actions">

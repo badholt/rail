@@ -44,8 +44,8 @@ Template.offsetDropdown.onRendered(function () {
         .dropdown({
             action: 'activate',
             onChange: (value) => {
-                const id = form.cipher[value];
-                form.templateId.set(id);
+                //const id = form.cipher[value];
+                form.templateId.set(value);
             }
         })
         .dropdown('set selected', stored);

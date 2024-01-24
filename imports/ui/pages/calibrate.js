@@ -3,6 +3,8 @@ import '/imports/ui/components/cross';
 import '/imports/ui/components/dropdown/offset';
 
 import {getContainer, renderCross} from '../components/cross';
+import {ReactiveVar} from 'meteor/reactive-var';
+import {Templates} from '../../api/collections';
 
 Template.calibrate.helpers({
     elements(elements) {
@@ -51,11 +53,34 @@ Template.screenCalibrationForm.events({
 });
 
 Template.screenCalibrationModal.helpers({
-    element() {
-        return Template.instance().elements.get()['cross'];
+    element(template) {console.log(template);
+        let current = Template.instance().elements.get()['cross'];
+
+        /*if (template) {
+            const def = _.find(_.flatten(template.stages), (element) => (element.type === 'cross'));
+
+            if (def) {
+                current = {
+                    "offset": {
+                        "x": def.offset.x + current.offset.x,
+                        "y": def.offset.y + current.offset.y
+                    },
+                    "span": 75,
+                    "weight": 10
+                };console.log(def, current);
+            }
+        }*/ // TODO: Move out of helper to intialize & onChange
+
+        return current;
     },
     screen() {
         return Template.instance().screen.get();
+    },
+    template() {
+        const templateId = Template.instance().templateId.get(),
+        id = Template.instance().cipher[templateId];console.log(Template.instance(), templateId, id);
+
+        return Templates.findOne({"_id": id});
     }
 });
 
@@ -65,13 +90,13 @@ Template.screenCalibrationModal.onCreated(function () {
     this.elements = new ReactiveVar((calibration.screen) ? calibration.screen : {cross: {
         "offset": {
             "x": 0,
-            "y": 0.85
+            "y": 0.75
         },
         "span": 75,
         "weight": 10
     }});
     this.screen = new ReactiveVar({height: "480px", width: "800px"});
-    this.templateId = new ReactiveVar(_.last(this.data.templates));
+    this.templateId = new ReactiveVar("");
 });
 
 Template.screenCalibrationModal.onRendered(function () {

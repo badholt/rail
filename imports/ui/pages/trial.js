@@ -40,7 +40,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
                 'count': (p) => {
                     const data = template.getTrial(trial + 1).data,
 					f = _.filter(data[stage - 1], (e) => {
-                        const u = update(variables, {event: {$set: (p) => (e[p])}}); // Count can filter other events like iti.end
+                        const u = update(variables, {event: {$set: (p) => (e[p])}}); // Count can filter other events like iti.end, but requires all events to pass
                         return conditionsMet(p, u);
                     });console.log("COUNT", p, f);
 
@@ -48,10 +48,10 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
                 }, // need to keep track of what event is referenced so that timeStamps can be compared
                 'data': (p) => {
                     const data = template.getTrial(trial + 1).data,
-                    f = _.pluck(_.filter(data[stage - 1], (e) => {
+                    f = _.pluck(_.filter(data[stage - 1], (e) => { // Data filters out individual events that pass a set of conditions
                         const u = update(variables, {event: {$set: (p) => (e[p])}});
                         return conditionsMet(p, u);
-                    }), p.value);console.log("DATA", data, p.value, f, f[p.index]);
+                    }), p.value);console.log("DATA", data, p, p.value, f, f[p.index]);
 
                     return f[p.index];
                 },
@@ -468,13 +468,13 @@ Template.trialElement.helpers({
             template.timers[trial][stage][name + '.start'] = Meteor.setTimeout(() => {
                 template.recordEvent({timeStamp: performance.now(), type: type + '.start'});
                 template.toggles[name] = true;
-                //console.log('%c⏳ ' + name + ' start\t', 'color: purple; font-size: 1.5em; font-weight: 800;', performance.now());
+                console.log('%c⏳ ' + name + ' start\t', 'color: purple; font-size: 1.5em; font-weight: 800;', performance.now());
             }, delay);
 
             template.timers[trial][stage][name + '.end'] = Meteor.setTimeout(() => {
                 template.recordEvent({timeStamp: performance.now(), type: name + '.end'});
                 template.toggles[name] = false;
-                //console.log('%c⌛ ' + name + ' end\t', 'color: purple; font-size: 1.5em; font-weight: 800;', performance.now());
+                console.log('%c⌛ ' + name + ' end\t', 'color: purple; font-size: 1.5em; font-weight: 800;', performance.now());
             }, delay + duration);
         }
 
@@ -524,46 +524,40 @@ Template.trialSVG.helpers({
     },
     ir(stage, trial) {
         const data = trial.data[stage - 1],
-            prereq = _.some(data, (element) => (element.type === 'click' || element.type === 'iti.end'));
+            template = Template.instance(),
+            triggered = template.triggered.get();
 
-            //TODO: ITI.end added but may interfere in later paradigms; IR handling in ShII vs. ShIV;
-            //TODO: Move timestamp filter to processEvent condition //make sure IR events prior to ITI end are not counted b/c is clearing timers but not preceding trial
+        /** By setting triggered to the updated length of recorded events,
+         *  each newly added event is processed only once. */
+        if (0 < data.length && triggered < data.length) {
+            const last = data[triggered],
+            inputs = template.events[last.type];
 
-        if (prereq) {
-            const groups = _.groupBy(_.filter(data, (element) => (element.request && (element.request.ir === 1 || element.request.reward === "off"))), (element) => (element.type)),
-			entry = (groups['sensor']) ? _.filter(groups['sensor'], (e) => {
-				if (groups['reward']) {console.log(groups['reward']);
-					const trigger = groups['reward'][0];
-					return (trigger) ? (e.timeStamp - trigger.timeStamp) > 200 : false;
-				} else {
-					return true;
-				}
-			}) : [],
-				//entry = _.filter(data, (element) => (element.request && element.request.ir === 1)),
-			template = Template.instance(),
-			triggered = template.triggered.get();
+            /** Only proceed with event processing if inputs governing this event type are found.
+             *  Check event against each set of conditions, potentially fulfilling criteria for multiple reactions: */
+            _.each(inputs, (input, index) => { //TODO Generalize into processing events from inputs feed (i.e., ir sensor)
+                const entry = (last.request && last.request.ir === 1),
+                prereq = _.some(data, (e) => (e.type === 'reward' && e.request.reward === "off")); console.log("IR entry?\t" + entry, "\nReward dispensed?\t" + prereq);
 
-            /** The first IR entry event is ignored, due to a power "blip" upon reward delivery. */
-            if (0 < entry.length && triggered < entry.length) {
-                console.log('%c⚡ Trial ' + trial.number + ':\tIR entry ' + entry.length, 'color:red; font-size: 3em', performance.now());
-                processEvent({number: entry.length, timeStamp: entry[0]['timeStamp'], type: 'ir.entry'}, template.parent(), stage, trial.number - 1);
+                if (entry && prereq) {
+                    /** Create reaction event & Collect all of same event type: */
+                    const event = 'ir.entry',
+                    elements = _.filter(data, (e) => (e.type === event));
 
-  //              const p = template.parent(),
-  //                  n = p.timers[trial.number][stage]['next.trial'];
+                    /** Process the reaction event using template's input conditions: */
+                    processEvent({index: triggered, number: (elements.length + 1), timeStamp: last.timeStamp, type: event}, template.parent(), stage, trial.number - 1);
+                    console.log('%c⚡ Trial ' + trial.number + ':\t IR Entry ' + (elements.length + 1), 'color:red; font-size: 3em', performance.now());
+                }
+            });
 
-  //              Meteor.clearTimeout(n);
-  //              p.timers[trial.number][stage]['next.trial'] = null;
-  //              p.nextTrial(0, 1, 0);
-
-                /** By setting triggered to the updated length of detection events each time,
-                 * each event is processed only once. */
-                template.triggered.set(entry.length);
-            }
+            /** Will only increment to next data entry in events list */
+            template.triggered.set(triggered + 1);
         }
     }
 });
 
 Template.trialSVG.onCreated(function () {
+    this.events = _.groupBy(this.data.inputs[this.data.stage - 1],"event");
     this.triggered = new ReactiveVar(0);
 });
 

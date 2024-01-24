@@ -143,6 +143,31 @@ Template.dataMenu.events({
 					});
 
 					break;
+				case 'sensor':
+					headers = ['Trial No', 'Sensor Status', 'TimeStamp'],
+						content = [
+							'Experiment\t' + experiment.title + '\n',
+							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+							'Subject\t' + subjects + '\n',
+							'Device\t' + device.profile.name + '\n',
+							'Experimenter\t' + user.profile.name + '\n\n',
+							headers.join('\t') + '\n'
+						];
+
+					_.each(session.trials, (id) => {
+						const trial = Trials.findOne(id);
+
+						_.each(trial.data, (stage, i) => {
+							const groups = getGroups(stage, i);console.log(groups),
+							ir = _.sortBy(_.flatten(_.filter(groups, (value, key) => (key.startsWith('request.ir.')))), (e) => (e.timeStamp));
+						});
+
+						content.push(trial.number + '\t');
+						_.each(ir, (e) => (content.push(e.status + '\t' + e.timeStamp + '\t')));
+						content.push('\n');
+					});
+
+					break;
 				case 'settings':
 					headers = ['Stage', 'Rule', 'Event'],
 					content = [
@@ -254,7 +279,7 @@ Template.dataMenu.events({
 
 					break;
 				case 'shapingI':
-					headers = ['Trial No', 'Trial Start', 'Tone Start', 'Reward Start', 'IR Entry'],
+					headers = ['Trial No', 'Trial Start', 'Tone Start', 'Reward Stop', 'IR Entry'],
 						events = [['trial.start', 'audio.wave.start', 'reward.dispense.fired', 'request.ir.1']],
 						content = [
 							'Experiment\t' + experiment.title + '\n',
@@ -273,11 +298,15 @@ Template.dataMenu.events({
 						_.each(trial.data, (stage, i) => {
 							const groups = getGroups(stage, i),
 								ir = _.filter(groups['request.ir.1'], (e) => {
-									if (groups['audio.wave.start']) {
+									/*if (groups['audio.wave.start']) {
 										const tone = groups['audio.wave.start'][0];
-										return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false;
+										return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false;*/
+
+									if (groups['reward.dispense.fired']) {
+										const reward = groups['reward.dispense.fired'][0];
+										return (reward) ? (e.timeStamp - reward.timeStamp) > 0 : false;
 									} else {
-										console.log('no tone: ', stage, i, groups['audio.wave.start']);
+										console.log('no reward: ', stage, i, groups['reward.dispense.fired']);
 									}
 								});
 								
@@ -287,7 +316,7 @@ Template.dataMenu.events({
 											content.push(e.timeStamp + '\t');
 										});
 									} else if (ir) {
-										_.each(ir, (e)=> {console.log(e);
+										_.each(ir, (e)=> {
 											content.push(e.timeStamp + '\t');
 										});
 									} else {
