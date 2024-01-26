@@ -537,7 +537,7 @@ Template.trialSVG.helpers({
              *  Check event against each set of conditions, potentially fulfilling criteria for multiple reactions: */
             _.each(inputs, (input, index) => { //TODO Generalize into processing events from inputs feed (i.e., ir sensor)
                 const entry = (last.request && last.request.ir === 1),
-                prereq = _.some(data, (e) => (e.type === 'reward' && e.request.reward === "off")); console.log("IR entry?\t" + entry, "\nReward dispensed?\t" + prereq);
+                prereq = _.some(data, (e) => (e.type === 'reward' && e.request.reward === "off" && (last.timeStamp - e.timeStamp > 200))); console.log("IR entry?\t" + entry, "\nReward dispensed?\t" + prereq);
 
                 if (entry && prereq) {
                     /** Create reaction event & Collect all of same event type: */
