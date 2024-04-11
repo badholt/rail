@@ -98,7 +98,7 @@ Template.dataMenu.events({
 						content.push(trial.number + '\t');
 						
 						_.each(clicks, (stage, i) => _.each(stage, (e, j) => {
-							content.push(((e.clientY > 420) ? 'm\t' : (e.clientX < (width / 2)) ? 'l\t' : 'r\t') + e.timeStamp + '\t');
+							content.push(((e.clientY > 430) ? 'm' : (e.clientX < (width / 2)) ? 'l' : 'r') + ' (' + e.clientX + ', ' + e.clientY + ')\t' + e.timeStamp + '\t');
 						}));
 						
 						content.push('\n');
@@ -279,8 +279,8 @@ Template.dataMenu.events({
 
 					break;
 				case 'shapingI':
-					headers = ['Trial No', 'Trial Start', 'Tone Start', 'Reward Stop', 'IR Entry'],
-						events = [['trial.start', 'audio.wave.start', 'reward.dispense.fired', 'request.ir.1']],
+					headers = ['Trial No', 'Trial Start', 'Tone Start', 'Reward Stop', 'IR Entry (Post-Tone)'],
+						events = [['trial.start', 'audio.start', 'reward', 'request.ir.1']],
 						content = [
 							'Experiment\t' + experiment.title + '\n',
 							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
@@ -298,22 +298,18 @@ Template.dataMenu.events({
 						_.each(trial.data, (stage, i) => {
 							const groups = getGroups(stage, i),
 								ir = _.filter(groups['request.ir.1'], (e) => {
-									/*if (groups['audio.wave.start']) {
-										const tone = groups['audio.wave.start'][0];
-										return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false;*/
-
-									if (groups['reward.dispense.fired']) {
-										const reward = groups['reward.dispense.fired'][0];
-										return (reward) ? (e.timeStamp - reward.timeStamp) > 0 : false;
+									if (groups['audio.start']) {
+										const tone = groups['audio.start'][0];
+										return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false;
 									} else {
-										console.log('no reward: ', stage, i, groups['reward.dispense.fired']);
+										console.log('No tone:\t', stage, i, groups['audio.start']);
 									}
 								});
 								
 								_.each(events[i], (g) => {
 									if (g !== 'request.ir.1' && groups[g]) {
 										_.each(groups[g], (e)=> {
-											content.push(e.timeStamp + '\t');
+											if (g !== 'reward' || e.request.reward === 'off') content.push(e.timeStamp + '\t');
 										});
 									} else if (ir) {
 										_.each(ir, (e)=> {
@@ -345,44 +341,35 @@ Template.dataMenu.events({
 						const trial = Trials.findOne(id),
 							clicks = _.filter(trial.data[0], (e) => (e.type === 'click'));
 
-						if (clicks.length > 0) {
-							_.each(trial.data, (stage, i) => {
-								const groups = getGroups(stage, i),
-									ir = _.filter(groups['request.ir.1'], (e) => {
-										if (groups['audio.wave.start']) {
-											const tone = groups['audio.wave.start'][0];
-											return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false;
-										} else {
-											console.log('no tone: ', stage, i, groups['audio.wave.start']);
-										}
-									});
-
-								if (i === 0) content.push(trial.number + '\t');
-
-								_.each(events[i], (g) => {
-									if (g !== 'request.ir.1' && groups[g]) {
-										_.each(groups[g], (e)=> {
-											content.push(e.timeStamp + '\t');
-										});
-									} else if (ir) {
-										_.each(ir, (e)=> {console.log(e);
-											content.push(e.timeStamp + '\t');
-										});
+						_.each(trial.data, (stage, i) => {
+							const groups = getGroups(stage, i),
+								ir = _.filter(groups['request.ir.1'], (e) => {
+									if (groups['audio.start']) {
+										const tone = (groups['audio.start'] && groups['audio.start'].length > 1) ? groups['audio.start'][1] : 0;
+										return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false;
 									} else {
-										content.push('\t');
+										console.log('no tone: ', stage, i, groups['audio.start']);
 									}
 								});
-							});
 
-							content.push('\n');
-						}
+							/** Print the trial number only once, during the first stage: */
+							if (i === 0) content.push(trial.number + '\t');
+
+							_.each(groups['trial.start'], (e)=> (content.push(e.timeStamp + '\t')));
+
+							if (clicks.length > 0) content.push(clicks[0].timeStamp + '\t');
+
+							if (ir) _.each(ir, (e)=> (content.push(e.timeStamp + '\t')));
+						});
+
+						content.push('\n');
 					});
 
 					break;
 				case 'shapingIV':
-					headers = ['Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
+					headers = ['Trial No', 'Trial Type', 'Outcome', 'Trial Start', 'Stimulus Start', 'Response',
 						 'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry'],
-						events = [['cross.start'], ['stimuli.start', 'click']],
+						events = [['trial.start'], ['stimuli.start', 'click']],
 						content = [
 							'Experiment\t' + experiment.title + '\n',
 							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
@@ -547,7 +534,7 @@ Template.dataMenu.events({
 				if (subject) return subject.identifier;
 			}).toString(),
 			user = Meteor.users.findOne(template.data.user),
-			filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '].xls';
+			filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '][' + settings + '].xls';
 			
 			print(date, device, experiment, filename, getGroups, template.data, settings, subjects, user);
 		} else {
@@ -576,7 +563,7 @@ Template.dataMenu.events({
 									if (subject) return subject.identifier;
 								}).toString(),
 								user = Meteor.users.findOne(session.user),
-								filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '].xls';
+								filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '][' + settings + '].xls';
 								
 								print(date, device, template.data, filename, getGroups, session, settings, subjects, user);
 							}
@@ -605,7 +592,7 @@ Template.sessionsView.events({
             session = table.row(event.currentTarget).data();
 		const selected = table.rows('.active').data(),
 			ids = _.pluck(selected, '_id');
-console.log(selected, ids);
+
         //if (prev !== session._id) template.parent().session.set(session._id);
     }
 });

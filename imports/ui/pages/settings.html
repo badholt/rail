@@ -21,31 +21,18 @@
 <template name="clientList">
 	<div id="clients" class="ui compact segments">
 		{{#each users}}
-			<div class="ui black inverted segment">
-				{{#if status.client.connected}}
-					<i class="green circle icon"></i>
-				{{/if}}
-				
-				{{#if status.client.disconnected}}
-					<i class="red circle icon"></i>
-				{{/if}}
-				
-				{{status.client.options.clientId}}
-				
-				<br>
-				{{#if status.client.disconnecting}}
-					<i class="red loading notched circle icon"></i> Disconnecting
-				{{/if}}
-				
-				{{#if status.client.reconnecting}}
-					<i class="green loading notched circle icon"></i> Reconnecting
-				{{/if}}
-				
-				<div class="ui mini buttons">
-					<button id="connect-{{status.client.options.clientId}}" class="ui black button" type="button" value="{{status.client.options.clientId}}">Connect</button>
-					<button id="disconnect-{{status.client.options.clientId}}" class="ui black button" type="button" value="{{status.client.options.clientId}}">Disconnect</button>
-				</div>
-			</div>
+      		{{#each clients status.client}}
+    			<div class="ui black inverted segment">
+    				<i class="{{#if connected}}{{#if disconnecting}}red loading notched {{else}}green {{/if}}{{else}}{{#if disconnected}}{{#if reconnecting}}green loading notched {{else}}red {{/if}}{{/if}}{{/if}}circle icon"></i>
+    				<span class="ui {{#if ../status.online}}green{{else}}red{{/if}} inverted header">{{../profile.name}}</span> ({{options.clientId}})
+    				<br>
+
+    				<div class="ui mini buttons">
+    					<button id="connect-{{options.clientId}}" class="ui black button" type="button" value="{{options.clientId}}">Connect</button>
+    					<button id="disconnect-{{options.clientId}}" class="ui black button" type="button" value="{{options.clientId}}">Disconnect</button>
+    				</div>
+    			</div>
+    		{{/each}}
 		{{/each}}
 	</div>
 </template>

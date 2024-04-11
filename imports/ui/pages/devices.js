@@ -91,6 +91,7 @@ Template.deviceCard.events({
         Meteor.call('mqttSend', 'test_' + template.data._id, 'lights',
             _.extend(messages[lights], template.getContext()));
         template.lights.set((lights < messages.length - 1) ? ++lights : 0);
+        Meteor.call('getClients');
     },
     'click #toggle-ir'(event, template) {
         const ir = template.ir.get(),
@@ -100,6 +101,7 @@ Template.deviceCard.events({
 
         Meteor.call('mqttSend', 'test_' + template.data._id, 'sensor', _.extend(messages, template.getContext()));
         template.ir.set(!ir);
+        Meteor.call('getClients');
     },
     'click #toggle-reward'(event, template) {
         const reward = template.reward.get(),
@@ -109,6 +111,7 @@ Template.deviceCard.events({
 
         Meteor.call('mqttSend', 'test_' + template.data._id, 'reward', _.extend(messages, template.getContext()));
         template.reward.set(!reward);
+        Meteor.call('getClients');
     }
 });
 
@@ -151,9 +154,9 @@ Template.deviceCard.onCreated(function () {
 //    });
 });
 
-/*Template.deviceCard.onDestroyed(function () {console.log('destroyed');
-    Meteor.call('mqttSend', 'test_' + this.data._id, 'client', {command: 'disconnect'});
-});*/
+Template.deviceCard.onDestroyed(function () {
+    if (this.data.status.client.hasOwnProperty(this.data._id)) Meteor.call('mqttSend', 'test_' + this.data._id, 'client', {command: 'disconnect'});
+});
 
 Template.deviceCardMessage.onRendered(function () {
     const device = Template.instance().parent();

@@ -97,6 +97,15 @@ if (Meteor.isServer) Meteor.methods({
         $push: {'profile.experiments': id}
     }),
     'countCollection': (collection) => Sessions.find().count(),
+    'getClients': () => {
+        clients.forEach((value, key) => {
+            const client = _.pick(value, 'options', 'connected', 'disconnecting', 'nextId', 'reconnecting', 'disconnected', '_deferredReconnect');
+
+            Meteor.users.update({_id: key.replace('test_', '')}, {
+                $set: {['status.client.' + key]: client}
+            });
+        });
+    },
     'updateClient': (id, command) => {
 		if (clients.has(id)) {
             const client = clients.get(id);
@@ -104,20 +113,14 @@ if (Meteor.isServer) Meteor.methods({
             if (command === 'end') {
 				client.end(false, {reasonCode: 4}, () => console.log(clientClosed(4)));
 			} else if (command === 'connect') {
-				client.reconnect();
+				if (client.reconnecting !== true && !client.connected) {
+                    client.end(false, {reasonCode: 5}, () => {
+                        console.log(clientClosed(5));
+                        client.reconnect();
+                    });
+                }
 			}
         }
-    },
-    'getClients': () => {
-		const ids = clients.keys();
-
-		clients.forEach((value, key) => {
-			const id = key.replace('test_', ''),
-			client = _.pick(value, 'options', 'connected', 'disconnecting', 'nextId', 'reconnecting', 'disconnected', '_deferredReconnect');
-			Meteor.users.update({_id: id}, {
-				$set: {'status.client': client}
-			});//TODO: multiple clients per box
-		});
     },
     'mqttConnect': (id, options) => {
         /** If client already exists, reconnect: */

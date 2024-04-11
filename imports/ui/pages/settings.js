@@ -3,6 +3,7 @@ import './settings.html';
 import '/imports/ui/components/dropdown/authorized';
 import '/imports/ui/components/dropdown/template';
 
+import {clients as clients} from '/imports/api/server.methods';
 import {Template} from 'meteor/templating';
 import {Meteor} from 'meteor/meteor';
 import {Templates} from "../../api/collections";
@@ -12,15 +13,20 @@ Template.clientList.events({
 		const id = e.target.value;
         console.log('connect', id, e, template);
 		Meteor.call('updateClient', id, 'connect');
+        Meteor.call('getClients');
     },
     'click .button[id^=disconnect]'(e, template) {
 		const id = e.target.value;
         console.log('disconnect', id, e, template);
 		Meteor.call('updateClient', id, 'end');
+        Meteor.call('getClients');
     }
 });
 
 Template.clientList.helpers({
+    clients(list) {
+        return _.values(list);
+    },
 	users() {
 		return Meteor.users.find({'profile.device': {$type: 'string'}});
 	}
@@ -37,7 +43,6 @@ Template.settingsForm.events({
 
         const target = e.target || e.srcElement,
             values = $('#' + target.getAttribute('id')).form('get values');
-        console.log(this, target, values, template);
 
         Meteor.call('updateExperiment', this, values);
     }

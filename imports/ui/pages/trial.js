@@ -36,13 +36,17 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
     processEvent = (event, template, stage, trial) => {
         const session = template.session.get(),
             variables = {
+                /** clear - Clears all timers
+                 *  Trials are indexed starting at 0, but the timers are referenced starting at Trial 1,
+                 *  so clearing timers for "next" actually clears the most recent trial. */
+                'clear': () => template.clearTimers(template.timers, trial + 1), //TODO: Customize which timers to clear?
                 'center': (p) => (template.center[p]),
                 'count': (p) => {
                     const data = template.getTrial(trial + 1).data,
 					f = _.filter(data[stage - 1], (e) => {
                         const u = update(variables, {event: {$set: (p) => (e[p])}}); // Count can filter other events like iti.end, but requires all events to pass
                         return conditionsMet(p, u);
-                    });console.log("COUNT", p, f);
+                    });
 
 					return f.length;
                 }, // need to keep track of what event is referenced so that timeStamps can be compared
@@ -51,7 +55,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
                     f = _.pluck(_.filter(data[stage - 1], (e) => { // Data filters out individual events that pass a set of conditions
                         const u = update(variables, {event: {$set: (p) => (e[p])}});
                         return conditionsMet(p, u);
-                    }), p.value);console.log("DATA", data, p, p.value, f, f[p.index]);
+                    }), p.value);
 
                     return f[p.index];
                 },
@@ -85,7 +89,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
 
         _.each(session.settings.inputs[stage - 1], (input) => {
             if (input.event === event.type) {
-                const correct = conditionsMet(input, variables);console.log("CORRECT", correct, input, event);
+                const correct = conditionsMet(input, variables);
                 _.each((correct) ? input.correct : input.incorrect, (action) =>
                     _.each(action.targets, (target) =>
                         variables[action.action](action.delay, action.specifications, target)));
@@ -99,27 +103,28 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
         /** Sets Session-level timers: */
         if (settings) {
             console.log('%c ...running Session... \t' + performance.now() + ' ', 'background: brown; color: white;');
+            template.timers['session'] = {};
+
             /** Delays onset of first trial: */
-            Meteor.setTimeout(() => {//console.log('delay timeout:\t', performance.now(), settings.session.delay);
+            template.timers['session']['onset'] = Meteor.setTimeout(() => {
                 console.log('%c| Session start:\t' + performance.now() + ' |', 'background: brown; color: white; font-size: 1.5em;');
                 template.trial.set(0);
-                template.recordEvent({timeStamp: performance.now(), type: 'session.start'});
-                
-            }, settings.session.delay);//console.log('set delay:\t', performance.now(), settings.session.delay);
+                template.recordEvent({timeStamp: performance.now(), type: 'session.start'});                
+            }, settings.session.delay);
 
             /** Sets timer for session duration: */
-            if (settings.session.duration) {//console.log('set session:\t', performance.now(), settings.session.delay + settings.session.duration);
-                Meteor.setTimeout(() => {//console.log('session timeout:\t', performance.now(), settings.session.delay + settings.session.duration);
+            if (settings.session.duration) {
+                template.timers['session']['end'] = Meteor.setTimeout(() => {
                     const trial = template.trial.get();
 
                     template.recordEvent({timeStamp: performance.now(), type: 'trial.' + trial + '.end'});
                     template.recordEvent({timeStamp: performance.now(), type: 'session.end'});
                     template.clearTimers(template.timers, trial + 1);
                     //TODO: Either port session.device ID to turn off IR beam or consolidate FlowRouter reroute in nextTrial
+
 					Meteor.call('mqttSend', device, 'lights', {command: 'off', pins: [4]});
-                    Meteor.call('mqttSend', device, 'sensor', {command: 'detect', detect: 'off'}, () => {
-						Meteor.call('mqttSend', device, 'client', {command: 'disconnect'});
-					});
+                    Meteor.call('mqttSend', device, 'sensor', {command: 'detect', detect: 'off'}, () => Meteor.call('mqttSend', device, 'client', {command: 'disconnect'}));
+
                     FlowRouter.go('/');
                 }, settings.session.delay + settings.session.duration);
             }
@@ -152,9 +157,18 @@ Template.trial.helpers({
 			const template = Template.instance(),
 			session = template.session.get();
 
+            /** Clear aborted session's timers: */
+            template.clearTimers(template.timers, template.trial.get() + 1);
+            _.each(template.timers['session'], (timer, label) => {
+                Meteor.clearTimeout(timer);
+                console.log('%c\t❌ CLEAR:\t' + label + '(' + timer + ')', 'background: red; color: white;');
+            });
+
+            /** Shutdown mqtt background services: */
 			Meteor.call('mqttSend', session.device, 'lights', {command: 'off', pins: [4]});
 			Meteor.call('mqttSend', session.device, 'sensor', {command: 'detect', detect: 'off'});
 			Meteor.call('mqttSend', session.device, 'client', {command: 'disconnect'});
+
             template.recordEvent({timeStamp: performance.now(), type: 'session.abort'});
             FlowRouter.go('/');
         }
@@ -230,15 +244,17 @@ Template.trial.onCreated(function () {
          *  and by event name. */
         if (n) {
             _.each(_.range(n, n - 2, -1), (trial) => {
+                /** Clear ITI timers first, ASAP: */
                 if (timers[trial]) Meteor.clearTimeout(timers[trial]['trial.' + trial + '.iti']);
+
                 return _.each(timers[trial], (stage) =>
                     _.each(stage, (timer, label) => {
                         const whitelist = 'audio' || 'lights' || 'reward';
                         if (!label.includes(whitelist)) {
                             Meteor.clearTimeout(timer);
-                            //console.log('%c\t❌ CLEAR:\t' + label + '(' + timer + ')', 'background: red; color: white;');
+                            console.log('%c\t❌ CLEAR:\t' + label + '(' + timer + ')', 'background: red; color: white;');
                         } else {
-                            //console.log('%c\t✔ KEEP:\t' + label + '(' + timer + ')', 'background: green; color: white;');
+                            console.log('%c\t✔ KEEP:\t' + label + '(' + timer + ')', 'background: green; color: white;');
                         }
                     }));
             });
@@ -250,15 +266,16 @@ Template.trial.onCreated(function () {
         const stage = this.stage.get() + increment,
             trial = this.trial.get() + 1,
             session = this.session.get(),
-            length = session.settings.stages[trial].length;
+            length = session.settings.stages[trial].length; // In cases of variable trial paradigms, checks on number of stages in trial
 
+        /** Verify that stage exists in current trial: */
         if (stage <= length) {
-            this.clearTimers(this.timers, trial);
+            //this.clearTimers(this.timers, trial);
 
             if (!this.timers[trial].hasOwnProperty(stage)) this.timers[trial][stage] = {};
 			
 			const topic = 'sensor/' + session._id + '/' + trial + '/' + stage;
-console.log('NEXT STAGE', stage);
+
 			Meteor.call('mqttSend', session.device, 'reward', {command: 'set', context: {session: session._id, stage: stage, timeStamp: performance.now(), trial: trial}},
 			() => this.recordEvent({timeStamp: performance.now(), type: 'set.context'}));
 			Meteor.call('mqttSend', session.device, topic, {command: 'set', context: {timeStamp: performance.now()}},
@@ -273,7 +290,7 @@ console.log('NEXT STAGE', stage);
     this.nextTrial = (delay, increment, duplicate) => {
         const stage = this.stage.get(),
             next = this.trial.get() + increment,
-            session = this.session.get();const x = this.timers;
+            session = this.session.get();const x = this.timers;console.log(this.timers);
 
         if (!this.timers[next]) this.timers[next] = {};
         if (!this.timers[next][stage]) this.timers[next][stage] = {};
@@ -282,10 +299,11 @@ console.log('NEXT STAGE', stage);
         if (this.timers[next][stage]['next.trial']) {
             const previous = this.timers[next][stage]['next.trial'];
 
-            Meteor.clearTimeout(previous);console.log("CLEAR", previous, delay, increment, duplicate);
+            Meteor.clearTimeout(previous);
             this.timers[next][stage]['next.trial'] = null;
         }
 
+        /** Sets ITI timer for trial: */
         this.timers[next][stage]['next.trial'] = Meteor.setTimeout(() => {
             if (next <= session.trials.length) {
                 // Meteor.call('mqttSend', session.device, 'board', {
@@ -295,7 +313,8 @@ console.log('NEXT STAGE', stage);
 
                 /** Trials are indexed starting at 0, but the timers are referenced starting at Trial 1,
                  *  so clearing timers for "next" actually clears the most recent trial. */
-                this.clearTimers(this.timers, next);
+                //this.clearTimers(this.timers, next);
+
                 // TODO: Shutdown sequence, reset state of lights, etc.
                 this.recordEvent({timeStamp: performance.now(), type: 'trial.' + next + '.end'});
                 //console.log('%c| trial.' + next + ' end\t' + performance.now() + ' |', 'background: darkgrey; color: white;');
@@ -318,7 +337,7 @@ console.log('NEXT STAGE', stage);
                     this.trial.set(next);
                 } else {
                     this.recordEvent({timeStamp: performance.now(), type: 'session.end'});
-					Meteor.call('mqttSend', session.device, 'lights', {command: 'off', pins: [4]});
+					//Meteor.call('mqttSend', session.device, 'lights', {command: 'off', pins: [4]});
                     Meteor.call('mqttSend', session.device, 'sensor', {command: 'detect', detect: 'off'}, ()=> {
 						Meteor.call('mqttSend', session.device, 'client', {command: 'disconnect'});
 					});
@@ -352,25 +371,26 @@ console.log('NEXT STAGE', stage);
         }
     });
 
-    this.timedAudio = (audio, delay, duration, name) => {
+    this.timedAudio = (audio, element) => {
         const stage = this.stage.get(),
             trial = this.trial.get() + 1,
-            start = name + '.start',
-            stop = name + '.stop';
+            timers = this.timers[trial][stage],
+            start = element.name + 'start',
+            stop = element.name + 'stop';
 
-        if (this.timers[trial][stage] && !this.timers[trial][stage][start]) {
+        if (timers && !timers[start]) {
             return Meteor.setTimeout(() => {
-                this.timers[trial][stage][start] = audio.toMaster().start();
-                console.log('%c🔊 ' + name + ' started\t', 'color: red; font-size: 1.5em; font-weight: 800;', performance.now());
+                timers[start] = audio.toMaster().start();
+                console.log('%c🔊 ' + element.name + ' started\t', 'color: red; font-size: 1.5em; font-weight: 800;', performance.now());
 
-                this.timers[trial][stage][stop] = Meteor.setTimeout(() => {
+                timers[stop] = Meteor.setTimeout(() => {
                     audio.stop();
-                    this.recordEvent({timeStamp: performance.now(), type: stop});
-                    console.log('%c🔊 ' + name + ' stopped\t', 'color: red; font-size: 1.5em; font-weight: 800;', performance.now());
-                }, duration);
+                    this.recordEvent(_.extend(element, {timeStamp: performance.now(), type: 'audio.stop'}));
+                    console.log('%c🔊 ' + element.name + ' stopped\t', 'color: red; font-size: 1.5em; font-weight: 800;', performance.now());
+                }, element.duration);
 
-                this.recordEvent({timeStamp: performance.now(), type: start});
-            }, delay);
+                this.recordEvent(_.extend(element, {timeStamp: performance.now(), type: 'audio.start'}));
+            }, element.delay);
         }
     };
     this.timedCommand = (device, topic, message, delay) => {
@@ -409,20 +429,24 @@ Template.trialElement.helpers({
                     template = Template.instance().parent(3);
                 let audio;
 
+                element['name'] = name;
+                element['number'] = i + 1;
+                element['response'] = (r === 're');
+
                 switch (element.source.type) {
                     case 'file':
                         audio = new Tone.Player(element.file.source, () => {
                             audio.loop = true;
-                            template.timedAudio(audio, element.delay, element.duration, name);
+                            template.timedAudio(audio, element);
                         });
                         break;
                     case 'noise':
                         audio = new Tone.Noise(element.source.noise.type);
-                        template.timedAudio(audio, element.delay, element.duration, name);
+                        template.timedAudio(audio, element);
                         break;
                     case 'wave':
                         audio = new Tone.OmniOscillator(element.source.wave.frequency, element.source.wave.type);
-                        template.timedAudio(audio, element.delay, element.duration, name);
+                        template.timedAudio(audio, element);
                         break;
                 }
             }
@@ -525,40 +549,70 @@ Template.trialSVG.helpers({
     ir(stage, trial) {
         const data = trial.data[stage - 1],
             template = Template.instance(),
-            triggered = template.triggered.get();
+            counts = template.count.get(),
+            count = counts[stage - 1];
 
-        /** By setting triggered to the updated length of recorded events,
+        /** By setting count to the updated length of recorded events,
          *  each newly added event is processed only once. */
-        if (0 < data.length && triggered < data.length) {
-            const last = data[triggered],
-            inputs = template.events[last.type];
+        if (0 < data.length && count < data.length) {
+            const last = data[count],
+            groups = _.groupBy(data, (e) => (e.type)),
+            inputs = template.events[stage - 1][last.type];
 
             /** Only proceed with event processing if inputs governing this event type are found.
              *  Check event against each set of conditions, potentially fulfilling criteria for multiple reactions: */
             _.each(inputs, (input, index) => { //TODO Generalize into processing events from inputs feed (i.e., ir sensor)
-                const entry = (last.request && last.request.ir === 1),
-                prereq = _.some(data, (e) => (e.type === 'reward' && e.request.reward === "off" && (last.timeStamp - e.timeStamp > 200))); console.log("IR entry?\t" + entry, "\nReward dispensed?\t" + prereq);
+                let timeStamp = 0;
 
-                if (entry && prereq) {
-                    /** Create reaction event & Collect all of same event type: */
+                /** Sensor events and reward dispense events are now handled separately (experimental): */
+                // if (last.type === 'reward') {
+                //     /** Only sensor events following reward dispense may trigger a response: */
+                //     if (last.request && last.request.reward === 'off') {
+                //         /** Grab the start time for the first audio tone: */
+                //         const tone = groups['audio.start'][0],
+                //         /** If an IR entry event occurs after the tone starts, return the IR entry's index from trial data.
+                //          *  Otherwise, return -1 for no match found. */
+                //         entry = _.findIndex(data, (e) => (e.type === 'sensor' && e.request.ir === 1 && (e.timeStamp > tone.timeStamp)));
+
+                //         /** Save event timestamp if an IR entry event has occurred following a tone start: */
+                //         if (entry > -1) timeStamp = data[entry].timeStamp;
+                //     }
+                // }
+                // else 
+                if (last.type === 'sensor') {
+                    /** Only entries may trigger a reponse, exits are ignored: */
+                    const entry = (last.request && last.request.ir === 1),
+                    /** Conditions are met if 200ms have elapsed since reward dispense ended: */
+                    prereq = _.some(data, (e) => (e.type === 'reward' && e.request.reward === "off" && (last.timeStamp - e.timeStamp > 200)));
+
+                    /** Save event timestamp if a sensor entry has occurred at least 200ms after reward dispense: */
+                    if (entry && prereq) timeStamp = last.timeStamp;
+                }
+
+                /** If a timestamp was collected,  */
+                if (timeStamp > 0) {console.log(timeStamp, stage, index, input);
+                    /** Create reaction event, collecting all of same event type: */
                     const event = 'ir.entry',
                     elements = _.filter(data, (e) => (e.type === event));
 
                     /** Process the reaction event using template's input conditions: */
-                    processEvent({index: triggered, number: (elements.length + 1), timeStamp: last.timeStamp, type: event}, template.parent(), stage, trial.number - 1);
-                    console.log('%c⚡ Trial ' + trial.number + ':\t IR Entry ' + (elements.length + 1), 'color:red; font-size: 3em', performance.now());
+                    processEvent({index: count, number: (elements.length + 1), timeStamp: timeStamp, type: event}, template.parent(), stage, trial.number - 1);
+                    console.log('%c⚡ Trial ' + trial.number + ':\t IR Entry ' + (elements.length + 1), 'color: ' + ((last.type === 'sensor') ? 'red' : 'blue') + '; font-size: 3em', performance.now());
                 }
             });
 
             /** Will only increment to next data entry in events list */
-            template.triggered.set(triggered + 1);
+            /** By end of Session, each stage's count should match number of data entries */
+            counts[stage - 1] = count + 1;
+            template.count.set(counts);
         }
     }
 });
 
+
 Template.trialSVG.onCreated(function () {
-    this.events = _.groupBy(this.data.inputs[this.data.stage - 1],"event");
-    this.triggered = new ReactiveVar(0);
+    this.events = _.map(this.data.inputs, (stage) => _.groupBy(stage, "event"));
+    this.count = new ReactiveVar(_.map(this.data.inputs, (stage) => 0));
 });
 
 Template.trialSVG.onRendered(function () {
