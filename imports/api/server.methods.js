@@ -231,7 +231,10 @@ if (Meteor.isServer) Meteor.methods({
             client.on('reconnect', () => console.log(status(client, id, 'RECONNECT')));
 //            client.on('packetsend', (packet) => console.log(status(client, id, 'SENT'), packet));
 //            client.on('packetreceive', (packet) => console.log(status(client, id, 'RECEIVED'), packet));
-            client.on('end', () => console.log(status(client, id, 'END')));
+            client.on('end', () => {
+                client.reconnecting = false; // Fix for MQTT.js reconnecting bug
+                console.log(status(client, id, 'END'));
+            });
 //            client.on('close', () => console.log(status(client, id, 'CLOSE')));
 //            client.on('offline', () => console.log(status(client, id, 'OFFLINE')));
             client.on('error', (e) => console.log('\n\n\x1b[91m━━━━━', e, '━━━━━\x1b[39m\n'));

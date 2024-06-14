@@ -16,10 +16,13 @@ export const calculateCenter = (height, width) => ({
         x: Math.floor(width / 2),
         y: Math.floor(height / 2)
     }),
+    calculateDuration = (session) => (session.duration) ? Math.round(session.duration / session.iti * session.distribution.multiplier) : session.total,
     calculateWeights = (blacklist, total) => {
         const selected = _.filter(blacklist, (element) => !element.blacklist);
+
         _.each(blacklist, (element) => element.weight = 0);
         if (selected.length) _.each(selected, (element) => element.weight = total / selected.length);
+
         return blacklist;
     },
     generateBlacklist = (blacklist, columns, rows) => {
@@ -32,6 +35,81 @@ export const calculateCenter = (height, width) => ({
             });
         }
         return blacklist;
+    },
+    generateCombinations = (element, n, ratio, trial) => {
+        /** Creates a new Map for each stage i to comprehensively track the properties of multiple elements
+        *  (i.e. to determine whether a vertical gratings stimulus has already been shown): */
+        const map = new Map();
+
+        /** Filters out all elements w/ variables needing probability distributions: */
+        if (element.variables && element.variables.length > 0) {
+            let list = [],
+            // base = _.omit(element, 'variables', ...element.variables), // TODO: Add base defaults as session.elements
+            variables = _.pick(element, ...element.variables);
+            
+            _.each(variables, (v, key) => {
+                const multiply = (a, item) => ((_.isArray(v) && v.length > 0)
+                        ? _.each(v, (o) => a.push(_.extend({[key]: o}, item)))
+                        : a.push(_.extend({[key]: v}, item)));
+
+                /** Temporary adjustment for schema version compatibility: */
+                if (key === 'location') v = _.filter(element.grid.blacklist, (location) => !location.blacklist);
+
+                /** If other variables have already been added to the combinations list,
+                 *  multiply/cross the previous variables w/ the current variable: */
+                if (list.length > 0) {
+                    let temp = [];
+
+                    _.each(list, (item) => multiply(temp, item));
+                    list = temp;
+                } else {
+                    multiply(list, {});
+                }
+            });
+
+            /** Adds count for each combination of element j's variables to the stage i Map: */
+            _.each(list, (item) => map.set(item, 0));
+
+            generateDistribution(element, map, n, ratio, trial, list);
+
+            /** Shuffle using Fisher-Yates method to randomize order of weighted distribution: */
+            trial = update(trial, {$set: _.shuffle(trial)});
+        } else {
+            _.times(n, () => trial.push(element));
+        }
+
+        return trial;
+    },
+    generateDistribution = (element, map, n, ratio, trial, list) => {
+        /** METHOD 1 - Weighted probabilities for (global) stages generation: */
+        // _.times(n, () => {
+        //     const weights = [0.25 * n, n], // DUMMY VARS
+        //     r = _.random(n),
+        //     rI = Math.floor(_.findIndex(weights, (w) => (r <= w))),
+        //     random = list[rI],
+        //     count = map.get(random);
+
+        //     trial.push(_.defaults(random, element));
+        //     map.set(random, count + 1);
+        // });
+
+        /** METHOD 2 - Probability distribution of stages w/ exact global weights: */
+        const weights = [ratio, parseFloat((1 - ratio).toFixed(5))], // DUMMY VARS
+        portion = (w) => Math.floor(n * w),
+        portions = _.map(weights, (w) => portion(w)),
+        sum = _.reduce(portions, (memo, p) => memo + p),
+        /** If stimuli combinations cannot be distributed evenly across an uneven number of trials,
+         *  add an additional trial to the last combination generated: */
+        repeats = _.map(weights, (w, i) => (i < weights.length - 1 || sum === n) ? portion(w) : portion(w) + Math.floor(n - sum));
+
+        _.each(repeats, (r, k) => _.times(r, () => {
+            trial.push(_.defaults(list[k], element)); // TODO: Push w/o defaults & use base under session.elements for defaults @ trial lvl
+            map.set(list[k], map.get(list[k]) + 1);
+        }));
+
+        // PRINT
+        console.log("PORTIONS:\t", portions);
+        console.log("COUNTS:\t", map.entries());
     },
     generateVisuals = (visuals, first, last) => {
         const columns = 3, rows = 3;
@@ -69,28 +147,6 @@ export const calculateCenter = (height, width) => ({
             key = JSON.stringify(location);
 
         return (!locations.get(key)) ? location : randomLocation(width, height, locations);
-    },
-    /**
-     * randomEntry
-     *
-     * Description:
-     *  Returns the value of a randomly-chosen entry in a list
-     *
-     * Parameters:
-     *  entries - an array of key-value pair objects
-     *
-     * Returns:
-     *  Array [Object, Integer]
-     * */
-    randomEntry = (entries) => {
-        /** Retrieves value of randomly-chosen entry i in a list of entries */
-        const i = _.random(0, entries.length - 1),
-            entry = entries[i],
-            value = entry[1],
-            r = _.random(0, 100) / 100;
-
-        /** Compares random decimal number to entry i value for extra "shuffling" effect */
-        return (r < value) ? entry : randomEntry(entries); //TODO: Verify what this is doing
     };
 
 Meteor.methods({
@@ -124,89 +180,32 @@ Meteor.methods({
         // TODO: Find way to generate "add on" stimuli with session parameters
         let trials = [];
 
-        /** Performs calculations for every stage of a given trial */
+        /** Returns an integer representing the estimated number of trials which will occur in the Session.
+         *  If the Session duration is given in terms of the total number of ms, the total ms are divided by
+         *  the ms duration of the ITI, which represents the total length of a trial, including any delay periods. */
+        const n = calculateDuration(session);
+
+        /** Performs calculations for every stage of a given template, iterating over stages instead of trials
+         *  in order to generate holistic probability distributions across a trial set: */
         _.each(stages, (stage, i) => {
-            /** (1) First, adds an empty array for stage i to the trials array*/
-            trials.push([]);
-            /** Creates a new Map for each stage i to comprehensively track the properties of multiple elements
-             *  (i.e. to determine whether a vertical gratings stimulus has already been shown) */
-            const combinations = new Map();
+                /** (1) First, adds an empty array for stage i to the trials array */
+                trials.push([]);
 
-            /** Performs calculations for every element within a given stage (i.e. fixation cross) */
-            _.each(stage, (element, j) => {
-                /** (2) Next, adds an empty array for element j to stage i on the trials array */
-                trials[i].push([]);
+                /** Performs calculations for every element within a given stage (i.e. fixation cross),
+                 *  generating combinations based on each element's specified variables: */
+                _.each(stage, (element, j) => {
+                    /** (2) Next, adds an empty array for element j to stage i on the trials array */
+                    trials[i].push([]);
 
-                /** (3) Filters out all elements specifying stimuli (i.e. gratings visual) */
-                if (element.type === 'stimuli') {
-                    let stimuli = [];
-
-                    /** For every parameter of an element */
-                    _.each(element.variables, (variable) => {
-                        // TODO: For other variables, we could generate arrays of possible values comparable to the blacklist here (i.e. [0, 0.25, 0.5, 0.75, 1] for contrast)
-                        /** Totals all parameters other than grid location */
-                        const options = (variable !== 'location') ? element[variable]
-                            /** Reserves a grid location for the element if viable */
-                            : _.filter(element.grid.blacklist, (location) => !location.blacklist),
-                            nOptions = _.size(options),
-                            nStimuli = _.size(stimuli);
-
-                        /** Checks for multiple stimuli */ //TODO: Explain this
-                        if (nStimuli > 0) {
-                            const repeats = nOptions / nStimuli;
-
-                            if (repeats >= 1) _.times(Math.round(repeats), () =>
-                                stimuli = update(stimuli, {$push: stimuli}));
-
-                            stimuli = _.map(stimuli, (stimulus, n) =>
-                                update(stimulus, {[variable]: {$set: options[Math.floor(n / nOptions) % nOptions]}}));
-                        } else {
-                            _.each(options, (stimulus) =>
-                                stimuli = update(stimuli, {$push: [{[variable]: stimulus}]}));
-                        }
-                    });
-
-                    /** Adds element j to the stage i Map as an entry */
-                    //TODO: Current value is a stimuli's (bar) weight. Repurpose this dynamically
-                    _.each(stimuli, (element) => combinations.set(element, element.location.weight));
-                }
-
-                //TODO: Possibly move this to a calculateDuration function
-                /** Calculates Session duration as an integer representing either the number of trials in the Session
-                 *  If the Session duration is given in terms of the total number of ms, the total ms are divided by
-                 *  the ms duration of the ITI, which represents the total length of a trial, including any delay periods */
-                const n = (session.duration) ? Math.round(session.duration / session.iti) * 6 : session.total; //TODO: Why multiply by 6?
-                // console.log(session.duration, session.iti, session.total, n);
-
-                /** Retrieves a current list of elements in stage i */
-                let map = [...combinations.entries()];
-
-                /** Performs calculations for each trial within the Session */
-                _.times(n, () => {
-                    /** Fills element j with default properties if no elements have yet been added to stage i */
-                    if (map.length > 0) {
-                        const random = randomEntry(map);
-
-                        trials[i][j].push(_.defaults(random[0], element));
-
-                        //TODO: How could the map ever be longer than 0/modified here?
-                        map = (map.length > 1) ? _.without(map, random) : [...combinations.entries()];
-                    } else {
-                        /** Adds an instance of the default element j to the array of stage i  */
-                        trials[i][j].push(element);
-                    }
+                    /** (3) Generates probability distributions for element j relative to specified variables: */
+                    trials[i][j] = generateCombinations(element, n, session.distribution.ratio, trials[i][j]);
                 });
+
+                /** Consolidates arrays of distributed elements of stage i into a single stage i item for the trials array: */
+                trials = update(trials, {[i]: {$set: _.zip(...trials[i])}});
             });
 
-            /** Distributes elements of stage i */
-            //trials[i]=stage i --> [element 1, element 2]
-            // console.log(trials[i]);
-            trials = update(trials, {[i]: {$set: _.zip(...trials[i])}});
-        });
-
-        /** Distributes stages of Session */
-        //[stage 1, stage 2] --->
-        // console.log(trials);
+        /** Consolidates arrays of distributed stages into a single trials array for Sessions: */
         return _.zip(...trials);
     }
 });
