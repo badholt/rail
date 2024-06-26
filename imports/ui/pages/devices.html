@@ -41,17 +41,15 @@
 
             <div class="description">
                 {{#unless status.active.session}}
-                    {{#with profile.calibration.screen}}
+                    {{#with profile.calibration.screen.cross}}
                         <a id="calibrate-screen-{{../profile.username}}" class="ui black mini icon message">
                             <i class="link expand icon"></i>
 
                             <div class="content">                      
                                 <div class="ui inverted list">
-                                    {{#with cross}}
-                                        <div class="item" value="+">
-                                            <b>cross</b> offset by {<span style="color: #f2711c;">{{offset.x}}</span>, <span style="color: #2185d0;">{{offset.y}}</span>}
-                                        </div>
-                                    {{/with}}
+                                    <div class="item" value="+">
+                                        <b>cross</b> offset by {<span style="color: #f2711c;">{{offset.x}}</span>, <span style="color: #2185d0;">{{offset.y}}</span>}
+                                    </div>
                                 </div>
                             </div>
                         </a>
@@ -92,9 +90,9 @@
                         </div>
                     {{/with}}
 
-                    {{#if calibrating}}
-                        {{> Template.dynamic template=calibrating}}
-                    {{/if}}
+                    {{#with calibrating}}
+                        {{> Template.dynamic template=window}}
+                    {{/with}}
 
                     <!-- <div id="pins-{{profile.username}}" class="ui icon list mini message">
                         <i class="link microchip icon"></i>

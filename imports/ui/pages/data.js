@@ -47,8 +47,22 @@ Template.data.onCreated(function () {
 
 Template.dataMenu.events({
     'click #download'(event, template) {
-		const print = (date, device, experiment, filename, getGroups, session, settings, subjects, user) => {
+		const print = (date, device, experiment, filename, session, settings, subjects, user) => {
+			const span = 60,
+			width = device.profile.calibration.screen.dimensions.width,
+			getClickType = (e) => (isCross(e) ? 'm': isLeft(e) ? 'l' : 'r'),
+			getGroups = (stage, i) => {
+				const p = ['request', 'ir'];
+
+				return _.groupBy(stage, (e) => ((_.property(p)(e) !== undefined)
+					? p.join('.') + '.' + _.property(p)(e)
+					: e.type.replace(/(\.?(re)?[\d]+\.)+/ig, '.')));
+			},
+			isCross = (e) => (e.clientX > (width - span) / 2 && e.clientX < (width + span) / 2),
+			isLeft = (e) => (e.clientX < (width / 2));
+
 			let headers, events, content;
+
 			switch (settings) {
 				case 'indices':
 					headers = ['Trial No', 'Trial Index'],
@@ -82,7 +96,6 @@ Template.dataMenu.events({
 							'Device\t' + device.profile.name + '\n',
 							'Experimenter\t' + user.profile.name + '\n'
 						];
-					const height = 600, width = 800;
 
 					_.each(session.trials, (id) => {
 						const trial = Trials.findOne(id),
@@ -98,7 +111,9 @@ Template.dataMenu.events({
 						content.push(trial.number + '\t');
 						
 						_.each(clicks, (stage, i) => _.each(stage, (e, j) => {
-							content.push(((e.clientY > 430) ? 'm' : (e.clientX < (width / 2)) ? 'l' : 'r') + ' (' + e.clientX + ', ' + e.clientY + ')\t' + e.timeStamp + '\t');
+							content.push(getClickType(e)
+								+ ' (' + e.clientX + ', ' + e.clientY + ')\t'
+								+ e.timeStamp + '\t');
 						}));
 						
 						content.push('\n');
@@ -158,8 +173,8 @@ Template.dataMenu.events({
 						const trial = Trials.findOne(id);
 
 						_.each(trial.data, (stage, i) => {
-							const groups = getGroups(stage, i);console.log(groups),
-							ir = _.sortBy(_.flatten(_.filter(groups, (value, key) => (key.startsWith('request.ir.')))), (e) => (e.timeStamp));
+							const groups = getGroups(stage, i),
+								ir = _.sortBy(_.flatten(_.filter(groups, (value, key) => (key.startsWith('request.ir.')))), (e) => (e.timeStamp));
 						});
 
 						content.push(trial.number + '\t');
@@ -301,8 +316,6 @@ Template.dataMenu.events({
 									if (groups['audio.start']) {
 										const tone = groups['audio.start'][0];
 										return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false;
-									} else {
-										console.log('No tone:\t', stage, i, groups['audio.start']);
 									}
 								});
 								
@@ -347,8 +360,6 @@ Template.dataMenu.events({
 									if (groups['audio.start']) {
 										const tone = (groups['audio.start'] && groups['audio.start'].length > 1) ? groups['audio.start'][1] : 0;
 										return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false;
-									} else {
-										console.log('no tone: ', stage, i, groups['audio.start']);
 									}
 								});
 
@@ -385,18 +396,17 @@ Template.dataMenu.events({
 						let correct = {};
 
 						if (trial.data[1] && trial.data[1].length > 0) {
-							const clicks = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY < 420)),
-							cross = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY > 420)),
-							width = 800; //TODO: Make part of device profile, or get screenwidth from click using OffsetX, PageX, or similar
+							const clicks = _.filter(trial.data[1], (e) => (e.type === 'click' && isCross(e))),
+							cross = _.filter(trial.data[1], (e) => (e.type === 'click' && isCross(e)));
 
 							content.push(trial.number + '\t');
 
 							if (trial.stages[1][0] && trial.stages[1][0].orientation.value === 0) {
 								content.push('V\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (c) => (c.clientX < (width / 2)));
+								if (clicks.length > 0) correct = _.groupBy(clicks, (e) => isLeft(e));
 							} else {
 								content.push('H\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (c) => (c.clientX > (width / 2)));
+								if (clicks.length > 0) correct = _.groupBy(clicks, (e) => !isLeft(e));
 							}
 
 							if (clicks.length > 0) {
@@ -413,9 +423,7 @@ Template.dataMenu.events({
 									});
 
 								_.each(events[i], (g) => {
-									if (g !== 'click') {
-										content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t');
-									}
+									if (g !== 'click') content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t');
 								});
 
 								if (_.contains(events[i], 'click')) {
@@ -427,11 +435,9 @@ Template.dataMenu.events({
 									content.push((cross) ? cross.length + '\t' : 0 + '\t');
 								}
 								
-								if (ir) {
-									_.each(ir, (e)=> {
-										content.push(e.timeStamp + '\t');
-									});
-								}
+								if (ir) _.each(ir, (e)=> {
+									content.push(e.timeStamp + '\t');
+								});
 							});
 
 							content.push('\n');
@@ -453,26 +459,25 @@ Template.dataMenu.events({
 						];
 
 					_.each(session.trials, (id) => {
-						const trial = Trials.findOne(id);console.log(session, id, trial);
+						const trial = Trials.findOne(id);
 
 						let correct = {};
 
 						if (trial.data[1] && trial.data[1].length > 0) {
-							const clicks = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY < 420)),
-							cross = _.filter(trial.data[1], (e) => (e.type === 'click' && e.clientY > 420)),
-							width = 800; //TODO: Make part of device profile, or get screenwidth from click using OffsetX, PageX, or similar
+							const clicks = _.filter(trial.data[1], (e) => (e.type === 'click' && !isCross(e))),
+							cross = _.filter(trial.data[1], (e) => (e.type === 'click' && isCross(e)));
 
 							content.push(trial.number + '\t');
 
 							if (trial.stages[1][0] && trial.stages[1][0].orientation.value === 0) {
 								content.push('V\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => (i < 1 && c.clientX < (width / 2)));
+								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => isLeft(c)); // i < 1 check is limiting to only first click
 							} else {
 								content.push('H\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => (i < 1 && c.clientX > (width / 2)));
+								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => !isLeft(c));
 							}
 
-							if (clicks.length > 0) {console.log(correct);
+							if (clicks.length > 0) {
 								content.push((correct.hasOwnProperty('true')) ? '0\t' : '1\t');
 							} else {
 								content.push('2\t');
@@ -486,9 +491,7 @@ Template.dataMenu.events({
 									});
 
 								_.each(events[i], (g) => {
-									if (g !== 'click') {
-										content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t');
-									}
+									if (g !== 'click') content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t');
 								});
 
 								if (_.contains(events[i], 'click')) {
@@ -500,11 +503,9 @@ Template.dataMenu.events({
 									content.push((cross) ? cross.length + '\t' : 0 + '\t');
 								}
 								
-								if (ir) {
-									_.each(ir, (e)=> {
-										content.push(e.timeStamp + '\t');
-									});
-								}
+								if (ir) _.each(ir, (e)=> {
+									content.push(e.timeStamp + '\t');
+								});
 							});
 
 							content.push('\n');
@@ -521,13 +522,6 @@ Template.dataMenu.events({
             const date = moment(template.data.date),
 			experiment = Experiments.findOne(template.data.experiment),
 			device = Meteor.users.findOne(template.data.device),
-			getGroups = (stage, i) => {
-				const p = ['request', 'ir'];
-
-				return _.groupBy(stage, (e) => ((_.property(p)(e) !== undefined)
-					? p.join('.') + '.' + _.property(p)(e)
-					: e.type.replace(/(\.?(re)?[\d]+\.)+/ig, '.')));
-			},
 			settings = template.$('#templates').dropdown('get value'),
 			subjects = _.map(template.data.subjects, (id) => {
 				const subject = Subjects.findOne(id);
@@ -535,8 +529,8 @@ Template.dataMenu.events({
 			}).toString(),
 			user = Meteor.users.findOne(template.data.user),
 			filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '][' + settings + '].xls';
-			
-			print(date, device, experiment, filename, getGroups, template.data, settings, subjects, user);
+
+			print(date, device, experiment, filename, template.data, settings, subjects, user);
 		} else {
 			const table = template.parent().$('table').DataTable(),
 			selected = table.rows('.active').data(),
@@ -550,13 +544,6 @@ Template.dataMenu.events({
 								const session = Sessions.findOne(id),
 								date = moment(session.date),
 								device = Meteor.users.findOne(session.device),
-								getGroups = (stage, i) => {
-									const p = ['request', 'ir'];
-
-									return _.groupBy(stage, (e) => ((_.property(p)(e) !== undefined)
-										? p.join('.') + '.' + _.property(p)(e)
-										: e.type.replace(/(\.?(re)?[\d]+\.)+/ig, '.')));
-								},
 								settings = template.$('#templates').dropdown('get value'),
 								subjects = _.map(session.subjects, (id) => {
 									const subject = Subjects.findOne(id);
@@ -564,8 +551,8 @@ Template.dataMenu.events({
 								}).toString(),
 								user = Meteor.users.findOne(session.user),
 								filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '][' + settings + '].xls';
-								
-								print(date, device, template.data, filename, getGroups, session, settings, subjects, user);
+
+								print(date, device, template.data, filename, session, settings, subjects, user);
 							}
 						});
 					},
@@ -589,8 +576,8 @@ Template.sessionsView.events({
     'click tbody > tr'(event, template) {
         const prev = template.parent().session.get(),
             table = template.$('table').DataTable(),
-            session = table.row(event.currentTarget).data();
-		const selected = table.rows('.active').data(),
+            session = table.row(event.currentTarget).data(),
+            selected = table.rows('.active').data(),
 			ids = _.pluck(selected, '_id');
 
         //if (prev !== session._id) template.parent().session.set(session._id);
@@ -896,21 +883,15 @@ Template.trialList.onCreated(function () {
                                 if (step.type.endsWith('start')) {
                                     counts.tones.push(step.timeStamp);
                                     lastTone = step.timeStamp;
-                                    // console.log('%caudio:\t', 'color: blue;', e, lastTone);
-                                }
-                                if (step.type.endsWith('stop')) {
-                                    // console.log('%caudio:\t', 'color: red;', e, lastTone);
                                 }
                             }
                         } else if (step.type === 'reward') {
                             if (_.has(step.request, 'ir')) {
                                 if (!firstEntry) {
                                     if (step.request.ir === 'entry') {
-                                        // console.log('%cIR:\t', 'color: purple;', step);
                                         counts.ir.entries.push(step.timeStamp);
                                         firstEntry = step.timeStamp;
                                     } else {
-                                        // console.log('%cIR:\t', 'color: violet;', step);
                                         counts.ir.exits.push(step.timeStamp);
                                     }
                                 }

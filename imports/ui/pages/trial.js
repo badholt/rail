@@ -99,17 +99,16 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
         template.recordEvent(event);
     },
     sessionTimers = (settings, template, device) => {
-        console.log('%c Session renders:\t' + performance.now() + ' ', 'background: brown; color: white;');
+        if (template.logging.session) template.printEvent('brown', '🆂 Session rendered');
         /** Sets Session-level timers: */
         if (settings) {
-            console.log('%c ...running Session... \t' + performance.now() + ' ', 'background: brown; color: white;');
             template.timers['session'] = {};
 
             /** Delays onset of first trial: */
             template.timers['session']['onset'] = Meteor.setTimeout(() => {
-                console.log('%c| Session start:\t' + performance.now() + ' |', 'background: brown; color: white; font-size: 1.5em;');
                 template.trial.set(0);
-                template.recordEvent({timeStamp: performance.now(), type: 'session.start'});                
+                template.recordEvent({timeStamp: performance.now(), type: 'session.start'}); 
+                if (template.logging.session) template.printEvent('brown', '🆂 Session started');
             }, settings.session.delay);
 
             /** Sets timer for session duration: */
@@ -128,6 +127,8 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
                     FlowRouter.go('/');
                 }, settings.session.delay + settings.session.duration);
             }
+
+            if (template.logging.session) template.printEvent('brown', '🆂 Session timers set');
         }
     },
     trialTimers = (settings, n, template) => {
@@ -138,13 +139,13 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
             if (template.timers[n] && !template.timers[n][pre + '.iti']) {
                 /** Sets timer for maximum trial duration: */
                 template.timers[n][pre + '.iti'] = Meteor.setTimeout(() => {
-                    //console.log('%c ' + pre + ' ITI end\t' + performance.now() + ' ', 'background: darkblue; color: white;');
+                    if (template.logging.trials) template.printEvent('cadetblue', '🆃 Trial ' + n + ' ITI ended');
                     return processEvent({timeStamp: performance.now(), type: 'iti.end'}, template, template.stage.get(), n - 1);
-                }, settings.session.iti);
-                //console.log('%c ' + pre + ' ITI start\t' + performance.now() + ' ', 'background: blue; color: white;');
+                }, settings.session.iti);                
 
                 /** Records trial start: */
                 template.recordEvent({timeStamp: performance.now(), type: pre + '.start'});
+                if (template.logging.trials) template.printEvent('cadetblue', '🆃 Trial ' + n + ' ITI started');
             }
         }
     };
@@ -161,7 +162,7 @@ Template.trial.helpers({
             template.clearTimers(template.timers, template.trial.get() + 1);
             _.each(template.timers['session'], (timer, label) => {
                 Meteor.clearTimeout(timer);
-                console.log('%c\t❌ CLEAR:\t' + label + '(' + timer + ')', 'background: red; color: white;');
+                if (template.logging.timers) template.printEvent('firebrick', `❌ Cleared Timer ${timer} (${label})`);
             });
 
             /** Shutdown mqtt background services: */
@@ -170,6 +171,7 @@ Template.trial.helpers({
 			Meteor.call('mqttSend', session.device, 'client', {command: 'disconnect'});
 
             template.recordEvent({timeStamp: performance.now(), type: 'session.abort'});
+            if (template.logging.session) template.printEvent('brown', `🚫 Session aborted`);
             FlowRouter.go('/');
         }
     },
@@ -187,7 +189,7 @@ Template.trial.helpers({
                 if (trial) {
                     if (!template.timers[n]) {
                         template.timers[n] = {};
-                        //console.log('%c| trial.' + n + ' start\t' + performance.now() + ' |', 'background: black; color: white; font-size: 1.5em;');
+                        if (template.logging.trials) template.printEvent('darkslategrey', '🆃 Trial ' + n + ' started');
                         trialTimers(settings, n, template);
 
                         Meteor.call('mqttSend', this.device, 'reward', {command: 'set', context: {session: this._id, stage: stage, timeStamp: performance.now(), trial: n}},
@@ -229,6 +231,12 @@ Template.trial.helpers({
 Template.trial.onCreated(function () {
     this.center = calculateCenter($(window).height(), $(window).width());
     this.index = new ReactiveVar(0);
+
+    this.autorun(() => {
+        const user = Meteor.user({fields: {'profile.logging': 1}});
+        if (user) this.logging = user.profile.logging;
+    });
+    
     this.responses = new ReactiveVar([]);
     this.session = new ReactiveVar();
     this.stage = new ReactiveVar(1);
@@ -252,9 +260,9 @@ Template.trial.onCreated(function () {
                         const whitelist = 'audio' || 'lights' || 'reward';
                         if (!label.includes(whitelist)) {
                             Meteor.clearTimeout(timer);
-                            console.log('%c\t❌ CLEAR:\t' + label + '(' + timer + ')', 'background: red; color: white;');
+                            if (this.logging.timers) this.printEvent('firebrick', `❌ Cleared Timer ${timer} (${label})`);
                         } else {
-                            console.log('%c\t✔ KEEP:\t' + label + '(' + timer + ')', 'background: green; color: white;');
+                            if (this.logging.timers) this.printEvent('seagreen', `✔ Kept Timer ${timer} (${label})`);
                         }
                     }));
             });
@@ -264,9 +272,9 @@ Template.trial.onCreated(function () {
     this.getTrial = (number) => Trials.findOne({number: number, session: id});
     this.nextStage = (delay, increment) => {
         const stage = this.stage.get() + increment,
-            trial = this.trial.get() + 1,
+            trial = this.index.get() + 1, // Follows index instead of trial number to allow for duplicates
             session = this.session.get(),
-            length = session.settings.stages[trial].length; // In cases of variable trial paradigms, checks on number of stages in trial
+            length = session.settings.stages[trial].length; // TODO In cases of variable trial paradigms, checks on number of stages in trial
 
         /** Verify that stage exists in current trial: */
         if (stage <= length) {
@@ -290,7 +298,7 @@ Template.trial.onCreated(function () {
     this.nextTrial = (delay, increment, duplicate) => {
         const stage = this.stage.get(),
             next = this.trial.get() + increment,
-            session = this.session.get();const x = this.timers;console.log(this.timers);
+            session = this.session.get();
 
         if (!this.timers[next]) this.timers[next] = {};
         if (!this.timers[next][stage]) this.timers[next][stage] = {};
@@ -317,36 +325,52 @@ Template.trial.onCreated(function () {
 
                 // TODO: Shutdown sequence, reset state of lights, etc.
                 this.recordEvent({timeStamp: performance.now(), type: 'trial.' + next + '.end'});
-                //console.log('%c| trial.' + next + ' end\t' + performance.now() + ' |', 'background: darkgrey; color: white;');
+                if (this.logging.trials) this.printEvent('darkslategrey', '🆃 Trial ' + next + ' ended');
 
                 /** Proceed to next trial or exit: */
                 if (session.settings.session.duration || next < session.settings.stages.length) {
                     const i = this.index.get();
 
-                    Meteor.call('addTrial', session._id, i, next + 1, performance.timeOrigin);
-
-                    if (!duplicate) {
-                        this.index.set(i + 1);
-                    } else {
-                        const nt = Trials.find({index: i}).count();
-                        if (nt > duplicate - 1) this.index.set(i + 1);
-                    }
+                    Meteor.call('addTrial', session._id, i, next + 1, performance.timeOrigin, () => {
+                        /** Trial indices are incremented downstream of new trial creation, so that
+                         *  checks involving database calls do not delay trial progression: */
+                        if (!duplicate) {
+                            this.index.set(i + 1);
+                        } else {
+                            /** A second asynchronous index simulates a cache for comparing to previous trials.
+                             *  If a trial has not been duplicated or replayed beyond a specified limit, a new
+                             *  trial identical to the first at this index is added: */
+                            const nt = Trials.find({index: i}).count();
+                            /** If the number of duplicate trials, where the next trial added would be nt + 1,
+                             *  exceeds the specified amount, stop duplicating the original trial at index i: */
+                            if (nt + 1 > duplicate) this.index.set(i + 1);
+                        }
+                    });
                     
                     this.responses.set([]);
                     this.stage.set(1);
                     this.trial.set(next);
-                } else {
-                    this.recordEvent({timeStamp: performance.now(), type: 'session.end'});
+                } else {                    
 					//Meteor.call('mqttSend', session.device, 'lights', {command: 'off', pins: [4]});
-                    Meteor.call('mqttSend', session.device, 'sensor', {command: 'detect', detect: 'off'}, ()=> {
+                    Meteor.call('mqttSend', session.device, 'sensor', {command: 'detect', detect: 'off'}, () => {
 						Meteor.call('mqttSend', session.device, 'client', {command: 'disconnect'});
+                        if (this.logging.mqtt) this.printEvent('darkgoldenrod', '🅲 Client disconnected');
 					});
-                    console.log('%c| Session end:\t' + performance.now() + ' |', 'background: brown; color: white; font-size: 1.5em;');
+
+                    this.recordEvent({timeStamp: performance.now(), type: 'session.end'});
+                    if (this.logging.session) this.printEvent('brown', '🆂 Session ended');
+
                     FlowRouter.go('/');
                 }
             }
         }, delay);
     };
+    this.printEvent = (color, description) => console.log(`%c ${description}%c @${performance.now()} `,
+        `background: ${color}; color: white; padding: 0.35em;`,
+        `background: #111; color: ${color}; padding: 0.25em; border: 1px solid ${color}; font-weight: 800;`),
+    this.printTimer = (trial, stage, name, color, description) => console.log(`%c ⌛ Timer ${this.timers[trial][stage][name]} (${name})%c ${description} @${performance.now()} `,
+        `background: ${color}; color: white; padding: 0.35em;`,
+        `background: #111; color: ${color}; padding: 0.25em; border: 1px solid ${color}; font-weight: 800;`);
     this.recordEvent = (event) => {
         const number = this.trial.get() + 1,
             stage = this.stage.get() - 1,
@@ -375,18 +399,18 @@ Template.trial.onCreated(function () {
         const stage = this.stage.get(),
             trial = this.trial.get() + 1,
             timers = this.timers[trial][stage],
-            start = element.name + 'start',
-            stop = element.name + 'stop';
+            start = element.name + '.start',
+            stop = element.name + '.stop';
 
         if (timers && !timers[start]) {
             return Meteor.setTimeout(() => {
                 timers[start] = audio.toMaster().start();
-                console.log('%c🔊 ' + element.name + ' started\t', 'color: red; font-size: 1.5em; font-weight: 800;', performance.now());
+                if (this.logging.audio) this.printTimer(trial, stage, start, 'steelblue', '🔊 Started');
 
                 timers[stop] = Meteor.setTimeout(() => {
                     audio.stop();
                     this.recordEvent(_.extend(element, {timeStamp: performance.now(), type: 'audio.stop'}));
-                    console.log('%c🔊 ' + element.name + ' stopped\t', 'color: red; font-size: 1.5em; font-weight: 800;', performance.now());
+                    if (this.logging.audio) this.printTimer(trial, stage, stop, 'steelblue', '🔊 Stopped');
                 }, element.duration);
 
                 this.recordEvent(_.extend(element, {timeStamp: performance.now(), type: 'audio.start'}));
@@ -400,7 +424,7 @@ Template.trial.onCreated(function () {
 
         return this.timers[trial][stage][timer] = Meteor.setTimeout(() => {
             const timeStamp = performance.now();
-            //console.log('%c💬 ' + timer + '\t', 'color: orange; font-size: 1.5em; font-weight: 800;', timeStamp);
+            if (this.logging.mqtt) this.printTimer(trial, stage, timer, 'orange', '💬 Sent');
             return Meteor.call('mqttSend', device, topic, _.extend(_.omit(message, 'delay'), {
                 context: {session: id, stage: stage, timeStamp: timeStamp, trial: trial}
             }), () => this.recordEvent({timeStamp: timeStamp, type: timer + '.fired'}));
@@ -492,13 +516,13 @@ Template.trialElement.helpers({
             template.timers[trial][stage][name + '.start'] = Meteor.setTimeout(() => {
                 template.recordEvent({timeStamp: performance.now(), type: type + '.start'});
                 template.toggles[name] = true;
-                console.log('%c⏳ ' + name + ' start\t', 'color: purple; font-size: 1.5em; font-weight: 800;', performance.now());
+                if (template.logging.timers) template.printTimer(trial, stage, name + '.start', 'rebeccapurple', 'Started');
             }, delay);
 
             template.timers[trial][stage][name + '.end'] = Meteor.setTimeout(() => {
                 template.recordEvent({timeStamp: performance.now(), type: name + '.end'});
                 template.toggles[name] = false;
-                console.log('%c⌛ ' + name + ' end\t', 'color: purple; font-size: 1.5em; font-weight: 800;', performance.now());
+                if (template.logging.timers) template.printTimer(trial, stage, name + '.end', 'rebeccapurple', 'Ended');
             }, delay + duration);
         }
 
@@ -524,7 +548,8 @@ Template.trialElements.helpers({
 });
 
 Template.trialElements.onRendered(function () {
-    console.log('%c Trial Elements render:\t' + performance.now() + ' ', 'background: darkgrey; color: white;');
+    const template = Template.instance().parent(2);
+    if (template.logging.trials) template.printEvent('darkslategrey', '🆃 Trial Elements rendered');
 });
 
 Template.trialSVG.events({
@@ -590,14 +615,14 @@ Template.trialSVG.helpers({
                 }
 
                 /** If a timestamp was collected,  */
-                if (timeStamp > 0) {console.log(timeStamp, stage, index, input);
+                if (timeStamp > 0) {
                     /** Create reaction event, collecting all of same event type: */
                     const event = 'ir.entry',
                     elements = _.filter(data, (e) => (e.type === event));
 
                     /** Process the reaction event using template's input conditions: */
                     processEvent({index: count, number: (elements.length + 1), timeStamp: timeStamp, type: event}, template.parent(), stage, trial.number - 1);
-                    console.log('%c⚡ Trial ' + trial.number + ':\t IR Entry ' + (elements.length + 1), 'color: ' + ((last.type === 'sensor') ? 'red' : 'blue') + '; font-size: 3em', performance.now());
+                    if (template.parent().logging.sensors) template.parent().printEvent((last.type === 'sensor') ? 'red' : 'blue', `⚡ Trial ${trial.number}:\t IR Entry ${elements.length + 1}`);
                 }
             });
 
@@ -616,5 +641,6 @@ Template.trialSVG.onCreated(function () {
 });
 
 Template.trialSVG.onRendered(function () {
-    console.log('%c Trial SVG renders:\t' + performance.now() + ' ', 'background: darkgrey; color: white;');
+    const template = Template.instance().parent();
+    if (template.logging.trials) template.printEvent('darkslategrey', '🆃 Trial SVG rendered');
 });

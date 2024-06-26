@@ -28,9 +28,10 @@ Accounts.onCreateUser(function (profile, user) {
     } else {
         user.profile = {
             address: '127.0.0.1',
-            calibration: {},
+            calibration: { screen: { dimensions: { height: 480, width: 800 } } },
             components: [],
             device: true,
+            logging: { audio: false, mqtt: false, session: false, sensors: false, timers: false, trials: false },
             name: profile.profile.name,
             username: profile.username || type.google.email
         }
@@ -46,9 +47,6 @@ UserStatus.events.on('connectionLogin', function (fields) {
 
     if (user.profile.device) {
         if (user.profile.address !== fields.ipAddr || user.profile.device !== fields.userAgent) {
-            //TODO: Create popup & make IP address update optional
-            console.log("You're logging in from " + fields.userAgent + " at " + fields.ipAddr + ", a different location than your previous login, "
-                + user.profile.address + ".  Would you like to update your device settings?");
             Meteor.users.update(fields.userId, {$set: {'profile.address': fields.ipAddr}});
             Meteor.users.update(fields.userId, {$set: {'profile.device': fields.userAgent}});
         }

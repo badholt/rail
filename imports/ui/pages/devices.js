@@ -4,9 +4,8 @@ import './calibrate';
 import _ from 'underscore';
 import moment from 'moment/moment';
 
-import {renderCross} from '../components/cross';
 import {Meteor} from 'meteor/meteor';
-import {Sessions, Subjects} from '../../api/collections';
+import {Sessions, Subjects, Templates} from '../../api/collections';
 import {Template} from "meteor/templating";
 
 Template.deviceActivity.events({
@@ -30,10 +29,12 @@ Template.deviceActivity.helpers({
         return t;
     },
 	remaining(session) {
-		const t = moment(session.date),
-		finish = t.add(session.settings.session.duration, 'ms').fromNow(true);
+        if (session.settings.session) {
+    		const t = moment(session.date),
+    		finish = t.add(session.settings.session.duration, 'ms').fromNow(true);
 
-		return finish + ' remaining';
+    		return finish + ' remaining';
+        }
 	},
     session(id) {
         if (id) return Sessions.findOne(id);
@@ -52,11 +53,11 @@ Template.deviceActivity.onCreated(function () {
 
 Template.deviceCard.events({
     'click a[id^=calibrate-screen]'(event, template) {
-        template.calibrating.set('screenCalibrationModal');
+        template.calibrating.set({profile: template.data.profile, window: 'screenCalibrationModal'});
         return template.data;
     },
     'click a[id^=calibrate-water]'(event, template) {
-        template.calibrating.set('waterCalibrationModal');
+        template.calibrating.set({profile: template.data.profile, window: 'waterCalibrationModal'});
         return template.data;
     },
     'click .editable'(event, template) {
@@ -137,7 +138,8 @@ Template.deviceCard.helpers({
 });
 
 Template.deviceCard.onCreated(function () {
-    this.calibrating = new ReactiveVar(false);
+    this.calibrating = new ReactiveVar({profile: this.data.profile, window: ''});
+    this.cipher = {}; // Stores template information to avoid reloading for each render
     this.getContext = () => ({
         context: {
 			device: this.data._id,
@@ -155,7 +157,9 @@ Template.deviceCard.onCreated(function () {
 });
 
 Template.deviceCard.onDestroyed(function () {
-    if (this.data.status.client.hasOwnProperty(this.data._id)) Meteor.call('mqttSend', 'test_' + this.data._id, 'client', {command: 'disconnect'});
+    if (this.data.status.client && this.data.status.client.hasOwnProperty(this.data._id)) {
+        Meteor.call('mqttSend', 'test_' + this.data._id, 'client', {command: 'disconnect'});
+    }
 });
 
 Template.deviceCardMessage.onRendered(function () {
@@ -189,7 +193,6 @@ Template.devicePanel.onCreated(function () {
 
 Template.deviceQueue.events({
     'click .delete'(event, template) {
-        console.log(this._id, this.trials);
         if (this.trials) {
             Meteor.call('removeTrials', this.trials, (error, result) => {
                 if (!error && this._id) Meteor.call('removeSession', this._id);

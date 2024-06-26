@@ -1,5 +1,5 @@
 <template name="calibrate">
-    {{#with elements currentUser.status.active.calibration}}
+    {{#with preview currentUser.status.active.calibration}}
         {{> calibrationView}}
     {{/with}}
 </template>
@@ -14,31 +14,33 @@
 
 <template name="screenCalibrationForm">
     <form id="calibration-form" class="ui inverted form">
-        <div style="border: 1px solid #f2711c; border-radius: 5px; padding: 5px 10px; margin-top: -10px; margin-bottom: 10px;">
-            <label>Offset <span class="ui mini horizontal label">% from center</span></label>
-            <div class="two fields">
-                <div class="field">
-                    <div class="ui inverted transparent input">
-                        <div class="ui mini orange right pointing label">
-                            x
+        {{#with offsets 'cross'}}
+            <div style="border: 1px solid #f2711c; border-radius: 5px; padding: 5px 10px; margin-top: -10px; margin-bottom: 10px;">
+                <label>Offset <span class="ui mini horizontal label">% from center</span></label>
+                <div class="two fields">
+                    <div class="field">
+                        <div class="ui inverted transparent input">
+                            <div class="ui mini orange right pointing label">
+                                x
+                            </div>
+                            <input type="number" name="offset-x" placeholder="0.0"
+                                   value="{{offset.x}}" max="1.0" min="-1.0" step="0.1">
                         </div>
-                        <input type="number" name="offset-x" placeholder="0.0"
-                               value="{{offset.x}}" max="1.0" min="-1.0" step="0.1">
                     </div>
-                </div>
-                <div class="field">
-                    <div class="ui inverted transparent input">
-                        <div class="ui mini blue right pointing label">
-                            y
+                    <div class="field">
+                        <div class="ui inverted transparent input">
+                            <div class="ui mini blue right pointing label">
+                                y
+                            </div>
+                            <input type="number" name="offset-y" placeholder="0.0"
+                                   value="{{offset.y}}" max="1.0" min="-1.0" step="0.1">
                         </div>
-                        <input type="number" name="offset-y" placeholder="0.0"
-                               value="{{offset.y}}" max="1.0" min="-1.0" step="0.1">
                     </div>
-                </div>
 
-                <i class="ui circular inverted orange link warning icon" style="position: absolute; top: 22px; left: -20px;" title="This will modify the offset already applied by the template!"></i>
+                    <i class="ui circular inverted orange link warning icon" style="position: absolute; top: 22px; left: -20px;" title="This will modify the offset already applied by the template!"></i>
+                </div>
             </div>
-        </div>
+        {{/with}}
 
         <div class="two fields">
             <div class="field">
@@ -64,15 +66,17 @@
 <template name="screenCalibrationModal">
     <div id="modal-calibrate-{{profile.username}}" class="ui basic modal">
         <div class="header">Calibrate Screen for {{profile.name}}</div>
+        
         <div class="content">
-            <svg id="cross-preview" style="{{#with screen}}height: {{height}}; width: {{width}};{{/with}}background: #1b1c1d; border-left-color: #2185d0; border-top-color: #f2711c; display: block; margin: 0 auto 1.5em auto;">
-                <text x="20" y="20" style="fill: #f2711c;">{{screen.width}}</text>
-                <text x="10" y="20" style="fill: #2185d0; writing-mode: tb; text-orientation: sideways; -webkit-text-orientation: sideways;">{{screen.height}}</text>
-                {{#with template}}
-                    {{> cross (element template)}}
-                {{/with}}
-            </svg>
-            {{> screenCalibrationForm (element template)}}
+            {{#with preview 'cross'}}
+                <svg id="cross-preview" style="{{#with screen}}height: {{height}}; width: {{width}};{{/with}}background: #1b1c1d; border-left-color: #2185d0; border-top-color: #f2711c; display: block; margin: 0 auto 1.5em auto;">
+                    <text x="20" y="20" style="fill: #f2711c;">{{screen.width}}</text>
+                    <text x="10" y="20" style="fill: #2185d0; writing-mode: tb; text-orientation: sideways; -webkit-text-orientation: sideways;">{{screen.height}}</text>
+                    {{> cross}}
+                </svg>
+
+                {{> screenCalibrationForm}}
+            {{/with}}
         </div>
 
         <div class="actions">
