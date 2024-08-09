@@ -341,9 +341,9 @@ Template.trial.onCreated(function () {
                              *  If a trial has not been duplicated or replayed beyond a specified limit, a new
                              *  trial identical to the first at this index is added: */
                             const nt = Trials.find({index: i}).count();
-                            /** If the number of duplicate trials, where the next trial added would be nt + 1,
+                            /** If the number of duplicate trials, where the next trial added would be nt,
                              *  exceeds the specified amount, stop duplicating the original trial at index i: */
-                            if (nt + 1 > duplicate) this.index.set(i + 1);
+                            if (nt > duplicate) this.index.set(i + 1);
                         }
                     });
                     

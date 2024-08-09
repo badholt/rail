@@ -8,14 +8,13 @@ Template.blacklist.helpers({
     blacklist(y, index) {
         const session = Template.instance().parent(7),
             page = session.page.get(),
-            stages = session.stages.get();
-        const stimuli = stages[page][index] || { //TODO: Update default stimulus
+            stages = session.stages.get(),
+            stimuli = stages[page][index] || { //TODO: Update default stimulus
             "type": "stimuli",
             "bars": 3,
             "contrast": 1,
             "delay": 0,
             "duration": 5000,
-            "frequency": 4,
             "grid": {
                 "blacklist": [
                     {
@@ -92,13 +91,13 @@ Template.blacklist.helpers({
                     "value": 90
                 }
             ],
-            "spacing": 2,
+            "spacing": 1,
             "span": 100,
             "variables": [
                 "location",
                 "orientation"
             ],
-            "weight": 5
+            "weight": 20
         };
 
         if (stimuli && stimuli.grid) return {

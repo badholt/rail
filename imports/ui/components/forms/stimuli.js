@@ -16,7 +16,6 @@ Template.stimuliForm.events({
                 page = session.page.get(),
                 stages = session.stages.get(),
                 stage = stages[page][this.number - 1];
-            console.log(session, stages, this, stage);
             let grid;
 
             switch (target.name) {
@@ -24,13 +23,11 @@ Template.stimuliForm.events({
                 case 'contrast':
                 case 'delay':
                 case 'duration':
-                case 'frequency':
                 case 'min':
                 case 'spacing':
                 case 'span':
                 case 'step':
                 case 'weight':
-                    console.log(stage, target, value, stages);
                     stage[target.name] = value;
                     session.stages.set(stages);
                     break;
@@ -56,7 +53,7 @@ Template.stimuliForm.events({
                     break;
                 case 'number':
                     session[target.name] = value;
-                    console.log(session, target.name, value);
+
                     const values = (value < stages[page].length)
                         ? _.first(stages[page], value)
                         : generateVisuals(stages[page], stages[page].length, value);
@@ -101,7 +98,6 @@ Template.stimulusForm.helpers({
         return _.contains(this.variables, field);
     },
     weighted() {
-        console.log(this, Template.instance());
         return this.grid.weighted;
     }
 });
@@ -185,21 +181,9 @@ Template.stimulusPreview.helpers({
 });
 
 Template.stimulusPreview.onCreated(function () {
-    this.autorun(() => {
-        this.getDimensions = () => {
-            const container = $('svg.stimulus-preview'),
-                height = container.height(),
-                width = container.width();
-
-            console.log(container, height, width);
-        }
-
-    });
-
     this.rendered = new ReactiveVar(false);
 });
 
 Template.stimulusPreview.onRendered(function () {
-    Template.instance().getDimensions();
     Template.instance().rendered.set(true);
 });

@@ -2,7 +2,7 @@
     {{#with data}}
         <g id="region">
             <g id="stimulus-at-{{location.x}}-{{location.y}}">
-                {{#each range 0 (gratings max) 1}}
+                {{#each range 0 bars 1}}
                     {{> bar (dimensions)}}
                 {{/each}}
             </g>

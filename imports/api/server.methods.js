@@ -60,6 +60,7 @@ if (Meteor.isServer) Meteor.methods({
         users: [Meteor.userId()]
     }),
     'addTemplate': (template) => Templates.insert({
+        _id: template._id || Random.id(),
         author: Meteor.userId() || template.author,
         devices: 'any',
         icon: template.icon,

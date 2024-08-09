@@ -120,7 +120,6 @@ export const calculateCenter = (height, width) => ({
                 contrast: 1,
                 delay: 0,
                 duration: 5000,
-                frequency: 4,
                 grid: {
                     blacklist: generateBlacklist([],
                         {first: 1, last: columns + 1},
@@ -129,10 +128,10 @@ export const calculateCenter = (height, width) => ({
                     x: 3,
                     y: 3
                 },
-                spacing: 2,
+                spacing: 1,
                 span: 100,
                 variables: ['grid.blacklist'],
-                weight: 5
+                weight: 20
             };
 
             visuals.push(previous);

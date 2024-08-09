@@ -128,38 +128,22 @@
 
             {{> stimulusPreview}}
 
-            {{#unless frequency}}
-                <div class="fields">
-                    <div class="field">
-                        <label>
-                            Bars
-                            <span class="ui mini horizontal label">bars</span>
-                        </label>
-                        <input type="number" name="bars"
-                               placeholder="#" value="{{bars}}">
-                    </div>
-                    <div class="field">
-                        <label>
-                            Spacing
-                            <span class="ui mini horizontal label">x Weight</span>
-                        </label>
-                        <input type="number" name="spacing"
-                               placeholder="#" value="{{spacing}}">
-                    </div>
-                </div>
-            {{/unless}}
-
             <div class="fields">
-                {{#if frequency}}
-                    <div class="field">
-                        <label>
-                            Frequency
-                            <span class="ui mini horizontal label">bars/unit</span>
-                        </label>
-                        <input type="number" name="frequency"
-                               placeholder="#" value="{{frequency}}">
-                    </div>
-                {{/if}}
+                <div class="field">
+                    <label>
+                        Bars
+                    </label>
+                    <input type="number" name="bars"
+                           placeholder="#" value="{{bars}}">
+                </div>
+                <div class="field">
+                    <label>
+                        Spacing
+                    </label>
+                    <input type="number" name="spacing"
+                           placeholder="#" value="{{spacing}}">
+                </div>
+
                 <div class="field">
                     <label>
                         Span
