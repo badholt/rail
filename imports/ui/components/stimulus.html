@@ -1,6 +1,6 @@
 <template name="bars">
     {{#with data}}
-        <g id="region">
+        <g id="region-at-{{location.x}}-{{location.y}}">
             <g id="stimulus-at-{{location.x}}-{{location.y}}">
                 {{#each range 0 bars 1}}
                     {{> bar (dimensions)}}

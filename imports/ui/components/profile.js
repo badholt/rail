@@ -1,5 +1,7 @@
-import {Meteor} from "meteor/meteor";
-import {Template} from "meteor/templating";
+import './profile.html';
+
+import { Meteor } from 'meteor/meteor';
+import { Template } from 'meteor/templating';
 
 Template.profileAvatar.helpers({
     user(id) {

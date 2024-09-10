@@ -1,12 +1,12 @@
 import './stimulus.html';
 
 import * as d3 from 'd3';
-
-import {Sessions} from "../../api/collections";
-import {Template} from 'meteor/templating';
 import _ from "underscore";
 import update from "immutability-helper/index";
-import {calculateCenter} from "../../api/client.methods";
+
+import { calculateCenter } from "../../api/client.methods";
+import { Sessions } from "../../api/collections";
+import { Template } from 'meteor/templating';
 
 export const translateBars = (i, bars, spacing, span, weight) => {
         const n = bars + spacing * (bars - 1),
@@ -14,7 +14,7 @@ export const translateBars = (i, bars, spacing, span, weight) => {
         return center - (spacing * i + i + 1) * weight;
     },
     renderBars = (center, data) => {
-        const group = d3.select('#region'),
+        const group = d3.select('#region-at-' + data.location.x + '-' + data.location.y),
             stimulus = group.select('#stimulus-at-' + data.location.x + '-' + data.location.y),
             bars = stimulus.selectAll('.bar'),
             box = data.span / 2,

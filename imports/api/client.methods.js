@@ -10,7 +10,7 @@
 import _ from 'underscore';
 import update from 'immutability-helper';
 
-import {Meteor} from 'meteor/meteor';
+import { Meteor } from 'meteor/meteor';
 
 export const calculateCenter = (height, width) => ({
         x: Math.floor(width / 2),
@@ -94,13 +94,13 @@ export const calculateCenter = (height, width) => ({
         // });
 
         /** METHOD 2 - Probability distribution of stages w/ exact global weights: */
-        const weights = [ratio, parseFloat((1 - ratio).toFixed(5))], // DUMMY VARS
-        portion = (w) => Math.floor(n * w),
-        portions = _.map(weights, (w) => portion(w)),
-        sum = _.reduce(portions, (memo, p) => memo + p),
-        /** If stimuli combinations cannot be distributed evenly across an uneven number of trials,
-         *  add an additional trial to the last combination generated: */
-        repeats = _.map(weights, (w, i) => (i < weights.length - 1 || sum === n) ? portion(w) : portion(w) + Math.floor(n - sum));
+        const weights = [ ratio, parseFloat((1 - ratio).toFixed(5)) ], // DUMMY VARS
+            portion = (w) => Math.floor(n * w),
+            portions = _.map(weights, (w) => portion(w)),
+            sum = _.reduce(portions, (memo, p) => memo + p),
+            /** If stimuli combinations cannot be distributed evenly across an uneven number of trials,
+             *  add an additional trial to the last combination generated: */
+            repeats = _.map(weights, (w, i) => (i < weights.length - 1 || sum === n) ? portion(w) : portion(w) + Math.floor(n - sum));
 
         _.each(repeats, (r, k) => _.times(r, () => {
             trial.push(_.defaults(list[k], element)); // TODO: Push w/o defaults & use base under session.elements for defaults @ trial lvl
@@ -194,14 +194,43 @@ Meteor.methods({
                  *  generating combinations based on each element's specified variables: */
                 _.each(stage, (element, j) => {
                     /** (2) Next, adds an empty array for element j to stage i on the trials array */
-                    trials[i].push([]);
+                    trials[ i ].push([]);
 
                     /** (3) Generates probability distributions for element j relative to specified variables: */
-                    trials[i][j] = generateCombinations(element, n, session.distribution.ratio, trials[i][j]);
+                    trials[ i ][ j ] = generateCombinations(element, n, session.distribution.ratio, trials[ i ][ j ]);
+
+
+
+                    _.each(element.variables, (v) => { // TODO: Avoid post-processing?
+                        if (_.has(element[ v ], 'dependent')) {
+                            const variable = element[ v ],
+                                dependent = variable[ 'dependent' ].split('.');
+
+                            if (dependent.length > 1) {
+                                let d = _.findIndex(trials[ i ], (elements, k) =>
+                                    (j !== k && dependent[ 0 ] === elements[ k ][ 'type' ] && dependent[ 1 ] == elements[ k ][ 'number' ] - 1));
+
+                                if (d > -1) {
+                                    const post = _.map(trials[ i ][ j ], (e, k) => {
+                                        const property = trials[ i ][ d ][ k ][ dependent[ 2 ] ],
+                                            transform = (key, value) => property[ key ] + value;
+
+                                        _.each(variable[ 'transform' ], (value, key) => {
+                                            e = update(e, { [ dependent[ 2 ] ]: { $set: { [ key ]:  transform(key, value)} } });
+                                        });
+
+                                        return e;
+                                    });
+
+                                    trials = update(trials, { [ i ]: { [ j ]: { $set: post } } });
+                                }
+                            }
+                        }
+                    });
                 });
 
                 /** Consolidates arrays of distributed elements of stage i into a single stage i item for the trials array: */
-                trials = update(trials, {[i]: {$set: _.zip(...trials[i])}});
+                trials = update(trials, {[ i ]: {$set: _.zip(...trials[ i ])}});
             });
 
         /** Consolidates arrays of distributed stages into a single trials array for Sessions: */
