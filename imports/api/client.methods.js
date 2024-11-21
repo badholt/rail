@@ -16,7 +16,7 @@ export const calculateCenter = (height, width) => ({
         x: Math.floor(width / 2),
         y: Math.floor(height / 2)
     }),
-    calculateDuration = (session) => (session.duration) ? Math.round(session.duration / session.iti * session.distribution.multiplier) : session.total,
+    calculateTotal = (session) => (session.duration) ? Math.round(session.duration / session.iti * session.distribution.multiplier) : session.total,
     calculateWeights = (blacklist, total) => {
         const selected = _.filter(blacklist, (element) => !element.blacklist);
 
@@ -179,10 +179,12 @@ Meteor.methods({
         // TODO: Find way to generate "add on" stimuli with session parameters
         let trials = [];
 
+        if (!session.distribution) session.distribution = { multiplier: 1, ratio: 1 };
+
         /** Returns an integer representing the estimated number of trials which will occur in the Session.
          *  If the Session duration is given in terms of the total number of ms, the total ms are divided by
          *  the ms duration of the ITI, which represents the total length of a trial, including any delay periods. */
-        const n = calculateDuration(session);
+        const n = calculateTotal(session);
 
         /** Performs calculations for every stage of a given template, iterating over stages instead of trials
          *  in order to generate holistic probability distributions across a trial set: */

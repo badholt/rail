@@ -2,9 +2,9 @@ import './session.html';
 
 import _ from "underscore";
 
-import {calculateDuration} from '/imports/api/client.methods';
-import {ReactiveVar} from 'meteor/reactive-var';
-import {Template} from "meteor/templating";
+import { calculateTotal } from '/imports/api/client.methods';
+import { ReactiveVar } from 'meteor/reactive-var';
+import { Template } from "meteor/templating";
 
 Template.sessionForm.events({
     'input input'(event, template) {
@@ -22,34 +22,34 @@ Template.sessionForm.events({
                 case 'delay':
                 case 'light.duration':
                 case 'total':
-                    session[property] = value;
+                    session[ property ] = value;
                     form.session.set(session);
                     break;
                 case 'duration':
                 case 'iti':
-                    session[property] = value;                    
-                    session['distribution']['size'] = calculateDuration(session);
+                    session[ property ] = value;                    
+                    if (session.distribution) session[ 'distribution' ][ 'size' ] = calculateTotal(session);
                     form.session.set(session);
                     break;
                 case 'distribution':
-                    switch (split[2]) {
+                    switch (split[ 2 ]) {
                         case 'multiplier':
-                            session[property][split[2]] = value;
-                            session[property]['size'] = calculateDuration(session);
+                            session[ property ][ split[ 2 ] ] = value;
+                            session[ property ][ 'size' ] = calculateTotal(session);
                             form.session.set(session);
                             break;
                         case 'size':
-                            session[property][split[2]] = value;
+                            session[ property ][ split[ 2 ] ] = value;
 
                             /** Calculate default distribution size w/ multiplier of 1: */
-                            const n = calculateDuration(_.defaults({'distribution': {'multiplier': 1}}, session));
+                            const n = calculateTotal(_.defaults({ 'distribution': { 'multiplier': 1 } }, session));
                             
-                            session[property]['size'] = value;
-                            session[property]['multiplier'] = parseFloat((value / n).toFixed(5));
+                            session[ property ][ 'size' ] = value;
+                            session[ property ][ 'multiplier' ] = parseFloat((value / n).toFixed(5));
                             form.session.set(session);
                             break;
                         default:
-                            session[property][split[2]] = value;
+                            session[ property ][ split[ 2 ] ] = value;
                             form.session.set(session);
                             break;
                     }
@@ -61,7 +61,7 @@ Template.sessionForm.events({
 
 Template.sessionForm.helpers({
     base() {
-        return calculateDuration(_.defaults({'distribution': {'multiplier': 1}}, Template.currentData()));
+        return calculateTotal(_.defaults({'distribution': {'multiplier': 1}}, Template.currentData()));
     },
     modify() {
         return Template.instance().modify.get();
