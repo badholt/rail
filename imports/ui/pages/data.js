@@ -18,12 +18,12 @@ import semantic from 'datatables.net-se';
 import _ from 'underscore';
 import moment from 'moment/moment';
 
-import {$} from 'meteor/jquery';
-import {Experiments, Sessions, Subjects, Trials} from '/imports/api/collections';
-import {Meteor} from 'meteor/meteor';
-import {Template} from 'meteor/templating';
-import {ReactiveVar} from 'meteor/reactive-var';
-import {saveAs} from 'file-saver';
+import { $ } from 'meteor/jquery';
+import { Experiments, Sessions, Subjects, Trials } from '/imports/api/collections';
+import { Meteor } from 'meteor/meteor';
+import { Template } from 'meteor/templating';
+import { ReactiveVar } from 'meteor/reactive-var';
+import { saveAs } from 'file-saver';
 
 Template.data.events({
     'click #session'(event, template) {
@@ -48,31 +48,35 @@ Template.data.onCreated(function () {
 Template.dataMenu.events({
     'click #download'(event, template) {
 		const print = (date, device, experiment, filename, session, settings, subjects, user) => {
-			const span = 60,
-			width = device.profile.calibration.screen.dimensions.width,
-			getClickType = (e) => (isCross(e) ? 'm': isLeft(e) ? 'l' : 'r'),
-			getGroups = (stage, i) => {
-				const p = ['request', 'ir'];
+			const screen = device.profile.calibration.screen,
+				height = screen.dimensions.height,
+				width = screen.dimensions.width,
+				getClickType = (e, region) => (isCross(e, region, 'y') ? isCross(e, region, 'x') ? 'mm': isLess(e, region, 'x')
+					? 'lm' : 'rm' : isLess(e, region, 'y') ? isLess(e, region, 'x') ? 'lt' : 'rt' : isLess(e, region, 'x') ? 'lb' : 'rb'),
+				getGroups = (stage, i) => {
+					const p = [ 'request', 'ir' ];
 
-				return _.groupBy(stage, (e) => ((_.property(p)(e) !== undefined)
-					? p.join('.') + '.' + _.property(p)(e)
-					: e.type.replace(/(\.?(re)?[\d]+\.)+/ig, '.')));
-			},
-			isCross = (e) => (e.clientX > (width - span) / 2 && e.clientX < (width + span) / 2),
-			isLeft = (e) => (e.clientX < (width / 2));
+					return _.groupBy(stage, (e) => ((_.property(p)(e) !== undefined)
+						? p.join('.') + '.' + _.property(p)(e)
+						: e.type.replace(/(\.?(re)?[\d]+\.)+/ig, '.')));
+				},
+				getRegion = (region, axis) => ((1 + region.offset[ axis ] + screen.cross.offset[ axis ]) * ((axis === 'y') ? height : width)),
+				isCross = (coordinate, region, axis) => (coordinate[ 'client' + axis.toUpperCase() ] > (getRegion(region, axis) - region.span) / 2
+					&& coordinate[ 'client' + axis.toUpperCase() ] < (getRegion(region, axis) + region.span) / 2),
+				isLess = (coordinate, region, axis) => (coordinate[ 'client' + axis.toUpperCase() ] < getRegion(region, axis) / 2);
 
-			let headers, events, content;
+			let axis, headers, events, content;
 
 			switch (settings) {
 				case 'indices':
-					headers = ['Trial No', 'Trial Index'],
-						content = [
-							'Experiment\t' + experiment.title + '\n',
-							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-							'Subject\t' + subjects + '\n',
-							'Device\t' + device.profile.name + '\n',
-							'Experimenter\t' + user.profile.name + '\n'							
-						];
+					headers = [ 'Trial No', 'Trial Index' ],
+					content = [
+						'Experiment\t' + experiment.title + '\n',
+						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+						'Subject\t' + subjects + '\n',
+						'Device\t' + device.profile.name + '\n',
+						'Experimenter\t' + user.profile.name + '\n'							
+					];
 
 					_.each(session.trials, (id) => {
 						const trial = Trials.findOne(id);
@@ -88,20 +92,19 @@ Template.dataMenu.events({
 
 					break;
 				case 'responses':
-					headers = ['Trial No'],
-						content = [
-							'Experiment\t' + experiment.title + '\n',
-							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-							'Subject\t' + subjects + '\n',
-							'Device\t' + device.profile.name + '\n',
-							'Experimenter\t' + user.profile.name + '\n'
-						];
+					headers = [ 'Trial No' ],
+					content = [
+						'Experiment\t' + experiment.title + '\n',
+						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+						'Subject\t' + subjects + '\n',
+						'Device\t' + device.profile.name + '\n',
+						'Experimenter\t' + user.profile.name + '\n'
+					];
 
 					_.each(session.trials, (id) => {
 						const trial = Trials.findOne(id),
-							clicks = _.map(trial.data, (stage, i) => {
-								return _.filter(stage, (e) => (e.type === 'click'));
-							});
+							clicks = _.map(trial.data, (stage) => _.filter(stage, (e) => (e.type === 'click'))),
+							region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross')));
 
 						if (trial.number === 1) {
 							content.push('Time Origin\t' + trial.timeOrigin + '\n\n');
@@ -110,26 +113,23 @@ Template.dataMenu.events({
 						
 						content.push(trial.number + '\t');
 						
-						_.each(clicks, (stage, i) => _.each(stage, (e, j) => {
-							content.push(getClickType(e)
-								+ ' (' + e.clientX + ', ' + e.clientY + ')\t'
-								+ e.timeStamp + '\t');
-						}));
+						_.each(clicks, (stage) => _.each(stage, (e) =>
+							(content.push(getClickType(e, region[ 0 ]) + ' (' + e.clientX + ', ' + e.clientY + ')\t' + e.timeStamp + '\t'))));
 						
 						content.push('\n');
 					});
 
 					break;
 				case 'reward':
-					headers = ['Trial No', 'Dispense Time', 'Amount Dispensed', 'TimeStamp'],
-						content = [
-							'Experiment\t' + experiment.title + '\n',
-							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-							'Subject\t' + subjects + '\n',
-							'Device\t' + device.profile.name + '\n',
-							'Experimenter\t' + user.profile.name + '\n\n',
-							headers.join('\t') + '\n'
-						];
+					headers = [ 'Trial No', 'Dispense Time', 'Amount Dispensed', 'TimeStamp' ],
+					content = [
+						'Experiment\t' + experiment.title + '\n',
+						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+						'Subject\t' + subjects + '\n',
+						'Device\t' + device.profile.name + '\n',
+						'Experimenter\t' + user.profile.name + '\n\n',
+						headers.join('\t') + '\n'
+					];
 
 					_.each(session.trials, (id) => {
 						const trial = Trials.findOne(id);
@@ -140,7 +140,7 @@ Template.dataMenu.events({
 						_.each(trial.data, (stage, i) => {
 							const groups = getGroups(stage, i);
 
-							if (groups['reward']) _.each(groups['reward'], (e) => {
+							if (groups[ 'reward' ]) _.each(groups[ 'reward' ], (e) => {
 								if (e.request.dispense) {
 									amount += ((e.request.dispense - device.profile.calibration.water.intercept) / device.profile.calibration.water.slope);
 									dispense += e.request.dispense;
@@ -159,15 +159,15 @@ Template.dataMenu.events({
 
 					break;
 				case 'sensor':
-					headers = ['Trial No', 'Sensor Status', 'TimeStamp'],
-						content = [
-							'Experiment\t' + experiment.title + '\n',
-							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-							'Subject\t' + subjects + '\n',
-							'Device\t' + device.profile.name + '\n',
-							'Experimenter\t' + user.profile.name + '\n\n',
-							headers.join('\t') + '\n'
-						];
+					headers = [ 'Trial No', 'Sensor Status', 'TimeStamp' ],
+					content = [
+						'Experiment\t' + experiment.title + '\n',
+						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+						'Subject\t' + subjects + '\n',
+						'Device\t' + device.profile.name + '\n',
+						'Experimenter\t' + user.profile.name + '\n\n',
+						headers.join('\t') + '\n'
+					];
 
 					_.each(session.trials, (id) => {
 						const trial = Trials.findOne(id);
@@ -178,13 +178,13 @@ Template.dataMenu.events({
 						});
 
 						content.push(trial.number + '\t');
-						_.each(ir, (e) => (content.push(e.status + '\t' + e.timeStamp + '\t')));
+						if (ir) _.each(ir, (e) => (content.push(e.status + '\t' + e.timeStamp + '\t')));
 						content.push('\n');
 					});
 
 					break;
 				case 'settings':
-					headers = ['Stage', 'Rule', 'Event'],
+					headers = [ 'Stage', 'Rule', 'Event' ],
 					content = [
 						'Experiment\t' + experiment.title + '\n',
 						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
@@ -293,17 +293,17 @@ Template.dataMenu.events({
 					}));
 
 					break;
-				case 'shapingI':
-					headers = ['Trial No', 'Trial Start', 'Tone Start', 'Reward Stop', 'IR Entry (Post-Tone)'],
-						events = [['trial.start', 'audio.start', 'reward', 'request.ir.1']],
-						content = [
-							'Experiment\t' + experiment.title + '\n',
-							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-							'Subject\t' + subjects + '\n',
-							'Device\t' + device.profile.name + '\n',
-							'Experimenter\t' + user.profile.name + '\n\n',
-							headers.join('\t') + '\n'
-						];
+				case 'shaping1':
+					headers = [ 'Trial No', 'Trial Start', 'Tone Start', 'Reward Stop', 'IR Entry (Post-Tone)' ],
+					events = [ [ 'trial.start', 'audio.start', 'reward', 'request.ir.1' ] ],
+					content = [
+						'Experiment\t' + experiment.title + '\n',
+						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+						'Subject\t' + subjects + '\n',
+						'Device\t' + device.profile.name + '\n',
+						'Experimenter\t' + user.profile.name + '\n\n',
+						headers.join('\t') + '\n'
+					];
 
 					_.each(session.trials, (id) => {
 						const trial = Trials.findOne(id);
@@ -312,22 +312,20 @@ Template.dataMenu.events({
 
 						_.each(trial.data, (stage, i) => {
 							const groups = getGroups(stage, i),
-								ir = _.filter(groups['request.ir.1'], (e) => {
-									if (groups['audio.start']) {
-										const tone = groups['audio.start'][0];
+								ir = _.filter(groups[ 'request.ir.1' ], (e) => {
+									if (groups[ 'audio.start' ]) {
+										const tone = groups[ 'audio.start' ][ 0 ];
 										return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false;
 									}
 								});
 								
-								_.each(events[i], (g) => {
-									if (g !== 'request.ir.1' && groups[g]) {
-										_.each(groups[g], (e)=> {
+								_.each(events[ i ], (g) => {
+									if (g !== 'request.ir.1' && groups[ g ]) {
+										_.each(groups[ g ], (e)=> {
 											if (g !== 'reward' || e.request.reward === 'off') content.push(e.timeStamp + '\t');
 										});
 									} else if (ir) {
-										_.each(ir, (e)=> {
-											content.push(e.timeStamp + '\t');
-										});
+										_.each(ir, (e) => (content.push(e.timeStamp + '\t')));
 									} else {
 										content.push('\t');
 									}
@@ -338,27 +336,27 @@ Template.dataMenu.events({
 					});
 
 					break;
-				case 'shapingII':
-					headers = ['Trial No', 'Trial Start', 'Initial Poke', 'IR Entry'],
-						events = [['cross.start', 'click', 'request.ir.1']],
-						content = [
-							'Experiment\t' + experiment.title + '\n',
-							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-							'Subject\t' + subjects + '\n',
-							'Device\t' + device.profile.name + '\n',
-							'Experimenter\t' + user.profile.name + '\n\n',
-							headers.join('\t') + '\n'
-						];
+				case 'shaping2':
+					headers = [ 'Trial No', 'Trial Start', 'Initial Poke', 'IR Entry' ],
+					events = [ [ 'cross.start', 'click', 'request.ir.1' ] ],
+					content = [
+						'Experiment\t' + experiment.title + '\n',
+						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+						'Subject\t' + subjects + '\n',
+						'Device\t' + device.profile.name + '\n',
+						'Experimenter\t' + user.profile.name + '\n\n',
+						headers.join('\t') + '\n'
+					];
 
 					_.each(session.trials, (id) => {
 						const trial = Trials.findOne(id),
-							clicks = _.filter(trial.data[0], (e) => (e.type === 'click'));
+							clicks = _.filter(trial.data[ 0 ], (e) => (e.type === 'click'));
 
 						_.each(trial.data, (stage, i) => {
 							const groups = getGroups(stage, i),
-								ir = _.filter(groups['request.ir.1'], (e) => {
-									if (groups['audio.start']) {
-										const tone = (groups['audio.start'] && groups['audio.start'].length > 1) ? groups['audio.start'][1] : 0;
+								ir = _.filter(groups[ 'request.ir.1' ], (e) => {
+									if (groups[ 'audio.start' ]) {
+										const tone = (groups[ 'audio.start' ] && groups[ 'audio.start' ].length > 1) ? groups[ 'audio.start' ][ 1 ] : 0;
 										return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false;
 									}
 								});
@@ -366,47 +364,50 @@ Template.dataMenu.events({
 							/** Print the trial number only once, during the first stage: */
 							if (i === 0) content.push(trial.number + '\t');
 
-							_.each(groups['trial.start'], (e)=> (content.push(e.timeStamp + '\t')));
+							_.each(groups[ 'trial.start' ], (e)=> (content.push(e.timeStamp + '\t')));
 
-							if (clicks.length > 0) content.push(clicks[0].timeStamp + '\t');
+							if (clicks.length > 0) content.push(clicks[ 0 ].timeStamp + '\t');
 
-							if (ir) _.each(ir, (e)=> (content.push(e.timeStamp + '\t')));
+							if (ir) _.each(ir, (e) => (content.push(e.timeStamp + '\t')));
 						});
 
 						content.push('\n');
 					});
 
 					break;
-				case 'shapingIV':
-					headers = ['Trial No', 'Trial Type', 'Outcome', 'Trial Start', 'Stimulus Start', 'Response',
-						 'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry'],
-						events = [['trial.start'], ['stimuli.start', 'click']],
-						content = [
-							'Experiment\t' + experiment.title + '\n',
-							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-							'Subject\t' + subjects + '\n',
-							'Device\t' + device.profile.name + '\n',
-							'Experimenter\t' + user.profile.name + '\n\n\n',
-							headers.join('\t') + '\n'
-						];
+				case 'shaping4':
+					// Analyze w/ horizontal mask parameters
+					axis = 'x',
+					headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Trial Start', 'Stimulus Start', 'Response',
+						 'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
+					events = [ [ 'trial.start' ], [ 'stimuli.start', 'click' ] ],
+					content = [
+						'Experiment\t' + experiment.title + '\n',
+						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+						'Subject\t' + subjects + '\n',
+						'Device\t' + device.profile.name + '\n',
+						'Experimenter\t' + user.profile.name + '\n\n\n',
+						headers.join('\t') + '\n'
+					];
 
 					_.each(session.trials, (id) => {
 						const trial = Trials.findOne(id);
 
 						let correct = {};
 
-						if (trial.data[1] && trial.data[1].length > 0) {
-							const clicks = _.filter(trial.data[1], (e) => (e.type === 'click' && isCross(e))),
-							cross = _.filter(trial.data[1], (e) => (e.type === 'click' && isCross(e)));
+						if (trial.data[ 1 ] && trial.data[ 1 ].length > 0) {
+							const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
+								clicks = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis))),
+								cross = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
 
 							content.push(trial.number + '\t');
 
-							if (trial.stages[1][0] && trial.stages[1][0].orientation.value === 0) {
+							if (trial.stages[ 1 ][ 0 ] && trial.stages[ 1 ][ 0 ].orientation.value === 0) {
 								content.push('V\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (e) => isLeft(e));
+								if (clicks.length > 0) correct = _.groupBy(clicks, (e) => isLess(e, region[ 0 ], axis));
 							} else {
 								content.push('H\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (e) => !isLeft(e));
+								if (clicks.length > 0) correct = _.groupBy(clicks, (e) => !isLess(e, region[ 0 ], axis));
 							}
 
 							if (clicks.length > 0) {
@@ -417,27 +418,25 @@ Template.dataMenu.events({
 
 							_.each(trial.data, (stage, i) => {
 								const groups = getGroups(stage, i),
-									ir = _.filter(groups['request.ir.1'], (e) => {
-										const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
+									ir = _.filter(groups[ 'request.ir.1' ], (e) => {
+										const on = _.find(groups[ 'reward' ], (r) => (r.request.reward === "on"));
 										return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
 									});
 
-								_.each(events[i], (g) => {
-									if (g !== 'click') content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t');
+								_.each(events[ i ], (g) => {
+									if (g !== 'click') content.push((groups[ g ]) ? (groups[ g ][ 0 ].timeStamp) + '\t' : '\t');
 								});
 
-								if (_.contains(events[i], 'click')) {
-									const c = correct['true'],
-										f = correct['false'];
+								if (_.contains(events[ i ], 'click')) {
+									const c = correct[ 'true' ],
+										f = correct[ 'false' ];
 
-									content.push((c) ? c[0].timeStamp + '\t' : (f) ? f[0].timeStamp + '\t' : '\t');
+									content.push((c) ? c[ 0 ].timeStamp + '\t' : (f) ? f[ 0 ].timeStamp + '\t' : '\t');
 									content.push((f) ? f.length + '\t' : 0 + '\t');
 									content.push((cross) ? cross.length + '\t' : 0 + '\t');
 								}
 								
-								if (ir) _.each(ir, (e)=> {
-									content.push(e.timeStamp + '\t');
-								});
+								if (ir) _.each(ir, (e) => (content.push(e.timeStamp + '\t')));
 							});
 
 							content.push('\n');
@@ -445,36 +444,39 @@ Template.dataMenu.events({
 					});
 
 					break;
-				case 'shapingVI':
-					headers = ['Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
-						 'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry'],
-						events = [['cross.start'], ['stimuli.start', 'click']],
-						content = [
-							'Experiment\t' + experiment.title + '\n',
-							'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-							'Subject\t' + subjects + '\n',
-							'Device\t' + device.profile.name + '\n',
-							'Experimenter\t' + user.profile.name + '\n\n\n',
-							headers.join('\t') + '\n'
-						];
+				case 'shaping4v':
+					// Analyze w/ vertical mask parameters
+					axis = 'y',
+					headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Trial Start', 'Stimulus Start', 'Response',
+						'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
+					events = [ [ 'trial.start' ], [ 'stimuli.start', 'click' ] ],
+					content = [
+						'Experiment\t' + experiment.title + '\n',
+						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+						'Subject\t' + subjects + '\n',
+						'Device\t' + device.profile.name + '\n',
+						'Experimenter\t' + user.profile.name + '\n\n\n',
+						headers.join('\t') + '\n'
+					];
 
 					_.each(session.trials, (id) => {
 						const trial = Trials.findOne(id);
 
 						let correct = {};
 
-						if (trial.data[1] && trial.data[1].length > 0) {
-							const clicks = _.filter(trial.data[1], (e) => (e.type === 'click' && !isCross(e))),
-							cross = _.filter(trial.data[1], (e) => (e.type === 'click' && isCross(e)));
+						if (trial.data[ 1 ] && trial.data[ 1 ].length > 0) {
+							const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
+								clicks = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis))),
+								cross = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
 
 							content.push(trial.number + '\t');
 
-							if (trial.stages[1][0] && trial.stages[1][0].orientation.value === 0) {
+							if (trial.stages[ 1 ][ 0 ] && trial.stages[ 1 ][ 0 ].orientation.value === 0) {
 								content.push('V\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => isLeft(c)); // i < 1 check is limiting to only first click
+								if (clicks.length > 0) correct = _.groupBy(clicks, (e) => isLess(e, region[ 0 ], axis));
 							} else {
 								content.push('H\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => !isLeft(c));
+								if (clicks.length > 0) correct = _.groupBy(clicks, (e) => !isLess(e, region[ 0 ], axis));
 							}
 
 							if (clicks.length > 0) {
@@ -485,27 +487,163 @@ Template.dataMenu.events({
 
 							_.each(trial.data, (stage, i) => {
 								const groups = getGroups(stage, i),
-									ir = _.filter(groups['request.ir.1'], (e) => {
-										const on = _.find(groups['reward'], (r) => (r.request.reward === "on"));
+									ir = _.filter(groups[ 'request.ir.1' ], (e) => {
+										const on = _.find(groups[ 'reward' ], (r) => (r.request.reward === "on"));
 										return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
 									});
 
-								_.each(events[i], (g) => {
-									if (g !== 'click') content.push((groups[g]) ? (groups[g][0].timeStamp) + '\t' : '\t');
+								_.each(events[ i ], (g) => {
+									if (g !== 'click') content.push((groups[ g ]) ? (groups[ g ][ 0 ].timeStamp) + '\t' : '\t');
 								});
 
-								if (_.contains(events[i], 'click')) {
-									const c = correct['true'],
-										f = correct['false'];
+								if (_.contains(events[ i ], 'click')) {
+									const c = correct[ 'true' ],
+										f = correct[ 'false' ];
 
-									content.push((c) ? c[0].timeStamp + '\t' : (f) ? f[0].timeStamp + '\t' : '\t');
+									content.push((c) ? c[ 0 ].timeStamp + '\t' : (f) ? f[ 0 ].timeStamp + '\t' : '\t');
 									content.push((f) ? f.length + '\t' : 0 + '\t');
 									content.push((cross) ? cross.length + '\t' : 0 + '\t');
 								}
 								
-								if (ir) _.each(ir, (e)=> {
-									content.push(e.timeStamp + '\t');
+								if (ir) _.each(ir, (e) => (content.push(e.timeStamp + '\t')));
+							});
+
+							content.push('\n');
+						}
+					});
+
+					break;
+				case 'shaping6':
+					// Analyze w/ horizontal mask parameters
+					axis = 'x',
+					headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
+						'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
+					events = [ [ 'cross.start' ], [ 'stimuli.start', 'click' ] ],
+					content = [
+						'Experiment\t' + experiment.title + '\n',
+						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+						'Subject\t' + subjects + '\n',
+						'Device\t' + device.profile.name + '\n',
+						'Experimenter\t' + user.profile.name + '\n\n\n',
+						headers.join('\t') + '\n'
+					];
+
+					_.each(session.trials, (id) => {
+						const trial = Trials.findOne(id);
+
+						let correct = {};
+
+						if (trial.data[ 1 ] && trial.data[ 1 ].length > 0) {
+							const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
+								clicks = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && !isCross(e, region[ 0 ], axis))),
+								cross = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
+
+							content.push(trial.number + '\t');
+
+							if (trial.stages[ 1 ][ 0 ] && trial.stages[ 1 ][ 0 ].orientation.value === 0) {
+								content.push('V\t');
+								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => isLess(c, region[ 0 ], axis)); // i < 1 check is limiting to only first click
+							} else {
+								content.push('H\t');
+								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => !isLess(c, region[ 0 ], axis));
+							}
+
+							if (clicks.length > 0) {
+								content.push((correct.hasOwnProperty('true')) ? '0\t' : '1\t');
+							} else {
+								content.push('2\t');
+							}
+
+							_.each(trial.data, (stage, i) => {
+								const groups = getGroups(stage, i),
+									ir = _.filter(groups[ 'request.ir.1' ], (e) => {
+										const on = _.find(groups[ 'reward' ], (r) => (r.request.reward === "on"));
+										return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
+									});
+
+								_.each(events[ i ], (g) => {
+									if (g !== 'click') content.push((groups[ g ]) ? (groups[ g ][ 0 ].timeStamp) + '\t' : '\t');
 								});
+
+								if (_.contains(events[ i ], 'click')) {
+									const c = correct[ 'true' ],
+										f = correct[ 'false' ];
+
+									content.push((c) ? c[ 0 ].timeStamp + '\t' : (f) ? f[ 0 ].timeStamp + '\t' : '\t');
+									content.push((f) ? f.length + '\t' : 0 + '\t');
+									content.push((cross) ? cross.length + '\t' : 0 + '\t');
+								}
+								
+								if (ir) _.each(ir, (e)=> (content.push(e.timeStamp + '\t')));
+							});
+
+							content.push('\n');
+						}
+					});
+
+					break;
+				case 'shaping6v':
+					// Analyze w/ vertical mask parameters
+					axis = 'y',
+					headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
+						'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
+					events = [ [ 'cross.start' ], [ 'stimuli.start', 'click' ] ],
+					content = [
+						'Experiment\t' + experiment.title + '\n',
+						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+						'Subject\t' + subjects + '\n',
+						'Device\t' + device.profile.name + '\n',
+						'Experimenter\t' + user.profile.name + '\n\n\n',
+						headers.join('\t') + '\n'
+					];
+
+					_.each(session.trials, (id) => {
+						const trial = Trials.findOne(id);
+
+						let correct = {};
+
+						if (trial.data[ 1 ] && trial.data[ 1 ].length > 0) {
+							const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
+								clicks = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && !isCross(e, region[ 0 ], axis))),
+								cross = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
+
+							content.push(trial.number + '\t');
+
+							if (trial.stages[ 1 ][ 0 ] && trial.stages[ 1 ][ 0 ].orientation.value === 0) {
+								content.push('V\t');
+								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => isLess(c, region[ 0 ], axis)); // i < 1 check is limiting to only first click
+							} else {
+								content.push('H\t');
+								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => !isLess(c, region[ 0 ], axis));
+							}
+
+							if (clicks.length > 0) {
+								content.push((correct.hasOwnProperty('true')) ? '0\t' : '1\t');
+							} else {
+								content.push('2\t');
+							}
+
+							_.each(trial.data, (stage, i) => {
+								const groups = getGroups(stage, i),
+									ir = _.filter(groups[ 'request.ir.1' ], (e) => {
+										const on = _.find(groups[ 'reward' ], (r) => (r.request.reward === "on"));
+										return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
+									});
+
+								_.each(events[ i ], (g) => {
+									if (g !== 'click') content.push((groups[ g ]) ? (groups[ g ][ 0 ].timeStamp) + '\t' : '\t');
+								});
+
+								if (_.contains(events[ i ], 'click')) {
+									const c = correct[ 'true' ],
+										f = correct[ 'false' ];
+
+									content.push((c) ? c[ 0 ].timeStamp + '\t' : (f) ? f[ 0 ].timeStamp + '\t' : '\t');
+									content.push((f) ? f.length + '\t' : 0 + '\t');
+									content.push((cross) ? cross.length + '\t' : 0 + '\t');
+								}
+								
+								if (ir) _.each(ir, (e) => (content.push(e.timeStamp + '\t')));
 							});
 
 							content.push('\n');
@@ -520,15 +658,15 @@ Template.dataMenu.events({
 		
 		if (template.data.date) {
             const date = moment(template.data.date),
-			experiment = Experiments.findOne(template.data.experiment),
-			device = Meteor.users.findOne(template.data.device),
-			settings = template.$('#templates').dropdown('get value'),
-			subjects = _.map(template.data.subjects, (id) => {
-				const subject = Subjects.findOne(id);
-				if (subject) return subject.identifier;
-			}).toString(),
-			user = Meteor.users.findOne(template.data.user),
-			filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '][' + settings + '].xls';
+				experiment = Experiments.findOne(template.data.experiment),
+				device = Meteor.users.findOne(template.data.device),
+				settings = template.$('#templates').dropdown('get value'),
+				subjects = _.map(template.data.subjects, (id) => {
+					const subject = Subjects.findOne(id);
+					if (subject) return subject.identifier;
+				}).toString(),
+				user = Meteor.users.findOne(template.data.user),
+				filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '][' + settings + '].xls';
 
 			print(date, device, experiment, filename, template.data, settings, subjects, user);
 		} else {
@@ -542,15 +680,15 @@ Template.dataMenu.events({
 						Meteor.subscribe('trials.session', id, {
 							onReady: function () {
 								const session = Sessions.findOne(id),
-								date = moment(session.date),
-								device = Meteor.users.findOne(session.device),
-								settings = template.$('#templates').dropdown('get value'),
-								subjects = _.map(session.subjects, (id) => {
-									const subject = Subjects.findOne(id);
-									if (subject) return subject.identifier;
-								}).toString(),
-								user = Meteor.users.findOne(session.user),
-								filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '][' + settings + '].xls';
+									date = moment(session.date),
+									device = Meteor.users.findOne(session.device),
+									settings = template.$('#templates').dropdown('get value'),
+									subjects = _.map(session.subjects, (id) => {
+										const subject = Subjects.findOne(id);
+										if (subject) return subject.identifier;
+									}).toString(),
+									user = Meteor.users.findOne(session.user),
+									filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '][' + settings + '].xls';
 
 								print(date, device, template.data, filename, session, settings, subjects, user);
 							}
@@ -588,7 +726,7 @@ Template.sessionsView.helpers({
     filters() {
         const experiment = Template.currentData(),
             filters = {
-                subjects: {subjects: {$all: [""]}}
+                subjects: { subjects: { $all: [""] } }
             };
 
         return {"experiment": experiment._id};
@@ -597,7 +735,7 @@ Template.sessionsView.helpers({
 
 Template.sessionsView.onCreated(function () {
     this.subscribe('subjects.experiment', this.data._id);
-    this.subscribe('users', {$or: [{_id: {$in: this.data.users}}, {'profile.device': {$ne: false}}]});
+    this.subscribe('users', { $or: [ { _id: { $in: this.data.users } }, { 'profile.device': { $ne: false } } ] });
 
     autofill(window, $);
     buttons(window, $);
@@ -625,7 +763,7 @@ Template.settingsList.helpers({
             total: 'No. of Trials'
         };
 
-        return (text[key]) ? text[key] : key;
+        return (text[ key ]) ? text[ key ] : key;
     }
 });
 
@@ -645,7 +783,7 @@ Template.statisticsList.helpers({
 
 Template.subjectsCell.helpers({
     subject(subjects) {
-        return Subjects.find({_id: {$in: subjects}});
+        return Subjects.find({ _id: { $in: subjects } });
     },
 });
 
@@ -654,7 +792,7 @@ Template.trialList.helpers({
         const events = Template.parentData(1);
 
         if (index > 0) {
-            const previous = events[index - 1],
+            const previous = events[ index - 1 ],
                 delay = (event.timeStamp || event.context.time) - (previous.timeStamp || previous.context.time);
 
             return delay.toFixed(3);
@@ -662,8 +800,8 @@ Template.trialList.helpers({
     },
     event(request) {
         return _.map(_.pairs(request), (property) => ({
-            key: property[0],
-            value: (parseFloat(property[1])) ? parseFloat(property[1]).toFixed(3) : property[1]
+            key: property[ 0 ],
+            value: (parseFloat(property[ 1 ])) ? parseFloat(property[ 1 ]).toFixed(3) : property[ 1 ]
         }));
     },
     icon(request, sender, type) {
@@ -829,7 +967,7 @@ Template.trialList.helpers({
         return timeStamp || context.time;
     },
     trial(ids) {
-        return Trials.find({_id: {$in: ids}});
+        return Trials.find({ _id: { $in: ids } });
     }
 });
 
@@ -856,15 +994,15 @@ Template.trialList.onCreated(function () {
                 const s = 0,
                     groups = _.map(trial.data, (stage) => _.groupBy(stage, (element) =>
                         (element.type) ? element.type.split('.')[0] : element.sender)),
-                    session = _.flatten([groups[s]['session'], groups[s]['trial']]),
+                    session = _.flatten([ groups[ s ][ 'session' ], groups[ s ][ 'trial' ] ]),
                     time = _.groupBy(_.compact(session), (e) => _.last(e.type.split('.'))),
                     types = _.map(stages, (stage, i) => _.map(stage, (e) =>
-                        (groups[i]) ? (groups[i][e.type || e.sender] || []) : [])),
-                    cells = _.flatten([[time['start']], ...types, [time['end'] || time ['abort']]], true);
+                        (groups[ i ]) ? (groups[ i ][ e.type || e.sender ] || []) : [])),
+                    cells = _.flatten([ [ time[ 'start' ] ], ...types, [ time[ 'end' ] || time [ 'abort' ] ] ], true);
 
                 /** Distribute events by timestamp rather than event: */
                 const events = _.flatten(trial.data),
-                    es = _.omit(groups[s], _.pluck(stages[s], 'type' || 'sender'), ['session', 'trial']);
+                    es = _.omit(groups[ s ], _.pluck(stages[ s ], 'type' || 'sender'), [ 'session', 'trial' ]);
 
                 if (es.click) counts.clicks += es.click.length;
 
@@ -873,7 +1011,7 @@ Template.trialList.onCreated(function () {
                     lastTone = 0;
 
                 _.each(cells, (cell) => {
-                    let event = events[n];
+                    let event = events[ n ];
 
                     _.each(cell, (step, j, list) => {
                         if (event.type === 'click' && event.timeStamp <= step.timeStamp) {
@@ -896,12 +1034,12 @@ Template.trialList.onCreated(function () {
                                     }
                                 }
                             } else if (_.has(step.request, 'dispense')) {
-                                counts.amount += step.request['amount'];
-                                counts.dispensed += step.request['dispense'];
+                                counts.amount += step.request[ 'amount' ];
+                                counts.dispensed += step.request[ 'dispense' ];
                             }
                         }
 
-                        event = events[n++];
+                        event = events[ n++ ];
                     });
                 });
 
@@ -910,13 +1048,13 @@ Template.trialList.onCreated(function () {
             }
         });
 
-        return {counts: counts, list: list, stages: stages};
+        return { counts: counts, list: list, stages: stages };
     };
 
     this.table = new ReactiveVar();
 
     this.autorun(() => {
-        const trials = Trials.find({_id: {$in: this.data.trials}}).fetch(),
+        const trials = Trials.find({ _id: { $in: this.data.trials } }).fetch(),
             table = this.analyzeTrials(stages, trials);
 
         this.parent(2).counts.set(table.counts);
@@ -932,5 +1070,5 @@ Template.trialsView.onCreated(function () {
     this.subscribe('sessions.single', this.data._id);
     this.subscribe('subjects.session', this.data.subjects);
     this.subscribe('trials.session', this.data._id);
-    this.subscribe('users', {$or: [{_id: this.data.user}, {_id: this.data.device}]});
+    this.subscribe('users', { $or: [ { _id: this.data.user }, { _id: this.data.device } ] });
 });
