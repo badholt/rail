@@ -189,7 +189,11 @@ Template.trial.helpers({
                 if (trial) {
                     if (!template.timers[n]) {
                         template.timers[n] = {};
-                        if (template.logging.trials) template.printEvent('darkslategrey', '🆃 Trial ' + n + ' started');
+
+                        if (template.logging.trials) template.printEvent('darkslategrey', '🆃 Trial ' + n + ' started\n|'
+                            + ((trial.stages[1] && trial.stages[1][0] && trial.stages[1][0]['orientation']) ? (trial.stages[1][0]['orientation']['value'] > 0) ? 'Ｈ|' : 'Ｖ|' : '')
+                            + ' Number: ' + trial.number + ' | Index: ' + trial.index + ' |');
+
                         trialTimers(settings, n, template);
 
                         Meteor.call('mqttSend', this.device, 'reward', {command: 'set', context: {session: this._id, stage: stage, timeStamp: performance.now(), trial: n}},
@@ -329,23 +333,26 @@ Template.trial.onCreated(function () {
 
                 /** Proceed to next trial or exit: */
                 if (session.settings.session.duration || next < session.settings.stages.length) {
-                    const i = this.index.get();
+                    const getIndex = () => {
+                            const i = this.index.get();
 
-                    Meteor.call('addTrial', session._id, i, next + 1, performance.timeOrigin, () => {
-                        /** Trial indices are incremented downstream of new trial creation, so that
-                         *  checks involving database calls do not delay trial progression: */
-                        if (!duplicate) {
-                            this.index.set(i + 1);
-                        } else {
-                            /** A second asynchronous index simulates a cache for comparing to previous trials.
-                             *  If a trial has not been duplicated or replayed beyond a specified limit, a new
-                             *  trial identical to the first at this index is added: */
-                            const nt = Trials.find({index: i}).count();
-                            /** If the number of duplicate trials, where the next trial added would be nt,
-                             *  exceeds the specified amount, stop duplicating the original trial at index i: */
-                            if (nt > duplicate) this.index.set(i + 1);
-                        }
-                    });
+                            if (!duplicate) {
+                                this.index.set(i + 1);
+                            } else {
+                                /** A second asynchronous index simulates a cache for comparing to previous trials.
+                                 *  If a trial has not been duplicated or replayed beyond a specified limit, a new
+                                 *  trial identical to the first at this index is added: */
+                                const n = Trials.find({ index: i }).count();
+
+                                /** If the number of duplicate trials, where the next trial added would be n,
+                                 *  exceeds the specified amount, stop duplicating the original trial at index i: */
+                                if (n > duplicate) this.index.set(i + 1);
+                            }
+
+                            return this.index.get();
+                        };
+
+                    Meteor.call('addTrial', session._id, getIndex(), next + 1, performance.timeOrigin);
                     
                     this.responses.set([]);
                     this.stage.set(1);

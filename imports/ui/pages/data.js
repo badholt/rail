@@ -60,10 +60,10 @@ Template.dataMenu.events({
 						? p.join('.') + '.' + _.property(p)(e)
 						: e.type.replace(/(\.?(re)?[\d]+\.)+/ig, '.')));
 				},
-				getRegion = (region, axis) => ((1 + region.offset[ axis ] + screen.cross.offset[ axis ]) * ((axis === 'y') ? height : width)),
-				isCross = (coordinate, region, axis) => (coordinate[ 'client' + axis.toUpperCase() ] > (getRegion(region, axis) - region.span) / 2
-					&& coordinate[ 'client' + axis.toUpperCase() ] < (getRegion(region, axis) + region.span) / 2),
-				isLess = (coordinate, region, axis) => (coordinate[ 'client' + axis.toUpperCase() ] < getRegion(region, axis) / 2);
+				getRegion = (region, axis) => ((1 + region.offset[ axis ]) * ((axis === 'y') ? height : width) / 2),
+				isCross = (coordinate, region, axis) => (coordinate[ 'client' + axis.toUpperCase() ] > getRegion(region, axis) - (region.span / 2)
+					&& coordinate[ 'client' + axis.toUpperCase() ] < getRegion(region, axis) + (region.span / 2)),
+				isLess = (coordinate, region, axis) => (coordinate[ 'client' + axis.toUpperCase() ] < getRegion(region, axis));
 
 			let axis, headers, events, content;
 
