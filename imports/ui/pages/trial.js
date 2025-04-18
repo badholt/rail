@@ -80,7 +80,15 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
                 },
                 'string': (s) => (s.toString()),
                 'style': (d, s, t) => (template.timers[trial + 1][stage - 1][t + '.style'] = Meteor.setTimeout(() => ($(t).css(s.css)), d) && template.recordEvent({timeStamp: performance.now(), type: t + '.style', css: s.css})),
-                'toggle': (d, s, t) => (template.toggles[t] = s.set),
+                'toggle': (d, s, t) => {
+                    const type = t + (s.set) ? '.start' : '.end';
+
+                    template.timers[ trial + 1 ][ stage ][ type ] = Meteor.setTimeout(() => {
+                        template.toggles[ t ] = s.set;
+                        template.recordEvent({ timeStamp: performance.now(), type: type });
+                        if (template.logging.timers) template.printTimer(trial + 1, stage, type, 'rebeccapurple', (s.set) ? 'Started' : 'Ended');
+                    }, d);
+                },
                 'trial': (d, i, n) => template.nextTrial(d, i, n),
                 '<': (o, s) => (o < s),
                 '+': (d, s, t) => variables[t](d, s.amount, s.duplicate),
