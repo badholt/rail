@@ -29,7 +29,6 @@ Template.audioForm.events({
                     session.stages.set(stages);
                     break;
             }
-            console.log(stages, page, template, this, value);
         }
     }
 });
@@ -72,9 +71,6 @@ Template.audioForm.onCreated(function () {
 Template.audioForm.onRendered(function () {
     const form = Template.instance(),
         session = form.parent(5);
-    console.log('AUDIO FORM:\t', form);
-    console.log('SESSION:\t', session);
-    console.log('DEFAULTS:\t', form.defaults);
 
     $('.audio-type.ui.dropdown').dropdown({
         action: 'activate',
@@ -105,7 +101,4 @@ Template.audioNoise.onRendered(function () {
             stages[element.page][element.i].source.noise.type = value;
         }
     });
-});
-Template.audioWave.onRendered(function () {
-    console.log(this, Template.instance().parent());
 });

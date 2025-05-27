@@ -93,16 +93,13 @@ Template.sessionSetup.onCreated(function () {
                             Valve opens in ~0.013 s
                             Water rate increases up to 0.19 mL/s
                         */
-                        console.log(command);
                         let duration = 0;
 
                         if (_.has(command, "amount")) {
                             const amount = parseFloat(command.amount) + parseFloat(device.profile.calibration.water.amount);
                             duration = (parseFloat(device.profile.calibration.water.slope) * Math.max(0, amount) + parseFloat(device.profile.calibration.water.intercept));
-                            console.log(amount, duration);
                         } else if (_.has(command, "dispense")) {
                             duration = parseFloat(command.dispense) + parseFloat(device.profile.calibration.water.dispense);
-                            console.log("dispense:\t" + command.dispense + "\tduration:\t" + duration);
                         }
 
                         return {command: 'dispense', duration: Math.max(0, duration)}; //TODO: More graceful handling of unexpected args; should negative amounts be allowed?
@@ -171,7 +168,6 @@ Template.sessionTemplate.events({
     },
     'click button'() {
         const template = Template.instance().parent();
-        console.log(template, Template.currentData());
         template.submitForm(template.inputs.get(), template.session.get(), template.stages.get());
     },
     'submit .form'(event) {

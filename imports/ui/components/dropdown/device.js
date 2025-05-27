@@ -35,7 +35,6 @@ Template.deviceDropdown.onRendered(function () {
             const devices = _.map(values.split(','), (value) => {
                 const selected = $(this).find('div[data-value="' + value + '"]');
 
-                console.log(template);
                 return ({
                     name: selected.html(),
                     value: value

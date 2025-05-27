@@ -147,58 +147,34 @@ if (Meteor.isServer) Meteor.methods({
                     /** Sort message by the mqtt service/channel responding: */
                     if (message.sender) switch (message.sender) {
                         case 'board':
-                            if (message.board) {
-                                /** Information from Raspberry Pi command line output is extracted & stored in array: */
-                                /* const text = message['board']['pins'].split(/(?:[^.\\\s\w]+)(?:\+?\\n\s?\+?)?/igm),
-                                    cells = _.filter(text, (cell, i) =>
-                                        i > 15 && i < (text.length - 16) && (i - 15) % 13),
-                                    groups = _.chunk(cells, 6),
-                                    pins = _.map(groups, (row, i) => {
-                                        const pin = (i % 2) ? row.reverse() : row;
-
-                                        return {
-                                            bcm: pin[0].trim(),
-                                            mode: pin[3].trim(),
-                                            name: pin[2].trim(),
-                                            physical: pin[5].trim(),
-                                            voltage: pin[4].trim(),
-                                            wpi: pin[1].trim()
-                                        };
-                                    }); */
-
-                                /** Device user's status updates to new pin readouts: */
-                                Meteor.call('updateUser', id.replace('test_', ''), 'status.board.pins', 'set', message['board']);
-                            }
-                            break;
                         case 'lights':
                         case 'reward':
                         case 'sensor':
-                            if (message.context) {//TODO: Check Box 4 & 5 for difference from Box 3
-                                if (message.context.device) {
-                                    Meteor.call('updateUser', message.context.device, 'status.message', 'set', message);
-                                } else {
-                                    const context = (message.context.topic) ? message.context.topic.split('/') : '',
+                            if (!message.context) break;
+                            if (message.context.device) {
+                                Meteor.call('updateUser', message.context.device, 'status.message', 'set', message);
+                            } else {
+                                const context = (message.context.topic) ? message.context.topic.split('/') : '',
                                     session = Sessions.findOne(context[1] || message.context.session);
 
-                                    if (session) {
-                                        const stage = (context[3] || message.context.stage) - 1,
-                                            trial = session.trials[(context[2] || message.context.trial) - 1],
-                                            timeStamp = (message['t1'] - message['t0']) * 1000 + message.context.timeStamp;
+                                if (session) {
+                                    const stage = (context[ 3 ] || message.context.stage) - 1,
+                                        trial = session.trials[(context[ 2 ] || message.context.trial) - 1],
+                                        timeStamp = (message.timeStamp || (message[ 't1' ] - message[ 't0' ])) * 1000 + message.context.timeStamp;
 
-                                        Meteor.call('updateTrial', trial, 'data.' + stage, 'push', {
-                                            pins: message.pins,
-                                            request: _.extend(message.request, {timeStamp: message.context.timeStamp}),
-                                            /** Timestamps t0 & t1 are in seconds since the epoch, and
-                                             *  message.context.timeStamp is in milliseconds since the
-                                             *  browser loaded. The following converts the timestamps
-                                             *  from the box to the box browser's frame of reference: */
-                                            t0: message['t0'],
-                                            t1: message['t1'],
-                                            timeStamp: timeStamp,
-                                            status: message.status,
-                                            type: message.sender
-                                        });
-                                    }
+                                    Meteor.call('updateTrial', trial, 'data.' + stage, 'push', {
+                                        pins: message.pins,
+                                        request: _.extend(message.request, { timeStamp: message.context.timeStamp }),
+                                        /** Timestamps t0 & t1 are in seconds since the epoch, and
+                                         *  message.context.timeStamp is in milliseconds since the
+                                         *  browser loaded. The following converts the timestamps
+                                         *  from the box to the box browser's frame of reference: */
+                                        t0: message['t0'],
+                                        t1: message['t1'],
+                                        timeStamp: timeStamp,
+                                        status: message.status,
+                                        type: message.sender
+                                    });
                                 }
                             }
                             break;

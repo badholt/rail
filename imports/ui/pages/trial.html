@@ -43,10 +43,7 @@
                 {{> bars center=center data=this}}
             {{/if}}
         {{/if}}
-        {{#if $eq type 'lights'}}
-            {{command stage trial ../i}}
-        {{/if}}
-        {{#if $eq type 'reward'}}
+        {{#if $in type 'board' 'lights' 'reward'}}
             {{command stage trial ../i}}
         {{/if}}
     {{/with}}

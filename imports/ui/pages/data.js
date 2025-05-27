@@ -651,6 +651,79 @@ Template.dataMenu.events({
 					});
 
 					break;
+				case 'optogenetics':
+					// Update 6v for addition of optogenetics command
+					axis = 'y',
+					headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
+						'Incorrect Response(s)', 'Cross Poke(s)', 'Stimulation', 'IR Entry' ],
+					events = [ [ 'cross.start' ], [ 'stimuli.start', 'click' ] ],
+					content = [
+						'Experiment\t' + experiment.title + '\n',
+						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+						'Subject\t' + subjects + '\n',
+						'Device\t' + device.profile.name + '\n',
+						'Experimenter\t' + user.profile.name + '\n\n\n',
+						headers.join('\t') + '\n'
+					];
+
+					_.each(session.trials, (id) => {
+						const trial = Trials.findOne(id);
+
+						let correct = {};
+
+						if (trial.data[ 1 ] && trial.data[ 1 ].length > 0) {
+							const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
+								clicks = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && !isCross(e, region[ 0 ], axis))),
+								cross = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
+
+							content.push(trial.number + '\t');
+
+							if (trial.stages[ 1 ][ 1 ] && trial.stages[ 1 ][ 1 ].orientation.value === 0) {
+								content.push('V\t');
+								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => isLess(c, region[ 0 ], axis)); // i < 1 check is limiting to only first click
+							} else {
+								content.push('H\t');
+								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => !isLess(c, region[ 0 ], axis));
+							}
+
+							if (clicks.length > 0) {
+								content.push((correct.hasOwnProperty('true')) ? '0\t' : '1\t');
+							} else {
+								content.push('2\t');
+							}
+
+							_.each(trial.data, (stage, i) => {
+								const groups = getGroups(stage, i),
+									ir = _.filter(groups[ 'request.ir.1' ], (e) => {
+										const on = _.find(groups[ 'reward' ], (r) => (r.request.reward === "on"));
+										return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
+									});
+
+								_.each(events[ i ], (g) => {
+									if (g !== 'click') content.push((groups[ g ]) ? (groups[ g ][ 0 ].timeStamp) + '\t' : '\t');
+								});
+
+								if (_.contains(events[ i ], 'click')) {
+									const c = correct[ 'true' ],
+										f = correct[ 'false' ];
+
+									content.push((c) ? c[ 0 ].timeStamp + '\t' : (f) ? f[ 0 ].timeStamp + '\t' : '\t');
+									content.push((f) ? f.length + '\t' : 0 + '\t');
+									content.push((cross) ? cross.length + '\t' : 0 + '\t');
+
+									// TTL signal sent to optogenetics DAQ
+									const command = trial.stages[ 1 ][ 0 ][ 'commands' ][ 0 ];
+									content.push((_.isEmpty(command)) ? 'OFF\t' : 'ON\t');
+								}
+								
+								if (ir) _.each(ir, (e) => (content.push(e.timeStamp + '\t')));
+							});
+
+							content.push('\n');
+						}
+					});
+
+					break;
 			}
 
 			saveAs(new Blob(content), filename);
