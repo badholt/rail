@@ -7,20 +7,38 @@
 </template>
 
 <template name="dataMenu">
-    <div class="ui compact inverted right floated stackable menu">
-        <a id="download" class="item">
-            <i class="fitted download icon"></i>
-        </a>
-        {{> dataDropdown}}
+    <div class="ui top attached tabular menu">
+        <div class="ui inverted right floated stackable menu">
+            {{#if selected}}
+                <a id="download" class="ui tiny animated {{#if selected}}active blue{{/if}} button item">
+                    <div class="visible content">Download</div>                
+                    <div class="hidden content">
+                        <i class="fitted download icon"></i>
+                    </div>
+                </a>
+
+                {{> precisionTimeCheckbox}}
+            {{/if}}
+
+            {{> dataDropdown}}
+        </div>
     </div>
 </template>
 
-<template name="dataCell">
-
+<template name="precisionTimeCheckbox">
+    <div id="precision" class="ui tiny toggle checkbox item" style="padding-top: 0.1em;padding-bottom: 0;">
+      <input type="checkbox" name="precision">
+      <label for="precision" style="padding-top: 0;">
+        <div class="ui tiny black inverted label">
+            {{#if precision}}Precision <div class="detail">( 24000.00000000000 )</div>
+            {{else}}Human-Readable <div class="detail">( 24:00:00.000 )</div>{{/if}}
+        </div>
+      </label>
+    </div>
 </template>
 
 <template name="dataDropdown">
-    <div id="templates" class="ui compact right attached search selection dropdown button">
+    <div id="templates" class="ui search selection dropdown button item" style="margin: 0">
         <input type="hidden" name="template">
         <i class="dropdown icon"></i>
         <span class="text">Select Template</span>
@@ -43,17 +61,17 @@
 </template>
 
 <template name="dateCell">
-    <a class="ui black label">
+    <div class="ui basic inverted segment">
         <i class="calendar icon"></i>{{formatDate date 'MMMM Do'}}
         <i class="stopwatch icon"></i>{{formatDate date 'HH:mm'}} - {{formatDate lastModified 'HH:mm'}}
-    </a>
+    </div>
 </template>
 
 <template name="deviceCell">
-    <a class="ui black label">
+    <div class="ui basic inverted segment">
         <i class='{{#if status.online}}green{{else}}red{{/if}} cube icon'></i>
         {{profile.name}}
-    </a>
+    </div>  
 </template>
 
 <template name="sessionsView">
@@ -64,9 +82,9 @@
         <span class="section">Sessions</span>
     </h2>
 
-    <div id="sessions-panel" class="ui inverted padded stacked segment">
-		{{> dataMenu}}
+    {{> dataMenu}}
 
+    <div id="sessions-panel" class="ui bottom attached inverted padded segment">
         {{> tabular selector=filters table=TabularTables.Sessions
                 class="ui basic celled center aligned inverted small selectable table"}}
     </div>
@@ -207,14 +225,10 @@
 </template>
 
 <template name="subjectsCell">
-    <div class="ui black labels">
-        {{#each subject subjects}}
-            <a class="ui label">
-                <i class="fitted {{#if $eq sex 'm'}}blue mars{{else}}pink venus{{/if}} icon"></i>
-                {{identifier}}
-            </a>
-        {{/each}}
-    </div>
+    {{#each subject subjects}}
+        <i class="fitted {{#if $eq sex 'm'}}blue mars{{else}}pink venus{{/if}} icon"></i>
+        {{identifier}}
+    {{/each}}
 </template>
 
 <template name="trialCell">
@@ -380,8 +394,8 @@
 </template>
 
 <template name="userCell">
-    <a class="ui black label">
+    <div class="ui basic inverted segment">
         {{> profileAvatar user}}
-    </a>
+    </div>
 </template>
 

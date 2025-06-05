@@ -35,741 +35,622 @@ Template.data.helpers({
     selected() {
         const id = Template.instance().session.get(),
             session = Sessions.findOne(id);
-
         if (session) return session;
     }
 });
 
 Template.data.onCreated(function () {
     this.counts = new ReactiveVar({});
+    this.precision = new ReactiveVar(false);
     this.session = new ReactiveVar('');
+    this.selected = new ReactiveVar([]);
 });
 
 Template.dataMenu.events({
     'click #download'(event, template) {
-		const print = (date, device, experiment, filename, session, settings, subjects, user) => {
-			const screen = device.profile.calibration.screen,
-				height = screen.dimensions.height,
-				width = screen.dimensions.width,
-				getClickType = (e, region) => (isCross(e, region, 'y') ? isCross(e, region, 'x') ? 'mm': isLess(e, region, 'x')
-					? 'lm' : 'rm' : isLess(e, region, 'y') ? isLess(e, region, 'x') ? 'lt' : 'rt' : isLess(e, region, 'x') ? 'lb' : 'rb'),
-				getGroups = (stage, i) => {
-					const p = [ 'request', 'ir' ];
+    	let axis, headers, events, content;
 
-					return _.groupBy(stage, (e) => ((_.property(p)(e) !== undefined)
-						? p.join('.') + '.' + _.property(p)(e)
-						: e.type.replace(/(\.?(re)?[\d]+\.)+/ig, '.')));
-				},
-				getRegion = (region, axis) => ((1 + region.offset[ axis ]) * ((axis === 'y') ? height : width) / 2),
-				isCross = (coordinate, region, axis) => (coordinate[ 'client' + axis.toUpperCase() ] > getRegion(region, axis) - (region.span / 2)
-					&& coordinate[ 'client' + axis.toUpperCase() ] < getRegion(region, axis) + (region.span / 2)),
-				isLess = (coordinate, region, axis) => (coordinate[ 'client' + axis.toUpperCase() ] < getRegion(region, axis));
-
-			let axis, headers, events, content;
-
-			switch (settings) {
-				case 'indices':
-					headers = [ 'Trial No', 'Trial Index' ],
+    	const defaultContent = (data, headers = false) => {
+				const device = Meteor.users.findOne(data.device),
+					experiment = Experiments.findOne(data.experiment),
+					user = Meteor.users.findOne(data.user),
+					subjects = getSubjects(data.subjects),
 					content = [
 						'Experiment\t' + experiment.title + '\n',
-						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
+						'Date\t' + moment(data.date).format('dddd, MMMM Do HH:mm') + '\n',
 						'Subject\t' + subjects + '\n',
 						'Device\t' + device.profile.name + '\n',
 						'Experimenter\t' + user.profile.name + '\n'							
 					];
 
-					_.each(session.trials, (id) => {
-						const trial = Trials.findOne(id);
-
-						if (trial.number === 1) {
-							content.push('Time Origin\t' + trial.timeOrigin + '\n\n');
-							content.push(headers.join('\t') + '\n');
-						}
-						
-						content.push(trial.number + '\t');
-						content.push(trial.index + '\t\n');
-					});
-
-					break;
-				case 'responses':
-					headers = [ 'Trial No' ],
-					content = [
-						'Experiment\t' + experiment.title + '\n',
-						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-						'Subject\t' + subjects + '\n',
-						'Device\t' + device.profile.name + '\n',
-						'Experimenter\t' + user.profile.name + '\n'
-					];
-
-					_.each(session.trials, (id) => {
-						const trial = Trials.findOne(id),
-							clicks = _.map(trial.data, (stage) => _.filter(stage, (e) => (e.type === 'click'))),
-							region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross')));
-
-						if (trial.number === 1) {
-							content.push('Time Origin\t' + trial.timeOrigin + '\n\n');
-							content.push(headers.join('\t') + '\n');
-						}
-						
-						content.push(trial.number + '\t');
-						
-						_.each(clicks, (stage) => _.each(stage, (e) =>
-							(content.push(getClickType(e, region[ 0 ]) + ' (' + e.clientX + ', ' + e.clientY + ')\t' + e.timeStamp + '\t'))));
-						
-						content.push('\n');
-					});
-
-					break;
-				case 'reward':
-					headers = [ 'Trial No', 'Dispense Time', 'Amount Dispensed', 'TimeStamp' ],
-					content = [
-						'Experiment\t' + experiment.title + '\n',
-						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-						'Subject\t' + subjects + '\n',
-						'Device\t' + device.profile.name + '\n',
-						'Experimenter\t' + user.profile.name + '\n\n',
-						headers.join('\t') + '\n'
-					];
-
-					_.each(session.trials, (id) => {
-						const trial = Trials.findOne(id);
-						let amount = 0,
-							dispense = 0,
-							timeStamps = [];
-
-						_.each(trial.data, (stage, i) => {
-							const groups = getGroups(stage, i);
-
-							if (groups[ 'reward' ]) _.each(groups[ 'reward' ], (e) => {
-								if (e.request.dispense) {
-									amount += ((e.request.dispense - device.profile.calibration.water.intercept) / device.profile.calibration.water.slope);
-									dispense += e.request.dispense;
-
-									if (e.timeStamp) timeStamps.push(e.timeStamp);
-								}
-							});
-						});
-
-						content.push(trial.number + '\t');
-						content.push(dispense + '\t');
-						content.push(amount + '\t');
-						_.each(timeStamps, (timeStamp, i) => (content.push(timeStamp + '\t')));
-						content.push('\n');
-					});
-
-					break;
-				case 'sensor':
-					headers = [ 'Trial No', 'Sensor Status', 'TimeStamp' ],
-					content = [
-						'Experiment\t' + experiment.title + '\n',
-						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-						'Subject\t' + subjects + '\n',
-						'Device\t' + device.profile.name + '\n',
-						'Experimenter\t' + user.profile.name + '\n\n',
-						headers.join('\t') + '\n'
-					];
-
-					_.each(session.trials, (id) => {
-						const trial = Trials.findOne(id);
-
-						_.each(trial.data, (stage, i) => {
-							const groups = getGroups(stage, i),
-								ir = _.sortBy(_.flatten(_.filter(groups, (value, key) => (key.startsWith('request.ir.')))), (e) => (e.timeStamp));
-						});
-
-						content.push(trial.number + '\t');
-						if (ir) _.each(ir, (e) => (content.push(e.status + '\t' + e.timeStamp + '\t')));
-						content.push('\n');
-					});
-
-					break;
-				case 'settings':
-					headers = [ 'Stage', 'Rule', 'Event' ],
-					content = [
-						'Experiment\t' + experiment.title + '\n',
-						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-						'Subject\t' + subjects + '\n',
-						'Device\t' + device.profile.name + '\n',
-						'Experimenter\t' + user.profile.name + '\n\n'
-					];
-
-					content.push('Session\n');
-
-					_.each(session.settings.session, (value, key) => {
-						content.push(key + '\t' + value + '\n');
-					});
-
-					const compare = (condition, indent) => {
-						_.each(condition.objects, (object, o) => {
-							_.times(indent, () => content.push('\t'));
-							content.push(object.name);
-
-							if (_.isObject(object.property)) {
-								content.push('\n');
-
-								_.each(object.property, (value, key) => {
-									if (key !== 'conditions') {
-										_.times(indent + 1, () => content.push('\t'));
-										content.push(key + '\t' + value + '\n');
-									} else {
-										_.each(object.property.conditions, (c) => compare(c, indent + 1));
-										content.push('\n');
-									}
-								});
-							} else {
-								content.push('\t' + object.property + '\n');
-							}
-						});
-
-						_.times(indent, () => content.push('\t'));
-						content.push(condition.comparison + '\n');
-
-						_.each(condition.subjects, (subject, s) => {
-							_.times(indent, () => content.push('\t'));
-							content.push(subject.name);
-
-							if (_.isObject(subject.property)) {
-								content.push('\n');
-								
-								_.each(subject.property, (value, key) => {
-									if (key !== 'conditions') {
-										_.times(indent + 1, () => content.push('\t'));
-										content.push(key + '\t' + value + '\n');
-									} else {
-										_.each(subject.property.conditions, (c) => compare(c, indent + 1));
-										content.push('\n');
-									}
-								});
-							} else {
-								content.push('\t' + subject.property + '\n');
-							}
-						});
-					},
-					properties = (target, indent) => {
-						if (_.isObject(target)) {
-							_.each(target, (value, key) => {
-								_.times(indent, () => content.push('\t'));
-								content.push(key);
-
-								if (!_.isObject(value)) {
-									content.push('\t' + value + '\n');
-								} else {
-									content.push('\n');
-									properties(value, indent + 1);
-								}
-							});
-						} else {
-							_.times(indent, () => content.push('\t'));
-							content.push(target + '\n');
-						}
-					};
-
-					content.push('\n' + headers.join('\t'));
-
-					_.each(session.settings.inputs, (stage, i) => _.each(stage, (rule, j) => {
-						content.push('\n' + (i + 1) + '\t' + (j + 1) + '\t' + rule.event + '\n');
-						content.push((rule.conditions.length > 0) ? '\t\tConditions:\n' : '\t\tConditions:\n\t\t\tAlways\n');
-						_.each(rule.conditions, (condition, k) => compare(condition, 3));
-
-						if (rule.correct.length > 0) {
-							content.push('\t\tIf conditions met:\n');
-							_.each(rule.correct, (correct, k) => {
-								_.each(correct.targets, (target, l) => {
-									content.push('\t\t\tAfter ' + correct.delay + ' ms\t' + correct.action + '\t' + (target.type || target) + '\n');
-									if (_.isObject(target)) properties(_.omit(target, 'type'), 6);
-								});
-								_.each(correct.specifications, (value, key) => content.push('\t\t\t\t\t' + key + '\t' + value + '\n'));
-							});
-						}
-						
-						if (rule.incorrect.length > 0) {
-							content.push('\t\tIf conditions not met:\n');
-							_.each(rule.incorrect, (incorrect, k) => {
-								_.each(incorrect.targets, (target, l) => {
-									content.push('\t\t\tAfter ' + incorrect.delay + ' ms\t' + incorrect.action + '\t' + (target.type || target) + '\n');
-								});
-							});
-						}
-					}));
-
-					break;
-				case 'shaping1':
-					headers = [ 'Trial No', 'Trial Start', 'Tone Start', 'Reward Stop', 'IR Entry (Post-Tone)' ],
-					events = [ [ 'trial.start', 'audio.start', 'reward', 'request.ir.1' ] ],
-					content = [
-						'Experiment\t' + experiment.title + '\n',
-						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-						'Subject\t' + subjects + '\n',
-						'Device\t' + device.profile.name + '\n',
-						'Experimenter\t' + user.profile.name + '\n\n',
-						headers.join('\t') + '\n'
-					];
-
-					_.each(session.trials, (id) => {
-						const trial = Trials.findOne(id);
-
-						content.push(trial.number + '\t');
-
-						_.each(trial.data, (stage, i) => {
-							const groups = getGroups(stage, i),
-								ir = _.filter(groups[ 'request.ir.1' ], (e) => {
-									if (groups[ 'audio.start' ]) {
-										const tone = groups[ 'audio.start' ][ 0 ];
-										return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false;
-									}
-								});
-								
-								_.each(events[ i ], (g) => {
-									if (g !== 'request.ir.1' && groups[ g ]) {
-										_.each(groups[ g ], (e)=> {
-											if (g !== 'reward' || e.request.reward === 'off') content.push(e.timeStamp + '\t');
-										});
-									} else if (ir) {
-										_.each(ir, (e) => (content.push(e.timeStamp + '\t')));
-									} else {
-										content.push('\t');
-									}
-								});
-						});
-
-						content.push('\n');
-					});
-
-					break;
-				case 'shaping2':
-					headers = [ 'Trial No', 'Trial Start', 'Initial Poke', 'IR Entry' ],
-					events = [ [ 'cross.start', 'click', 'request.ir.1' ] ],
-					content = [
-						'Experiment\t' + experiment.title + '\n',
-						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-						'Subject\t' + subjects + '\n',
-						'Device\t' + device.profile.name + '\n',
-						'Experimenter\t' + user.profile.name + '\n\n',
-						headers.join('\t') + '\n'
-					];
-
-					_.each(session.trials, (id) => {
-						const trial = Trials.findOne(id),
-							clicks = _.filter(trial.data[ 0 ], (e) => (e.type === 'click'));
-
-						_.each(trial.data, (stage, i) => {
-							const groups = getGroups(stage, i),
-								ir = _.filter(groups[ 'request.ir.1' ], (e) => {
-									if (groups[ 'audio.start' ]) {
-										const tone = (groups[ 'audio.start' ] && groups[ 'audio.start' ].length > 1) ? groups[ 'audio.start' ][ 1 ] : 0;
-										return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false;
-									}
-								});
-
-							/** Print the trial number only once, during the first stage: */
-							if (i === 0) content.push(trial.number + '\t');
-
-							_.each(groups[ 'trial.start' ], (e)=> (content.push(e.timeStamp + '\t')));
-
-							if (clicks.length > 0) content.push(clicks[ 0 ].timeStamp + '\t');
-
-							if (ir) _.each(ir, (e) => (content.push(e.timeStamp + '\t')));
-						});
-
-						content.push('\n');
-					});
-
-					break;
-				case 'shaping4':
-					// Analyze w/ horizontal mask parameters
-					axis = 'x',
-					headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Trial Start', 'Stimulus Start', 'Response',
-						 'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
-					events = [ [ 'trial.start' ], [ 'stimuli.start', 'click' ] ],
-					content = [
-						'Experiment\t' + experiment.title + '\n',
-						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-						'Subject\t' + subjects + '\n',
-						'Device\t' + device.profile.name + '\n',
-						'Experimenter\t' + user.profile.name + '\n\n\n',
-						headers.join('\t') + '\n'
-					];
-
-					_.each(session.trials, (id) => {
-						const trial = Trials.findOne(id);
-
-						let correct = {};
-
-						if (trial.data[ 1 ] && trial.data[ 1 ].length > 0) {
-							const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
-								clicks = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis))),
-								cross = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
-
-							content.push(trial.number + '\t');
-
-							if (trial.stages[ 1 ][ 0 ] && trial.stages[ 1 ][ 0 ].orientation.value === 0) {
-								content.push('V\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (e) => isLess(e, region[ 0 ], axis));
-							} else {
-								content.push('H\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (e) => !isLess(e, region[ 0 ], axis));
-							}
-
-							if (clicks.length > 0) {
-								content.push((correct.hasOwnProperty('true')) ? '0\t' : '1\t');
-							} else {
-								content.push('2\t');
-							}
-
-							_.each(trial.data, (stage, i) => {
-								const groups = getGroups(stage, i),
-									ir = _.filter(groups[ 'request.ir.1' ], (e) => {
-										const on = _.find(groups[ 'reward' ], (r) => (r.request.reward === "on"));
-										return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
-									});
-
-								_.each(events[ i ], (g) => {
-									if (g !== 'click') content.push((groups[ g ]) ? (groups[ g ][ 0 ].timeStamp) + '\t' : '\t');
-								});
-
-								if (_.contains(events[ i ], 'click')) {
-									const c = correct[ 'true' ],
-										f = correct[ 'false' ];
-
-									content.push((c) ? c[ 0 ].timeStamp + '\t' : (f) ? f[ 0 ].timeStamp + '\t' : '\t');
-									content.push((f) ? f.length + '\t' : 0 + '\t');
-									content.push((cross) ? cross.length + '\t' : 0 + '\t');
-								}
-								
-								if (ir) _.each(ir, (e) => (content.push(e.timeStamp + '\t')));
-							});
-
-							content.push('\n');
-						}
-					});
-
-					break;
-				case 'shaping4v':
-					// Analyze w/ vertical mask parameters
-					axis = 'y',
-					headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Trial Start', 'Stimulus Start', 'Response',
-						'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
-					events = [ [ 'trial.start' ], [ 'stimuli.start', 'click' ] ],
-					content = [
-						'Experiment\t' + experiment.title + '\n',
-						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-						'Subject\t' + subjects + '\n',
-						'Device\t' + device.profile.name + '\n',
-						'Experimenter\t' + user.profile.name + '\n\n\n',
-						headers.join('\t') + '\n'
-					];
-
-					_.each(session.trials, (id) => {
-						const trial = Trials.findOne(id);
-
-						let correct = {};
-
-						if (trial.data[ 1 ] && trial.data[ 1 ].length > 0) {
-							const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
-								clicks = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis))),
-								cross = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
-
-							content.push(trial.number + '\t');
-
-							if (trial.stages[ 1 ][ 0 ] && trial.stages[ 1 ][ 0 ].orientation.value === 0) {
-								content.push('V\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (e) => isLess(e, region[ 0 ], axis));
-							} else {
-								content.push('H\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (e) => !isLess(e, region[ 0 ], axis));
-							}
-
-							if (clicks.length > 0) {
-								content.push((correct.hasOwnProperty('true')) ? '0\t' : '1\t');
-							} else {
-								content.push('2\t');
-							}
-
-							_.each(trial.data, (stage, i) => {
-								const groups = getGroups(stage, i),
-									ir = _.filter(groups[ 'request.ir.1' ], (e) => {
-										const on = _.find(groups[ 'reward' ], (r) => (r.request.reward === "on"));
-										return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
-									});
-
-								_.each(events[ i ], (g) => {
-									if (g !== 'click') content.push((groups[ g ]) ? (groups[ g ][ 0 ].timeStamp) + '\t' : '\t');
-								});
-
-								if (_.contains(events[ i ], 'click')) {
-									const c = correct[ 'true' ],
-										f = correct[ 'false' ];
-
-									content.push((c) ? c[ 0 ].timeStamp + '\t' : (f) ? f[ 0 ].timeStamp + '\t' : '\t');
-									content.push((f) ? f.length + '\t' : 0 + '\t');
-									content.push((cross) ? cross.length + '\t' : 0 + '\t');
-								}
-								
-								if (ir) _.each(ir, (e) => (content.push(e.timeStamp + '\t')));
-							});
-
-							content.push('\n');
-						}
-					});
-
-					break;
-				case 'shaping6':
-					// Analyze w/ horizontal mask parameters
-					axis = 'x',
-					headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
-						'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
-					events = [ [ 'cross.start' ], [ 'stimuli.start', 'click' ] ],
-					content = [
-						'Experiment\t' + experiment.title + '\n',
-						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-						'Subject\t' + subjects + '\n',
-						'Device\t' + device.profile.name + '\n',
-						'Experimenter\t' + user.profile.name + '\n\n\n',
-						headers.join('\t') + '\n'
-					];
-
-					_.each(session.trials, (id) => {
-						const trial = Trials.findOne(id);
-
-						let correct = {};
-
-						if (trial.data[ 1 ] && trial.data[ 1 ].length > 0) {
-							const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
-								clicks = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && !isCross(e, region[ 0 ], axis))),
-								cross = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
-
-							content.push(trial.number + '\t');
-
-							if (trial.stages[ 1 ][ 0 ] && trial.stages[ 1 ][ 0 ].orientation.value === 0) {
-								content.push('V\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => isLess(c, region[ 0 ], axis)); // i < 1 check is limiting to only first click
-							} else {
-								content.push('H\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => !isLess(c, region[ 0 ], axis));
-							}
-
-							if (clicks.length > 0) {
-								content.push((correct.hasOwnProperty('true')) ? '0\t' : '1\t');
-							} else {
-								content.push('2\t');
-							}
-
-							_.each(trial.data, (stage, i) => {
-								const groups = getGroups(stage, i),
-									ir = _.filter(groups[ 'request.ir.1' ], (e) => {
-										const on = _.find(groups[ 'reward' ], (r) => (r.request.reward === "on"));
-										return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
-									});
-
-								_.each(events[ i ], (g) => {
-									if (g !== 'click') content.push((groups[ g ]) ? (groups[ g ][ 0 ].timeStamp) + '\t' : '\t');
-								});
-
-								if (_.contains(events[ i ], 'click')) {
-									const c = correct[ 'true' ],
-										f = correct[ 'false' ];
-
-									content.push((c) ? c[ 0 ].timeStamp + '\t' : (f) ? f[ 0 ].timeStamp + '\t' : '\t');
-									content.push((f) ? f.length + '\t' : 0 + '\t');
-									content.push((cross) ? cross.length + '\t' : 0 + '\t');
-								}
-								
-								if (ir) _.each(ir, (e)=> (content.push(e.timeStamp + '\t')));
-							});
-
-							content.push('\n');
-						}
-					});
-
-					break;
-				case 'shaping6v':
-					// Analyze w/ vertical mask parameters
-					axis = 'y',
-					headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
-						'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
-					events = [ [ 'cross.start' ], [ 'stimuli.start', 'click' ] ],
-					content = [
-						'Experiment\t' + experiment.title + '\n',
-						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-						'Subject\t' + subjects + '\n',
-						'Device\t' + device.profile.name + '\n',
-						'Experimenter\t' + user.profile.name + '\n\n\n',
-						headers.join('\t') + '\n'
-					];
-
-					_.each(session.trials, (id) => {
-						const trial = Trials.findOne(id);
-
-						let correct = {};
-
-						if (trial.data[ 1 ] && trial.data[ 1 ].length > 0) {
-							const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
-								clicks = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && !isCross(e, region[ 0 ], axis))),
-								cross = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
-
-							content.push(trial.number + '\t');
-
-							if (trial.stages[ 1 ][ 0 ] && trial.stages[ 1 ][ 0 ].orientation.value === 0) {
-								content.push('V\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => isLess(c, region[ 0 ], axis)); // i < 1 check is limiting to only first click
-							} else {
-								content.push('H\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => !isLess(c, region[ 0 ], axis));
-							}
-
-							if (clicks.length > 0) {
-								content.push((correct.hasOwnProperty('true')) ? '0\t' : '1\t');
-							} else {
-								content.push('2\t');
-							}
-
-							_.each(trial.data, (stage, i) => {
-								const groups = getGroups(stage, i),
-									ir = _.filter(groups[ 'request.ir.1' ], (e) => {
-										const on = _.find(groups[ 'reward' ], (r) => (r.request.reward === "on"));
-										return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
-									});
-
-								_.each(events[ i ], (g) => {
-									if (g !== 'click') content.push((groups[ g ]) ? (groups[ g ][ 0 ].timeStamp) + '\t' : '\t');
-								});
-
-								if (_.contains(events[ i ], 'click')) {
-									const c = correct[ 'true' ],
-										f = correct[ 'false' ];
-
-									content.push((c) ? c[ 0 ].timeStamp + '\t' : (f) ? f[ 0 ].timeStamp + '\t' : '\t');
-									content.push((f) ? f.length + '\t' : 0 + '\t');
-									content.push((cross) ? cross.length + '\t' : 0 + '\t');
-								}
-								
-								if (ir) _.each(ir, (e) => (content.push(e.timeStamp + '\t')));
-							});
-
-							content.push('\n');
-						}
-					});
-
-					break;
-				case 'optogenetics':
-					// Update 6v for addition of optogenetics command
-					axis = 'y',
-					headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
-						'Incorrect Response(s)', 'Cross Poke(s)', 'Stimulation', 'IR Entry' ],
-					events = [ [ 'cross.start' ], [ 'stimuli.start', 'click' ] ],
-					content = [
-						'Experiment\t' + experiment.title + '\n',
-						'Date\t' + date.format('dddd, MMMM Do HH:mm') + '\n',
-						'Subject\t' + subjects + '\n',
-						'Device\t' + device.profile.name + '\n',
-						'Experimenter\t' + user.profile.name + '\n\n\n',
-						headers.join('\t') + '\n'
-					];
-
-					_.each(session.trials, (id) => {
-						const trial = Trials.findOne(id);
-
-						let correct = {};
-
-						if (trial.data[ 1 ] && trial.data[ 1 ].length > 0) {
-							const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
-								clicks = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && !isCross(e, region[ 0 ], axis))),
-								cross = _.filter(trial.data[ 1 ], (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
-
-							content.push(trial.number + '\t');
-
-							if (trial.stages[ 1 ][ 1 ] && trial.stages[ 1 ][ 1 ].orientation.value === 0) {
-								content.push('V\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => isLess(c, region[ 0 ], axis)); // i < 1 check is limiting to only first click
-							} else {
-								content.push('H\t');
-								if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => !isLess(c, region[ 0 ], axis));
-							}
-
-							if (clicks.length > 0) {
-								content.push((correct.hasOwnProperty('true')) ? '0\t' : '1\t');
-							} else {
-								content.push('2\t');
-							}
-
-							_.each(trial.data, (stage, i) => {
-								const groups = getGroups(stage, i),
-									ir = _.filter(groups[ 'request.ir.1' ], (e) => {
-										const on = _.find(groups[ 'reward' ], (r) => (r.request.reward === "on"));
-										return (on) ? (e.timeStamp - on.timeStamp) > 150 : false;
-									});
-
-								_.each(events[ i ], (g) => {
-									if (g !== 'click') content.push((groups[ g ]) ? (groups[ g ][ 0 ].timeStamp) + '\t' : '\t');
-								});
-
-								if (_.contains(events[ i ], 'click')) {
-									const c = correct[ 'true' ],
-										f = correct[ 'false' ];
-
-									content.push((c) ? c[ 0 ].timeStamp + '\t' : (f) ? f[ 0 ].timeStamp + '\t' : '\t');
-									content.push((f) ? f.length + '\t' : 0 + '\t');
-									content.push((cross) ? cross.length + '\t' : 0 + '\t');
-
-									// TTL signal sent to optogenetics DAQ
-									const command = trial.stages[ 1 ][ 0 ][ 'commands' ][ 0 ];
-									content.push((_.isEmpty(command)) ? 'OFF\t' : 'ON\t');
-								}
-								
-								if (ir) _.each(ir, (e) => (content.push(e.timeStamp + '\t')));
-							});
-
-							content.push('\n');
-						}
-					});
-
-					break;
-			}
-
-			saveAs(new Blob(content), filename);
-		};
-		
-		if (template.data.date) {
-            const date = moment(template.data.date),
-				experiment = Experiments.findOne(template.data.experiment),
-				device = Meteor.users.findOne(template.data.device),
-				settings = template.$('#templates').dropdown('get value'),
-				subjects = _.map(template.data.subjects, (id) => {
+				if (headers) content.push(headers.join('\t') + '\n');
+				return content;
+			},
+			getGroups = (stage, i) => {
+				const p = [ 'request', 'ir' ];
+				return _.groupBy(stage, (e) => ((_.property(p)(e) !== undefined)
+					? p.join('.') + '.' + _.property(p)(e)
+					: e.type.replace(/(\.?(re)?[\d]+\.)+/ig, '.')));
+			},
+			getSubjects = (subjects) => _.map(subjects, (id) => {
 					const subject = Subjects.findOne(id);
 					if (subject) return subject.identifier;
 				}).toString(),
-				user = Meteor.users.findOne(template.data.user),
-				filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '][' + settings + '].xls';
+			getTime = (time, origin = 0, relative = true, readable = false) => {
+				if (!time) return;
+				const precision = template.parent(2).precision.get();
 
-			print(date, device, experiment, filename, template.data, settings, subjects, user);
+				if (precision && !readable) {
+					return (relative) ? time : time - origin;
+				} else {
+					const epoch = (relative) ? time + origin : time;
+					return new Date(epoch).toLocaleTimeString("en-US", {
+						hour: 'numeric',
+						hour12: false,
+						minute: 'numeric',
+						second: 'numeric',
+						fractionalSecondDigits: 3
+					});
+				}
+			},
+			print = (session) => {
+					const device = Meteor.users.findOne(session.device),
+						screen = device.profile.calibration.screen,
+						height = screen.dimensions.height,
+						width = screen.dimensions.width,
+						selected = template.$('#templates').dropdown('get value'),
+						filename = getSubjects(session.subjects)
+							+ '[' + moment(session.date).format('YY.MM.DD.HH.mm') + '][' + selected + '].xlsx',
+						addClicks = (correct, cross, origin = false) => {
+							const c = correct[ 'true' ],
+								f = correct[ 'false' ],
+								click = (c) ? c[ 0 ] : (f) ? f[ 0 ] : '',
+								t = (origin) ? getTime(click.timeStamp, origin) : click.timeStamp;
+
+							content.push((t) ? t + '\t' : '\t');
+							content.push((f) ? f.length + '\t' : 0 + '\t');
+							content.push((cross) ? cross.length + '\t' : 0 + '\t');
+						},
+						addCorrect = (clicks, region, stimulus, axis = 'x') => {
+							let correct = {};
+
+							if (stimulus && _.has(stimulus, 'orientation')) {
+								if (stimulus.orientation.value === 0) {
+									content.push('V\t');
+									if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => isLess(c, region[ 0 ], axis));
+								} else {
+									content.push('H\t');
+									if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => !isLess(c, region[ 0 ], axis));
+								}
+
+								content.push((clicks.length > 0) ? _.has(correct, 'true') ? '0\t' : '1\t' : '2\t');
+							} else {
+								content.push('-\t-\t');
+							}
+
+							return correct;
+						},
+						addOrigin = (trial, headers = false) => {
+							content.push('Time Origin\t' + trial.timeOrigin + '\n\n');
+							content.push('\t' + getTime(trial.timeOrigin, 0, false, true) + '\n\n');
+							if (headers) content.push(headers.join('\t') + '\n');
+						},
+						getClickType = (e, region) => (isCross(e, region, 'y') ? isCross(e, region, 'x') ? 'mm': isLess(e, region, 'x')
+							? 'lm' : 'rm' : isLess(e, region, 'y') ? isLess(e, region, 'x') ? 'lt' : 'rt' : isLess(e, region, 'x') ? 'lb' : 'rb'),
+						getIR = (groups, filter = selected, key = 'request.ir.1') => {
+							const fn = {
+									'sensor': (e) => (true), // Return all
+									'shaping1': (e) => { // Shaping 1
+										if (groups[ 'audio.start' ]) {
+											const tone = groups[ 'audio.start' ][ 0 ];
+											return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false; // Any ir event after only (reward) tone
+										}
+									},
+									'shaping2': (e) => { // Shaping 2
+										if (groups[ 'audio.start' ]) {
+											const tone = (groups[ 'audio.start' ].length > 1) ? groups[ 'audio.start' ][ 1 ] : false;
+											return (tone) ? (e.timeStamp - tone.timeStamp) > 0 : false; // Any ir event after 2nd (reward) tone
+										}
+									},
+									'shaping4': (e) => { // Shaping 4, 4v, 6, & 6v
+										const on = _.find(groups[ 'reward' ], (r) => (r.request.reward === "on"));
+										return (on) ? (e.timeStamp - on.timeStamp) > 150 : false; // Any ir event after 150ms post-reward "flicker" period
+									}
+								};
+
+							return _.filter(groups[ key ], (e) => fn[ filter ](e)); // TODO: Generalize to more groups & indices (sensor template)
+						},
+						getRegion = (region, axis) => ((1 + region.offset[ axis ]) * ((axis === 'y') ? height : width) / 2),
+						isCross = (coordinate, region, axis) =>
+							(coordinate[ 'client' + axis.toUpperCase() ] > getRegion(region, axis) - (region.span / 2)
+							&& coordinate[ 'client' + axis.toUpperCase() ] < getRegion(region, axis) + (region.span / 2)),
+						isLess = (coordinate, region, axis) => (coordinate[ 'client' + axis.toUpperCase() ] < getRegion(region, axis));
+
+					switch (selected) {
+						case 'indices':
+							headers = [ 'Trial No', 'Trial Index' ],
+							content = defaultContent(session);
+
+							_.each(session.trials, (id, n) => {
+								const trial = Trials.findOne(id);
+
+								if (n === 0) addOrigin(trial, headers);
+								
+								content.push(trial.number + '\t');
+								content.push(trial.index + '\t\n');
+							});
+
+							break;
+						case 'responses':
+							headers = [ 'Trial No' ],
+							content = defaultContent(session);
+
+							_.each(session.trials, (id, n) => {
+								const trial = Trials.findOne(id),
+									clicks = _.map(trial.data, (stage) => _.filter(stage, (e) => (e.type === 'click'))),
+									region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross')));
+
+								if (n === 0) addOrigin(trial, headers);
+								
+								content.push(trial.number + '\t');
+								
+								_.each(clicks, (stage) => _.each(stage, (e) =>  content.push(
+									getClickType(e, region[ 0 ]) + ' (' + e.clientX + ', ' + e.clientY + ')\t'
+									+ getTime(e.timeStamp, trial.timeOrigin) + '\t')));
+								
+								content.push('\n');
+							});
+
+							break;
+						case 'reward':
+							headers = [ 'Trial No', 'Dispense Time', 'Amount Dispensed', 'TimeStamp' ],
+							content = defaultContent(session);
+
+							_.each(session.trials, (id, n) => {
+								const trial = Trials.findOne(id);
+								let amount = 0,
+									dispense = 0,
+									timeStamps = [];
+
+								if (n === 0) addOrigin(trial, headers);
+
+								_.each(trial.data, (stage, i) => {
+									const groups = getGroups(stage, i);
+
+									if (groups[ 'reward' ]) _.each(groups[ 'reward' ], (e) => {
+										if (e.request.dispense) {
+											amount += ((e.request.dispense - device.profile.calibration.water.intercept) / device.profile.calibration.water.slope);
+											dispense += e.request.dispense;
+
+											if (e.timeStamp) timeStamps.push(getTime(e.timeStamp, trial.timeOrigin));
+										}
+									});
+								});
+
+								content.push(trial.number + '\t');
+								content.push(dispense + '\t');
+								content.push(amount + '\t');
+
+								_.each(timeStamps, (timeStamp, i) => (content.push(getTime(timeStamp, trial.timeOrigin) + '\t')));
+
+								content.push('\n');
+							});
+
+							break;
+						case 'sensor':
+							headers = [ 'Trial', 'Stage', 'Sensor Status', 'TimeStamp' ],
+							content = defaultContent(session);
+
+							_.each(session.trials, (id, n) => {
+								const trial = Trials.findOne(id);
+								let ir = [];
+
+								if (n === 0) addOrigin(trial, headers);
+
+								_.each(trial.data, (stage, i) => {
+									const groups = getGroups(stage, i),
+										ir = getIR(groups, selected, `request.ir.${ i }`);
+
+									content.push(`${ trial.number }\t${ i + 1 }`);
+									if (ir) _.each(ir, (e) => (content.push(`\t${ e.status }\t${ getTime(e.timeStamp, trial.timeOrigin) }`)));
+									content.push('\n');
+								});
+							});
+
+							break;
+						case 'settings':
+							headers = [ 'Stage', 'Rule', 'Event' ],
+							content = defaultContent(session);
+
+							content.push('Session\n');
+							_.each(session.settings.session, (value, key) => { content.push(key + '\t' + value + '\n'); });
+
+							const compare = (condition, indent) => {
+									_.each(condition.objects, (object, o) => {
+										_.times(indent, () => content.push('\t'));
+										content.push(object.name);
+
+										if (_.isObject(object.property)) {
+											content.push('\n');
+
+											_.each(object.property, (value, key) => {
+												if (key !== 'conditions') {
+													_.times(indent + 1, () => content.push('\t'));
+													content.push(key + '\t' + value + '\n');
+												} else {
+													_.each(object.property.conditions, (c) => compare(c, indent + 1));
+													content.push('\n');
+												}
+											});
+										} else {
+											content.push('\t' + object.property + '\n');
+										}
+									});
+
+									_.times(indent, () => content.push('\t'));
+									content.push(condition.comparison + '\n');
+
+									_.each(condition.subjects, (subject, s) => {
+										_.times(indent, () => content.push('\t'));
+										content.push(subject.name);
+
+										if (_.isObject(subject.property)) {
+											content.push('\n');
+											
+											_.each(subject.property, (value, key) => {
+												if (key !== 'conditions') {
+													_.times(indent + 1, () => content.push('\t'));
+													content.push(key + '\t' + value + '\n');
+												} else {
+													_.each(subject.property.conditions, (c) => compare(c, indent + 1));
+													content.push('\n');
+												}
+											});
+										} else {
+											content.push('\t' + subject.property + '\n');
+										}
+									});
+								},
+								properties = (target, indent) => {
+									if (_.isObject(target)) {
+										_.each(target, (value, key) => {
+											_.times(indent, () => content.push('\t'));
+											content.push(key);
+
+											if (!_.isObject(value)) {
+												content.push('\t' + value + '\n');
+											} else {
+												content.push('\n');
+												properties(value, indent + 1);
+											}
+										});
+									} else {
+										_.times(indent, () => content.push('\t'));
+										content.push(target + '\n');
+									}
+								};
+
+							content.push('\n' + headers.join('\t'));
+
+							_.each(session.settings.inputs, (stage, i) => _.each(stage, (rule, j) => {
+								content.push('\n' + (i + 1) + '\t' + (j + 1) + '\t' + rule.event + '\n');
+								content.push((rule.conditions.length > 0) ? '\t\tConditions:\n' : '\t\tConditions:\n\t\t\tAlways\n');
+
+								_.each(rule.conditions, (condition, k) => compare(condition, 3));
+
+								if (rule.correct.length > 0) {
+									content.push('\t\tIf conditions met:\n');
+
+									_.each(rule.correct, (correct, k) => {
+										_.each(correct.targets, (target, l) => {
+											content.push('\t\t\tAfter ' + correct.delay + ' ms\t' + correct.action + '\t' + (target.type || target) + '\n');
+											if (_.isObject(target)) properties(_.omit(target, 'type'), 6);
+										});
+										_.each(correct.specifications, (value, key) => content.push('\t\t\t\t\t' + key + '\t' + value + '\n'));
+									});
+								}
+								
+								if (rule.incorrect.length > 0) {
+									content.push('\t\tIf conditions not met:\n');
+
+									_.each(rule.incorrect, (incorrect, k) => _.each(incorrect.targets, (target, l) => {
+										content.push('\t\t\tAfter ' + incorrect.delay + ' ms\t' + incorrect.action + '\t' + (target.type || target) + '\n');
+									}));
+								}
+							}));
+
+							break;
+						case 'shaping1':
+							headers = [ 'Trial No', 'Trial Start', 'Tone Start', 'Reward Stop', 'IR Entry (Post-Tone)' ],
+							events = [ [ 'trial.start', 'audio.start', 'reward', 'request.ir.1' ] ],
+							content = defaultContent(session);
+
+							_.each(session.trials, (id, n) => {
+								const trial = Trials.findOne(id);
+
+								if (n === 0) addOrigin(trial, headers);
+
+								content.push(trial.number + '\t');
+
+								_.each(trial.data, (stage, i) => {
+									const groups = getGroups(stage, i),
+										ir = getIR(groups);
+										
+									_.each(events[ i ], (g) => {
+										if (g !== 'request.ir.1' && groups[ g ]) {
+											_.each(groups[ g ], (e) => {
+												if (g !== 'reward' || e.request.reward === 'off') content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t'); });
+										} else if (ir) {
+											_.each(ir, (e) => (content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t')));
+										} else {
+											content.push('\t');
+										}
+									});
+								});
+
+								content.push('\n');
+							});
+
+							break;
+						case 'shaping2':
+							headers = [ 'Trial No', 'Trial Start', 'Initial Poke', 'IR Entry' ],
+							events = [ [ 'cross.start', 'click', 'request.ir.1' ] ],
+							content = defaultContent(session);
+
+							_.each(session.trials, (id, n) => {
+								const trial = Trials.findOne(id),
+									clicks = _.filter(trial.data[ 0 ], (e) => (e.type === 'click'));
+
+								if (n === 0) addOrigin(trial, headers);
+
+								content.push(trial.number + '\t');
+
+								_.each(trial.data, (stage, i) => {
+									const groups = getGroups(stage, i),
+										ir = getIR(groups);
+
+									_.each(groups[ 'trial.start' ], (e) => (content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t')));
+
+									if (clicks.length > 0) content.push(getTime(clicks[ 0 ].timeStamp, trial.timeOrigin) + '\t');
+									if (ir) _.each(ir, (e) => (content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t')));
+								});
+
+								content.push('\n');
+							});
+
+							break;
+						case 'shaping4':
+							axis = 'x', // Analyze w/ horizontal mask parameters
+							headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Trial Start', 'Stimulus Start', 'Response',
+								 'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
+							events = [ [ 'trial.start' ], [ 'stimuli.start', 'click' ] ],
+							content = defaultContent(session);
+
+							_.each(session.trials, (id, n) => {
+								let correct = {};
+								const trial = Trials.findOne(id),
+									data2 = trial.data[ 1 ];
+
+								if (n === 0) addOrigin(trial, headers);
+
+								if (data2 && data2.length > 0) {
+									const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
+										clicks = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis))),
+										cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
+
+									content.push(trial.number + '\t');
+									correct = addCorrect(clicks, region, trial.stages[ 1 ][ 0 ], axis);
+
+									_.each(trial.data, (stage, i) => {
+										const groups = getGroups(stage, i),
+											ir = getIR(groups);
+
+										_.each(events[ i ], (g) => {
+											if (g !== 'click') content.push((groups[ g ]) ? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t' : '\t'); });
+
+										if (_.contains(events[ i ], 'click')) addClicks(correct, cross);								
+										if (ir) _.each(ir, (e) => (content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t')));
+									});
+
+									content.push('\n');
+								}
+							});
+
+							break;
+						case 'shaping4v':
+							axis = 'y', // Analyze w/ vertical mask parameters
+							headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Trial Start', 'Stimulus Start', 'Response',
+								'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
+							events = [ [ 'trial.start' ], [ 'stimuli.start', 'click' ] ],
+							content = defaultContent(session);
+
+							_.each(session.trials, (id, n) => {
+								let correct = {};
+								const trial = Trials.findOne(id),
+									data2 = trial.data[ 1 ];
+
+								if (n === 0) addOrigin(trial, headers);
+
+								if (data2 && data2.length > 0) {
+									const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
+										clicks = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis))),
+										cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
+
+									content.push(trial.number + '\t');
+									correct = addCorrect(clicks, region, trial.stages[ 1 ][ 0 ], axis);
+
+									_.each(trial.data, (stage, i) => {
+										const groups = getGroups(stage, i),
+											ir = getIR(groups, 'shaping4');
+
+										_.each(events[ i ], (g) => {
+											if (g !== 'click') content.push((groups[ g ]) ? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t' : '\t'); });
+
+										if (_.contains(events[ i ], 'click')) addClicks(correct, cross);								
+										if (ir) _.each(ir, (e) => (content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t')));
+									});
+
+									content.push('\n');
+								}
+							});
+
+							break;
+						case 'shaping6':
+							axis = 'x', // Analyze w/ horizontal mask parameters
+							headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
+								'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
+							events = [ [ 'cross.start' ], [ 'stimuli.start', 'click' ] ],
+							content = defaultContent(session);
+
+							_.each(session.trials, (id, n) => {
+								let correct = {};
+								const trial = Trials.findOne(id),
+									data2 = trial.data[ 1 ];
+
+								if (n === 0) addOrigin(trial, headers);
+
+								if (data2 && data2.length > 0) {
+									const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
+										clicks = _.filter(data2, (e) => (e.type === 'click' && !isCross(e, region[ 0 ], axis))),
+										cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
+
+									content.push(trial.number + '\t');
+									correct = addCorrect(clicks, region, trial.stages[ 1 ][ 0 ], axis);
+									_.each(trial.data, (stage, i) => {
+										const groups = getGroups(stage, i),
+											ir = getIR(groups, 'shaping4');
+
+										_.each(events[ i ], (g) => {
+											if (g !== 'click') content.push((groups[ g ]) ? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t' : '\t'); });
+
+										if (_.contains(events[ i ], 'click')) addClicks(correct, cross);								
+										if (ir) _.each(ir, (e)=> (content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t')));
+									});
+
+									content.push('\n');
+								}
+							});
+
+							break;
+						case 'shaping6v':
+							axis = 'y', // Analyze w/ vertical mask parameters
+							headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
+								'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
+							events = [ [ 'cross.start' ], [ 'stimuli.start', 'click' ] ],
+							content = defaultContent(session);
+
+							_.each(session.trials, (id, n) => {
+								let correct = {};
+								const trial = Trials.findOne(id),
+									data2 = trial.data[ 1 ];
+
+								if (n === 0) addOrigin(trial, headers);
+
+								if (data2 && data2.length > 0) {
+									const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
+										clicks = _.filter(data2, (e) => (e.type === 'click' && !isCross(e, region[ 0 ], axis))),
+										cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
+
+									content.push(trial.number + '\t');
+									correct = addCorrect(clicks, region, trial.stages[ 1 ][ 0 ], axis);
+
+									_.each(trial.data, (stage, i) => {
+										const groups = getGroups(stage, i),
+											ir = getIR(groups, 'shaping4');
+
+										_.each(events[ i ], (g) => {
+											if (g !== 'click') content.push((groups[ g ]) ? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t' : '\t'); });
+
+										if (_.contains(events[ i ], 'click')) addClicks(correct, cross);								
+										if (ir) _.each(ir, (e) => (content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t')));
+									});
+
+									content.push('\n');
+								}
+							});
+
+							break;
+						case 'optogenetics': // Update 6v for addition of optogenetics command
+							axis = 'y', // Analyze w/ vertical mask parameters
+							headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Trial Start', 'Stage Start', 'Stimulus Start', 'Response',
+								'Incorrect Response(s)', 'Cross Poke(s)', 'Stimulation', 'Rising Edge', 'IR Entry' ],
+							events = [ [ 'trial.start', 'cross.start' ], [ 'stimuli.start', 'click' ] ],
+							content = defaultContent(session);
+
+							_.each(session.trials, (id, n) => {
+								let correct = {};
+								const trial = Trials.findOne(id),
+									data2 = trial.data[ 1 ];
+
+								if (n === 0) addOrigin(trial, headers);
+
+								if (data2 && data2.length > 0) {
+									const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
+										clicks = _.filter(data2, (e) => (e.type === 'click' && !isCross(e, region[ 0 ], axis))),
+										cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
+
+									content.push(trial.number + '\t');
+									correct = addCorrect(clicks, region, trial.stages[ 1 ][ 1 ], axis);
+
+									_.each(trial.data, (stage, i) => {
+										const groups = getGroups(stage, i),
+											ir = getIR(groups, 'shaping4');
+
+										_.each(events[ i ], (g) => {
+											if (g !== 'click') content.push((groups[ g ])
+												? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t'
+												: '\t'); });
+
+										if (_.contains(events[ i ], 'click')) {
+											addClicks(correct, cross, trial.timeOrigin);
+
+											// TTL signal sent to optogenetics DAQ
+											const command = trial.stages[ 1 ][ 0 ][ 'commands' ][ 0 ],
+												ttl = _.find(data2, (e) => (e.type === 'board' && e.request.state === 1));
+
+											content.push(_.isEmpty(command) ? 'OFF\t' : 'ON\t');
+
+											if (ttl) {
+												epoch = ttl.timeStamp - ttl.request.timeStamp, // Fix timeStamp
+												content.push(`${ getTime(epoch, trial.timeOrigin, false) }\t`);
+											} else {
+												content.push('\t\t');
+											}
+										}
+
+										if (ir) _.each(ir, (e) => (content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t')));
+									});
+
+									content.push('\n');
+								}
+							});
+
+							break;
+					}
+
+					saveAs(new Blob(content, { type:'data:application/vnd.ms-excel;base64' }), filename);
+			};
+
+		if (template.data.date) {
+			print(template.data);
 		} else {
 			const table = template.parent().$('table').DataTable(),
-			selected = table.rows('.active').data(),
-			ids = _.pluck(selected, '_id');
+				selected = table.rows('.active').data(),
+				ids = _.pluck(selected, '_id');
 
-			_.each(ids, (id)=> {
-				Meteor.subscribe('sessions.single', id, {
-					onReady: function () {
-						Meteor.subscribe('trials.session', id, {
-							onReady: function () {
-								const session = Sessions.findOne(id),
-									date = moment(session.date),
-									device = Meteor.users.findOne(session.device),
-									settings = template.$('#templates').dropdown('get value'),
-									subjects = _.map(session.subjects, (id) => {
-										const subject = Subjects.findOne(id);
-										if (subject) return subject.identifier;
-									}).toString(),
-									user = Meteor.users.findOne(session.user),
-									filename = subjects + '[' + date.format('YY.MM.DD.HH.mm') + '][' + settings + '].xls';
-
-								print(date, device, template.data, filename, session, settings, subjects, user);
-							}
-						});
-					},
-				});
-			});
+			_.each(ids, (id) => Meteor.subscribe('sessions.single', id, { onReady: () => {
+				Meteor.subscribe('trials.session', id, { onReady: () => {
+					const session = Sessions.findOne(id);
+					print(session);
+				}});
+			}}));
 		}
+    }
+});
+
+Template.dataMenu.helpers({
+    selected() {
+    	return Template.instance().parent(2).selected.get();
     }
 });
 
@@ -783,6 +664,24 @@ Template.deviceCell.helpers({
     }
 });
 
+Template.precisionTimeCheckbox.helpers({
+    precision() {
+        return Template.instance().parent(3).precision.get();
+    }
+});
+
+Template.precisionTimeCheckbox.onRendered(function () {
+	const template = this.parent(3),
+		precision = template.precision.get();
+
+    this.$('#precision')
+	    .checkbox({
+	    	onChecked () { template.precision.set(true); },
+	    	onUnchecked () { template.precision.set(false); }
+	    })
+	    .checkbox((precision) ? 'check' : 'uncheck');
+});
+
 Template.sessionsView.events({
     'click tbody > tr'(event, template) {
         const prev = template.parent().session.get(),
@@ -791,7 +690,8 @@ Template.sessionsView.events({
             selected = table.rows('.active').data(),
 			ids = _.pluck(selected, '_id');
 
-        //if (prev !== session._id) template.parent().session.set(session._id);
+		template.parent().selected.set(ids);
+        //if (prev !== session._id) template.parent().session.set(session._id); // Enables Trials view
     }
 });
 
@@ -802,7 +702,7 @@ Template.sessionsView.helpers({
                 subjects: { subjects: { $all: [""] } }
             };
 
-        return {"experiment": experiment._id};
+        return { "experiment": experiment._id };
     }
 });
 
