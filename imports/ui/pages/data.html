@@ -9,18 +9,21 @@
 <template name="dataMenu">
     <div class="ui top attached tabular menu">
         <div class="ui inverted right floated stackable menu">
-            {{#if selected}}
-                <a id="download" class="ui tiny animated {{#if selected}}active blue{{/if}} button item">
-                    <div class="visible content">Download</div>                
-                    <div class="hidden content">
-                        <i class="fitted download icon"></i>
-                    </div>
-                </a>
+            {{#if getVar dataTemplate}}
+                {{#if selected}}
+                    <a id="download" class="ui tiny animated {{#if selected}}active blue{{/if}} button item">
+                        <div class="visible content">Download</div>                
+                        <div class="hidden content">
+                            <i class="fitted download icon"></i>
+                        </div>
+                    </a>
 
-                {{> precisionTimeCheckbox}}
+                    {{> formatDropdown default=format}}
+                    {{> precisionTimeCheckbox}}
+                {{/if}}
             {{/if}}
 
-            {{> dataDropdown}}
+            {{> dataDropdown value=dataTemplate}}
         </div>
     </div>
 </template>
@@ -34,29 +37,6 @@
             {{else}}Human-Readable <div class="detail">( 24:00:00.000 )</div>{{/if}}
         </div>
       </label>
-    </div>
-</template>
-
-<template name="dataDropdown">
-    <div id="templates" class="ui search selection dropdown button item" style="margin: 0">
-        <input type="hidden" name="template">
-        <i class="dropdown icon"></i>
-        <span class="text">Select Template</span>
-
-        <div class="menu">
-            <div class="item" data-value="shaping1">Shaping 1</div>
-            <div class="item" data-value="shaping2">Shaping 2</div>
-            <div class="item" data-value="shaping4">Shaping 4</div>
-            <div class="item" data-value="shaping4v">Shaping 4 (Vertical)</div>
-            <div class="item" data-value="shaping6">Shaping 6</div>
-            <div class="item" data-value="shaping6v">Shaping 6 (Vertical)</div>
-            <div class="item" data-value="optogenetics">Optogenetics</div>
-            <div class="item" data-value="responses">Responses</div>
-            <div class="item" data-value="sensor">Sensor - IR</div>
-            <div class="item" data-value="settings">Settings</div>
-            <div class="item" data-value="indices">Trials Repeated</div>
-            <div class="item" data-value="reward">Water Rewarded</div>
-        </div>
     </div>
 </template>
 

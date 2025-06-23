@@ -37,6 +37,9 @@ Template.registerHelpers({
         const float = parseFloat(number);
         if (float) return float.toFixed(places);
     },
+    getVar(x) {
+        return x.get();
+    },
     properties(object) {
         return _.map(object, (value, key) => ({key: key, value: value}));
     },

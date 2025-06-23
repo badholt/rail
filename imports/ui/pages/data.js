@@ -1,6 +1,8 @@
 import './data.html';
 import '/imports/ui/components/profile.html';
 
+import '/imports/ui/components/dropdown/data';
+import '/imports/ui/components/dropdown/files';
 import '/imports/ui/components/profile';
 import '/imports/ui/components/tablesort';
 import '/imports/startup/tables';
@@ -41,7 +43,9 @@ Template.data.helpers({
 
 Template.data.onCreated(function () {
     this.counts = new ReactiveVar({});
-    this.precision = new ReactiveVar(false);
+    this.dataTemplate = new ReactiveVar('');
+    this.format = new ReactiveVar('xlsx');
+    this.precision = new ReactiveVar(true);
     this.session = new ReactiveVar('');
     this.selected = new ReactiveVar([]);
 });
@@ -98,9 +102,10 @@ Template.dataMenu.events({
 						screen = device.profile.calibration.screen,
 						height = screen.dimensions.height,
 						width = screen.dimensions.width,
-						selected = template.$('#templates').dropdown('get value'),
-						filename = getSubjects(session.subjects)
-							+ '[' + moment(session.date).format('YY.MM.DD.HH.mm') + '][' + selected + '].xlsx',
+						dataTemplate = template.parent(2).dataTemplate.get(),
+						format = template.$('#formats').dropdown('get value'),
+						filename = `${ getSubjects(session.subjects) }[${ moment(session.date).format('YY.MM.DD.HH.mm') }]`
+							+ `[${ dataTemplate }].${ format }`,
 						addClicks = (correct, cross, origin = false) => {
 							const c = correct[ 'true' ],
 								f = correct[ 'false' ],
@@ -131,13 +136,13 @@ Template.dataMenu.events({
 							return correct;
 						},
 						addOrigin = (trial, headers = false) => {
-							content.push('Time Origin\t' + trial.timeOrigin + '\n\n');
+							content.push('Time Origin\t' + trial.timeOrigin + '\n');
 							content.push('\t' + getTime(trial.timeOrigin, 0, false, true) + '\n\n');
 							if (headers) content.push(headers.join('\t') + '\n');
 						},
 						getClickType = (e, region) => (isCross(e, region, 'y') ? isCross(e, region, 'x') ? 'mm': isLess(e, region, 'x')
 							? 'lm' : 'rm' : isLess(e, region, 'y') ? isLess(e, region, 'x') ? 'lt' : 'rt' : isLess(e, region, 'x') ? 'lb' : 'rb'),
-						getIR = (groups, filter = selected, key = 'request.ir.1') => {
+						getIR = (groups, filter = dataTemplate, key = 'request.ir.1') => {
 							const fn = {
 									'sensor': (e) => (true), // Return all
 									'shaping1': (e) => { // Shaping 1
@@ -166,7 +171,7 @@ Template.dataMenu.events({
 							&& coordinate[ 'client' + axis.toUpperCase() ] < getRegion(region, axis) + (region.span / 2)),
 						isLess = (coordinate, region, axis) => (coordinate[ 'client' + axis.toUpperCase() ] < getRegion(region, axis));
 
-					switch (selected) {
+					switch (dataTemplate) {
 						case 'indices':
 							headers = [ 'Trial No', 'Trial Index' ],
 							content = defaultContent(session);
@@ -178,6 +183,32 @@ Template.dataMenu.events({
 								
 								content.push(trial.number + '\t');
 								content.push(trial.index + '\t\n');
+							});
+
+							break;
+						case 'mqtt':
+							headers = [ 'Trial No', 'Message(s)' ],
+							content = defaultContent(session);
+
+							_.each(session.trials, (id, n) => {
+								const trial = Trials.findOne(id);
+
+								if (n === 0) addOrigin(trial, headers);
+
+								_.each(trial.data, (stage, i) => {
+									const cmds = _.filter(stage, (e) => ((/(.sent)|(.fired)$/g).test(e.type))),
+										services = _.groupBy(cmds, (e) => (e.type.split('.')[0])),
+										msgs = _.filter(stage, (e) => (_.has(services, e.type.split('.')[0])));
+
+									if (_.size(msgs) > 0) {
+										content.push(trial.number + '\t');
+										_.each(msgs, (e, i) => (content.push(`${ e.type } ${ 
+											(e.request) ? JSON.stringify(_.omit(e.request, 'timeStamp')) : '' }\t`)));
+										content.push('\n\t');
+										_.each(msgs, (e, i) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
+										content.push('\n');
+									}
+								});
 							});
 
 							break;
@@ -249,7 +280,7 @@ Template.dataMenu.events({
 
 								_.each(trial.data, (stage, i) => {
 									const groups = getGroups(stage, i),
-										ir = getIR(groups, selected, `request.ir.${ i }`);
+										ir = getIR(groups, dataTemplate, `request.ir.${ i }`);
 
 									content.push(`${ trial.number }\t${ i + 1 }`);
 									if (ir) _.each(ir, (e) => (content.push(`\t${ e.status }\t${ getTime(e.timeStamp, trial.timeOrigin) }`)));
@@ -605,7 +636,7 @@ Template.dataMenu.events({
 											addClicks(correct, cross, trial.timeOrigin);
 
 											// TTL signal sent to optogenetics DAQ
-											const command = trial.stages[ 1 ][ 0 ][ 'commands' ][ 0 ],
+											const command = _.get(trial.stages, [ 1, 0, 'commands', 0 ]) || {},
 												ttl = _.find(data2, (e) => (e.type === 'board' && e.request.state === 1));
 
 											content.push(_.isEmpty(command) ? 'OFF\t' : 'ON\t');
@@ -649,13 +680,15 @@ Template.dataMenu.events({
 });
 
 Template.dataMenu.helpers({
+	dataTemplate() {
+		return Template.instance().parent(2).dataTemplate;
+	},
+    format() {
+    	return Template.instance().parent(2).format.get();
+    },
     selected() {
     	return Template.instance().parent(2).selected.get();
     }
-});
-
-Template.dataMenu.onRendered(function () {
-    this.$('#templates').dropdown();
 });
 
 Template.deviceCell.helpers({
