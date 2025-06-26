@@ -12,6 +12,43 @@
     </svg>
 </template>
 
+<template name="audioCalibrationForm">
+    <div id="audio-calibration-form" class="ui inverted form">
+        <div class="two fields">
+            <div class="disabled field">
+                <div class="ui right labeled input">
+                    <label for="volume" class="ui blue right pointing mini label">Volume:</label>
+                    <input name="volume" type="number" value="{{volume}}" disabled>
+                    <span class="ui mini label">dB</span>
+                </div>
+            </div>
+
+            <div class="field" style="border: 1px solid #f2711c; border-radius: 5px; padding: 10px; margin-top: -10px;">
+                <div class="ui right labeled input">
+                    <label for="frequency" class="ui blue right pointing mini label">Frequency Offset:</label>
+                    <input name="frequency" type="number" value="{{frequency}}" autofocus="autofocus">
+                    <span class="ui mini label">Hz</span>
+                </div>
+
+                <i class="ui circular inverted orange link warning icon" style="position: absolute; top: 5px; right: -25px;" title="This will modify the tone wave frequencies specified by any template!"></i>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template name="audioCalibrationModal">
+    <div id="modal-calibrate-{{profile.username}}" class="ui basic modal">
+        <div class="header">Calibrate Audio for {{profile.name}}</div>
+        <div class="content">
+            {{> audioCalibrationForm (settings)}}
+        </div>
+
+        <div class="actions">
+            <button class="ui positive right labeled icon button">Save to {{profile.name}}<i class="checkmark icon"></i></button>
+        </div>
+    </div>
+</template>
+
 <template name="screenCalibrationForm">
     <form id="calibration-form" class="ui inverted form">
         {{#with offsets 'cross'}}

@@ -142,7 +142,7 @@ Template.dataMenu.events({
 						},
 						getClickType = (e, region) => (isCross(e, region, 'y') ? isCross(e, region, 'x') ? 'mm': isLess(e, region, 'x')
 							? 'lm' : 'rm' : isLess(e, region, 'y') ? isLess(e, region, 'x') ? 'lt' : 'rt' : isLess(e, region, 'x') ? 'lb' : 'rb'),
-						getIR = (groups, filter = dataTemplate, key = 'request.ir.1') => {
+						getIR = (groups, filter = dataTemplate, key = 'request.ir.0') => {
 							const fn = {
 									'sensor': (e) => (true), // Return all
 									'shaping1': (e) => { // Shaping 1
@@ -280,7 +280,7 @@ Template.dataMenu.events({
 
 								_.each(trial.data, (stage, i) => {
 									const groups = getGroups(stage, i),
-										ir = getIR(groups, dataTemplate, `request.ir.${ i }`);
+										ir = getIR(groups, dataTemplate);
 
 									content.push(`${ trial.number }\t${ i + 1 }`);
 									if (ir) _.each(ir, (e) => (content.push(`\t${ e.status }\t${ getTime(e.timeStamp, trial.timeOrigin) }`)));
@@ -393,7 +393,7 @@ Template.dataMenu.events({
 							break;
 						case 'shaping1':
 							headers = [ 'Trial No', 'Trial Start', 'Tone Start', 'Reward Stop', 'IR Entry (Post-Tone)' ],
-							events = [ [ 'trial.start', 'audio.start', 'reward', 'request.ir.1' ] ],
+							events = [ [ 'trial.start', 'audio.start', 'reward', 'request.ir.0' ] ],
 							content = defaultContent(session);
 
 							_.each(session.trials, (id, n) => {
@@ -408,7 +408,7 @@ Template.dataMenu.events({
 										ir = getIR(groups);
 										
 									_.each(events[ i ], (g) => {
-										if (g !== 'request.ir.1' && groups[ g ]) {
+										if (g !== 'request.ir.0' && groups[ g ]) {
 											_.each(groups[ g ], (e) => {
 												if (g !== 'reward' || e.request.reward === 'off') content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t'); });
 										} else if (ir) {
@@ -425,7 +425,7 @@ Template.dataMenu.events({
 							break;
 						case 'shaping2':
 							headers = [ 'Trial No', 'Trial Start', 'Initial Poke', 'IR Entry' ],
-							events = [ [ 'cross.start', 'click', 'request.ir.1' ] ],
+							events = [ [ 'cross.start', 'click', 'request.ir.0' ] ],
 							content = defaultContent(session);
 
 							_.each(session.trials, (id, n) => {

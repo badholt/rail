@@ -2,22 +2,22 @@ import './calibrate.html';
 import '/imports/ui/components/cross';
 import '/imports/ui/components/dropdown/offset';
 
-import {getContainer, renderCross} from '../components/cross';
-import {ReactiveVar} from 'meteor/reactive-var';
-import {Templates} from '../../api/collections';
+import { getContainer, renderCross } from '../components/cross';
+import { ReactiveVar } from 'meteor/reactive-var';
+import { Templates } from '../../api/collections';
 
 Template.calibrate.helpers({
     preview(elements) {
         if (elements) {
-            renderCross('#cross-preview', elements['cross']);
-            return elements['cross'];
+            renderCross('#cross-preview', elements[ 'cross' ]);
+            return elements[ 'cross' ];
         }
     }
 });
 
 Template.calibrate.onCreated(function () {
     this.autorun(() => {
-        this.subscribe('users', {'_id': Meteor.userId(), 'profile.device': {$ne: false}});
+        this.subscribe('users', { '_id': Meteor.userId(), 'profile.device': { $ne: false } });
         this.subscribe('users.user', 'cross');
     });
 });
@@ -26,6 +26,64 @@ Template.calibrationView.onDestroyed(function () {
     const status = Meteor.user().status;
     if (status && !status.active.calibration) FlowRouter.go('/');
 });
+
+Template.audioCalibrationForm.events({
+    'input input'(event, template) {
+        const target = event.target || event.srcElement,
+            value = parseFloat($('#audio-calibration-form').form('get value', target.name));
+
+        if (!_.isNaN(value)) {
+            const settings = template.parent().settings.get();
+
+            switch (target.name) {
+                case 'frequency':
+                case 'volume':
+                    settings[ target.name ] = value;
+                    break;
+            }
+
+            template.parent().settings.set(settings);
+            Meteor.call('updateUser', template.parent(2).data.data._id, 'status.active.calibration', 'set', settings);
+        }
+    }
+});
+
+Template.audioCalibrationModal.helpers({
+    settings() {
+        return Template.instance().settings.get();
+    }
+});
+
+Template.audioCalibrationModal.onCreated(function () {
+    const calibration = this.data.profile.calibration;
+
+    this.settings = new ReactiveVar((calibration.audio) ? calibration.audio : {
+        'frequency': 0,
+        'volume': 0
+    });
+});
+
+Template.audioCalibrationModal.onRendered(function () {
+    const device = Template.instance().parent(3),
+    settings = Template.instance().settings;
+
+    this.$('[id^=modal-calibrate-]')
+        .modal({
+            context: '#main-panel',
+            onApprove: function() {
+                Meteor.call('updateUser', device.data._id, 'profile.calibration.audio', 'set', settings.get());
+            },
+            onShow: function() {
+                Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', { audio: settings.get() });
+            },
+            onHidden: function() {
+                Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', false);
+                device.calibrating.set({ profile: device.data.profile, window: '' });
+            }
+        })
+        .modal('show');
+});
+
 
 Template.screenCalibrationForm.events({
     'input input'(event, template) {
@@ -41,17 +99,17 @@ Template.screenCalibrationForm.events({
             switch (target.name) {
                 case 'span':
                 case 'weight':
-                    preview[n][target.name] = value;
+                    preview[ n ][ target.name ] = value;
                     template.parent().preview.set(preview);
                     break;
                 case 'offset-x':
                 case 'offset-y':
                     const name = target.name.split('-');
 
-                    offsets[n][name[0]][name[1]] = value;
-                    preview[n][name[0]][name[1]] = elements[n][name[0]][name[1]] + value;
+                    offsets[ n ][ name[ 0 ] ][ name[ 1 ] ] = value;
+                    preview[ n ][ name[ 0 ] ][ name[ 1 ] ] = elements[ n ][ name[ 0 ] ][ name[ 1 ] ] + value;
 
-                    template.parent().offsets.set(offsets);                    
+                    template.parent().offsets.set(offsets);
                     template.parent().preview.set(preview);
                     break;
             }
@@ -95,7 +153,7 @@ Template.screenCalibrationModal.onCreated(function () {
     this.elements = new ReactiveVar(defaults);
     // Tracks final saved offsets from template version
     this.offsets = new ReactiveVar((calibration.screen.cross) ? calibration.screen : {
-        cross: {offset: {x: 0.0, y: 0.0}}
+        cross: { offset: { x: 0.0, y: 0.0 } }
     });
     // Tracks version of elements visually presented in calibration view
     this.preview = new ReactiveVar(defaults);
@@ -104,7 +162,7 @@ Template.screenCalibrationModal.onCreated(function () {
     _.each(this.offsets.get(), (o) => {
         if (o.offset) {
             const p = this.preview.get();
-            _.each(o.offset, (v,k) => (p['cross']['offset'][k] += v));
+            _.each(o.offset, (v,k) => (p[ 'cross' ][ 'offset' ][ k ] += v));
         }
     });
 
@@ -124,14 +182,14 @@ Template.screenCalibrationModal.onRendered(function () {
         .modal({
             context: '#main-panel',
             onApprove: function() { // TODO To save or not to save span & weight?
-                Meteor.call('updateUser', device.data._id, 'profile.calibration.screen.cross', 'set', offsets.get()['cross']);
+                Meteor.call('updateUser', device.data._id, 'profile.calibration.screen.cross', 'set', offsets.get()[ 'cross' ]);
             },
             onShow: function() {
                 Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', preview.get());
             },
             onHidden: function() {
                 Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', false);
-                device.calibrating.set({profile: device.data.profile, window: ''});
+                device.calibrating.set({ profile: device.data.profile, window: '' });
             }
         })
         .modal('show');
@@ -150,7 +208,7 @@ Template.waterCalibrationForm.events({
                 case 'dispense':
                 case 'intercept':
                 case 'slope':
-                    settings[target.name] = value;
+                    settings[ target.name ] = value;
                     break;
             }
 
@@ -188,11 +246,11 @@ Template.waterCalibrationModal.onRendered(function () {
                 Meteor.call('updateUser', device.data._id, 'profile.calibration.water', 'set', settings.get());
             },
             onShow: function() {
-                Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', {water: settings.get()});
+                Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', { water: settings.get() });
             },
             onHidden: function() {
                 Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', false);
-                device.calibrating.set({profile: device.data.profile, window: ''});
+                device.calibrating.set({ profile: device.data.profile, window: '' });
             }
         })
         .modal('show');

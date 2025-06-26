@@ -609,7 +609,7 @@ Template.trialSVG.helpers({
 
                 if (last.type === 'sensor') {
                     /** Only entries may trigger a reponse, exits are ignored: */
-                    const entry = (last.request && last.request.ir === 1),
+                    const entry = (last.request && last.request.ir === 0),
                     /** Conditions are met if 200ms have elapsed since reward dispense ended: */
                     prereq = _.some(data, (e) => (e.type === 'reward' && e.request.reward === "off" && (last.timeStamp - e.timeStamp > 200)));
 

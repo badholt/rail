@@ -81,33 +81,39 @@ Template.sessionSetup.onCreated(function () {
             devices = form.devices.split(','),
             experiment = this.parent().getExperiment()._id,
             elements = (device, el) => {
-                if (el.type === 'cross') {
-                    const cross = device.profile.calibration.screen['cross'];
-                    return update(el, {offset: {
-                        x: {$apply: (x) => (x + cross.offset.x)},
-                        y: {$apply: (y) => (y + cross.offset.y)}
-                    }});
-                } else if (el.type === 'reward') {
-                    const commands = _.map(el.commands, (command) => {
-                        /**
-                            Valve opens in ~0.013 s
-                            Water rate increases up to 0.19 mL/s
-                        */
-                        let duration = 0;
+                switch (el.type) {
+                    case 'audio':
+                        if (!_.has(el.source, 'wave')) return el;
+                        const frequency = el.source.wave.frequency + _.get(device.profile.calibration, [ 'audio', 'frequency' ], 0);
+                        return update(el, { source: { wave: { frequency: { $set: frequency } } } });
+                    case 'cross':
+                        const cross = device.profile.calibration.screen['cross'];
+                        return update(el, { offset: {
+                            x: { $apply: (x) => (x + cross.offset.x) },
+                            y: { $apply: (y) => (y + cross.offset.y) }
+                        } });
+                    case 'reward':
+                        const commands = _.map(el.commands, (command) => {
+                            /**
+                                Valve opens in ~0.013 s
+                                Water rate increases up to 0.19 mL/s
+                            */
+                            let duration = 0;
 
-                        if (_.has(command, "amount")) {
-                            const amount = parseFloat(command.amount) + parseFloat(device.profile.calibration.water.amount);
-                            duration = (parseFloat(device.profile.calibration.water.slope) * Math.max(0, amount) + parseFloat(device.profile.calibration.water.intercept));
-                        } else if (_.has(command, "dispense")) {
-                            duration = parseFloat(command.dispense) + parseFloat(device.profile.calibration.water.dispense);
-                        }
+                            if (_.has(command, 'amount')) {
+                                const amount = parseFloat(command.amount) + parseFloat(device.profile.calibration.water.amount);
+                                duration = (parseFloat(device.profile.calibration.water.slope) * Math.max(0, amount)
+                                    + parseFloat(device.profile.calibration.water.intercept));
+                            } else if (_.has(command, 'dispense')) {
+                                duration = parseFloat(command.dispense) + parseFloat(device.profile.calibration.water.dispense);
+                            }
 
-                        return {command: 'dispense', duration: Math.max(0, duration)}; //TODO: More graceful handling of unexpected args; should negative amounts be allowed?
-                    });
+                            return { command: 'dispense', duration: Math.max(0, duration) }; //TODO: More graceful handling of unexpected args; should negative amounts be allowed?
+                        });
 
-                    return update(el, {commands: {$set: commands}});
-                } else {
-                    return el;
+                        return update(el, { commands: { $set: commands } });
+                    default:
+                        return el;
                 }
             };
 
@@ -117,9 +123,9 @@ Template.sessionSetup.onCreated(function () {
                 subjects = _.map(form[id], (subject) => this.cipher[subject]);
 
             const inputs_adjusted = _.map(inputs, (stage) => _.map(stage, (input) => (update(input, {
-                correct: {$set: _.map(input.correct, (e) => ((e.action === 'insert')
-                    ? update(e, {targets: {$set: _.map(e.targets, (el) => (elements(device, el)))}})
-                    : e))}
+                correct: { $set: _.map(input.correct, (e) => ((e.action === 'insert')
+                    ? update(e, { targets: { $set: _.map(e.targets, (el) => (elements(device, el))) } })
+                    : e)) }
             }))));
 
             const stages_adjusted = _.map(stages, (stage)=> _.map(stage, (el) => (elements(device, el))));

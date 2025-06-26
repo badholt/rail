@@ -52,12 +52,16 @@ Template.deviceActivity.onCreated(function () {
 });
 
 Template.deviceCard.events({
+    'click a[id^=calibrate-audio]'(event, template) {
+        template.calibrating.set({ profile: template.data.profile, window: 'audioCalibrationModal' });
+        return template.data;
+    },
     'click a[id^=calibrate-screen]'(event, template) {
-        template.calibrating.set({profile: template.data.profile, window: 'screenCalibrationModal'});
+        template.calibrating.set({ profile: template.data.profile, window: 'screenCalibrationModal' });
         return template.data;
     },
     'click a[id^=calibrate-water]'(event, template) {
-        template.calibrating.set({profile: template.data.profile, window: 'waterCalibrationModal'});
+        template.calibrating.set({ profile: template.data.profile, window: 'waterCalibrationModal' });
         return template.data;
     },
     'click .editable'(event, template) {
@@ -171,13 +175,6 @@ Template.deviceCardMessage.onRendered(function () {
     });
 });
 
-Template.deviceModal.onRendered(function () {
-    $('#device-modal')
-        .modal({context: '#main-panel'})
-        .modal('attach events', '#modal-' + this.data.profile.username, 'show');
-    $('.ui.dropdown').dropdown();
-});
-
 Template.devicePanel.helpers({
     devices() {
         return Meteor.users.find({'profile.device': {$ne: false}}, {sort: {'profile.name': 1}});
@@ -243,54 +240,4 @@ Template.editField.helpers({
     edit() {
         return Template.instance().parent().edit.get();
     }
-});
-
-Template.piRow.events({
-    'click'(e, template) {
-        const device = Template.instance().parent(2);
-        // Meteor.call('updateUser', device.data._id, 'profile.components', 'push', {
-        //     device: 'IR Sensor',
-        //     mode: 'IN',
-        //     pin: template.data.physical
-        // });
-        $('#modal-device').modal('show');
-    }
-});
-
-Template.piRow.helpers({
-    property(pairs) {
-        return _.map(pairs, (pair) => ({key: pair[0], value: pair[1]}));
-    }
-});
-
-Template.piModal.helpers({
-    boards(pins) {
-        return _.partition(pins, (pin) => (pin.physical % 2));
-    },
-    headings(index) {
-        const headings = ['', 'BCM', 'Mode', 'Name', 'wPi'];
-        return (index > 0) ? headings : headings.reverse();
-    },
-    pin(index, pins, components) {
-        return _.map(pins, (pin) => {
-            const component = _.find(components, (component) =>
-                    _.contains(component['pins'], parseInt(pin.physical))),
-                properties = _.pairs(_.omit(pin, 'physical', 'voltage'));
-
-            return {
-                board: index,
-                component: component,
-                mode: pin.mode,
-                physical: pin.physical,
-                pairs: (index > 0) ? properties : properties.reverse(),
-                voltage: pin.voltage
-            };
-        });
-    }
-});
-
-Template.piModal.onRendered(function () {
-    $('#modal-' + this.data.profile.username)
-        .modal({allowMultiple: true, context: '#main-panel'})
-        .modal('attach events', '#pins-' + this.data.profile.username, 'show');
 });

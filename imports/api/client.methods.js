@@ -49,8 +49,8 @@ export const calculateCenter = (height, width) => ({
             
             _.each(variables, (v, key) => {
                 const multiply = (a, item) => ((_.isArray(v) && v.length > 0)
-                        ? _.each(v, (o) => a.push(_.extend({[key]: o}, item)))
-                        : a.push(_.extend({[key]: v}, item)));
+                        ? _.each(v, (o) => a.push(_.extend({ [ key ]: o }, item)))
+                        : a.push(_.extend({ [ key ]: v }, item)));
 
                 /** Temporary adjustment for schema version compatibility: */
                 if (key === 'location') v = _.filter(element.grid.blacklist, (location) => !location.blacklist);
@@ -73,7 +73,7 @@ export const calculateCenter = (height, width) => ({
             generateDistribution(element, map, n, ratio, trial, list);
 
             /** Shuffle using Fisher-Yates method to randomize order of weighted distribution: */
-            trial = update(trial, {$set: _.shuffle(trial)});
+            trial = update(trial, { $set: _.shuffle(trial) });
         } else {
             _.times(n, () => trial.push(element));
         }
@@ -103,8 +103,8 @@ export const calculateCenter = (height, width) => ({
             repeats = _.map(weights, (w, i) => (i < weights.length - 1 || sum === n) ? portion(w) : portion(w) + Math.floor(n - sum));
 
         _.each(repeats, (r, k) => _.times(r, () => {
-            trial.push(_.defaults(list[k], element)); // TODO: Push w/o defaults & use base under session.elements for defaults @ trial lvl
-            map.set(list[k], map.get(list[k]) + 1);
+            trial.push(_.defaults(list[ k ], element)); // TODO: Push w/o defaults & use base under session.elements for defaults @ trial lvl
+            map.set(list[ k ], map.get(list[ k ]) + 1);
         }));
 
         // PRINT
@@ -115,22 +115,22 @@ export const calculateCenter = (height, width) => ({
         const columns = 3, rows = 3;
 
         for (let i = first; i < last; i++) {
-            let previous = (visuals[first - 1]) ? visuals[first - 1] : {
+            let previous = (visuals[ first - 1 ]) ? visuals[ first - 1 ] : {
                 bars: 3,
                 contrast: 1,
                 delay: 0,
                 duration: 5000,
                 grid: {
                     blacklist: generateBlacklist([],
-                        {first: 1, last: columns + 1},
-                        {first: 1, last: rows + 1}),
+                        { first: 1, last: columns + 1 },
+                        { first: 1, last: rows + 1 }),
                     weighted: false,
                     x: 3,
                     y: 3
                 },
                 spacing: 1,
                 span: 100,
-                variables: ['grid.blacklist'],
+                variables: [ 'grid.blacklist' ],
                 weight: 20
             };
 
@@ -142,7 +142,7 @@ export const calculateCenter = (height, width) => ({
     randomLocation = (width, height, locations) => {
         const x = _.random(1, width),
             y = _.random(1, height),
-            location = {x: x, y: y},
+            location = { x: x, y: y },
             key = JSON.stringify(location);
 
         return (!locations.get(key)) ? location : randomLocation(width, height, locations);
@@ -161,7 +161,7 @@ Meteor.methods({
      *
      * Returns:
      *  Object {x: Integer, y: Integer} */
-    'calculateCenter': (height, width) => ({x: Math.floor(width / 2), y: Math.floor(height / 2)}),
+    'calculateCenter': (height, width) => ({ x: Math.floor(width / 2), y: Math.floor(height / 2) }),
     /**
      * generateTrials
      *
@@ -201,8 +201,6 @@ Meteor.methods({
                     /** (3) Generates probability distributions for element j relative to specified variables: */
                     trials[ i ][ j ] = generateCombinations(element, n, session.distribution.ratio, trials[ i ][ j ]);
 
-
-
                     _.each(element.variables, (v) => { // TODO: Avoid post-processing?
                         if (_.has(element[ v ], 'dependent')) {
                             const variable = element[ v ],
@@ -232,7 +230,7 @@ Meteor.methods({
                 });
 
                 /** Consolidates arrays of distributed elements of stage i into a single stage i item for the trials array: */
-                trials = update(trials, {[ i ]: {$set: _.zip(...trials[ i ])}});
+                trials = update(trials, { [ i ]: { $set: _.zip(...trials[ i ]) } });
             });
 
         /** Consolidates arrays of distributed stages into a single trials array for Sessions: */

@@ -41,6 +41,31 @@
 
             <div class="description">
                 {{#unless status.active.session}}
+                    {{#with profile.calibration.audio}}
+                        <a id="calibrate-audio-{{../profile.username}}" class="ui grey mini icon message">
+                            <i class="link volume up icon"></i>
+
+                            <div class="content">                      
+                                <div class="ui inverted list">
+                                    <div class="item" value="+">
+                                        <b>Tone frequency</b> offset by <span style="color: #2185d0;">{{frequency}}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    {{else}}
+                        <div class="ui inverted placeholder segment">
+                            <a id="calibrate-audio-{{../profile.username}}">
+                                <h5 class="ui inverted image header">
+                                    <i class="volume up icon"></i>
+                                    <span class="content">
+                                        No audio configured
+                                    </span>
+                                </h5>
+                            </a>
+                        </div>
+                    {{/with}}
+
                     {{#with profile.calibration.screen.cross}}
                         <a id="calibrate-screen-{{../profile.username}}" class="ui black mini icon message">
                             <i class="link expand icon"></i>
@@ -93,30 +118,6 @@
                     {{#with calibrating}}
                         {{> Template.dynamic template=window}}
                     {{/with}}
-
-                    <!-- <div id="pins-{{profile.username}}" class="ui icon list mini message">
-                        <i class="link microchip icon"></i>
-
-                        <div class="content">
-                            <div class="header">Assigned Pins</div>
-
-                            <div class="ui mini labels list">
-                                {{#each profile.components}}
-                                    <label class="ui {{color ../status}} label">
-                                        {{pin}}
-                                        <span class="detail">{{device}}</span>
-                                        <span class="detail">{{mode}}</span>
-                                    </label>
-                                {{else}}
-                                    <label class="ui {{color ../status}} label">None</label>
-                                {{/each}}
-                            </div>
-                        </div>
-                    </div>
-
-                    {{#if pi status.board profile}}
-                        {{> piModal}}
-                    {{/if}} -->
                 {{else}}
                     <div class="ui disabled inverted placeholder segment">
                         <h5 class="ui image header">
@@ -151,8 +152,6 @@
             </span>
         </div>
     </div>
-
-    {{> deviceModal}}
 </template>
 
 <template name="deviceActivity">
@@ -232,35 +231,6 @@
     </div>
 </template>
 
-<template name="deviceModal">
-    <div id="modal-device" class="ui basic mini modal">
-        <div class="content">
-            <form class="ui mini form">
-                <div class="two fields">
-                    <div class="field">
-                        <label>Device</label>
-                        <select class="ui dropdown" name="device">
-                            <option value="led">LED</option>
-                            <option value="reward.out">Reward</option>
-                            <option value="sensor">IR Sensor</option>
-                        </select>
-                    </div>
-
-                    <div class="field">
-                        <label>Mode</label>
-                        <select class="ui dropdown" name="mode">
-                            <option value="GND">GND</option>
-                            <option value="IN">IN</option>
-                            <option value="OUT">OUT</option>
-                            <option value="V">V</option>
-                        </select>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-</template>
-
 <template name="editField">
     {{#unless $eq edit name}}
         {{value}}
@@ -273,56 +243,4 @@
             </span>
         </span>
     {{/unless}}
-</template>
-
-<template name="piModal">
-    <div id="modal-{{profile.username}}" class="ui basic modal">
-        <div class="content">
-            <div class="ui two column grid">
-                <div class="stretched row">
-                    {{#each boards status.board.pins}}
-                        <div class="column">
-                            <table class="ui celled center aligned collapsing very compact inverted selectable
-                            small unstackable table">
-                                <thead>
-                                <tr>
-                                    {{#each headings @index}}
-                                        <th>{{this}}</th>
-                                    {{/each}}
-                                </tr>
-                                </thead>
-
-                                <tbody>
-                                {{#each pin @index this ../profile.components}}
-                                    {{> piRow}}
-                                {{/each}}
-                                </tbody>
-                            </table>
-                        </div>
-                    {{/each}}
-                </div>
-            </div>
-        </div>
-    </div>
-</template>
-
-<template name="piRow">
-    <tr class="ui horizontal mini labels row
-{{#if component}}inverted blue segment{{/if}}">
-        {{#if board}}
-            <td class="collapsing">{{physical}}</td>
-        {{/if}}
-
-        {{#each property pairs}}
-            <td class="collapsing">
-                {{#if value}}
-                    <label class="ui {{#unless ../mode}}black{{/unless}} label">{{value}}</label>
-                {{/if}}
-            </td>
-        {{/each}}
-
-        {{#unless board}}
-            <td class="collapsing">{{physical}}</td>
-        {{/unless}}
-    </tr>
 </template>
