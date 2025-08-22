@@ -94,7 +94,7 @@ export const calculateCenter = (height, width) => ({
         // });
 
         /** METHOD 2 - Probability distribution of stages w/ exact global weights: */
-        const weights = [ ratio, parseFloat((1 - ratio).toFixed(5)) ], // DUMMY VARS
+        const weights = _.flatten(_.times(map.size / 2, (n) => ([ ratio / (map.size / 2), parseFloat(((1 - ratio) / (map.size / 2)).toFixed(5)) ]))),
             portion = (w) => Math.floor(n * w),
             portions = _.map(weights, (w) => portion(w)),
             sum = _.reduce(portions, (memo, p) => memo + p),

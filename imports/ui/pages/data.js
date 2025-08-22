@@ -21,6 +21,7 @@ import _ from 'underscore';
 import moment from 'moment/moment';
 
 import { $ } from 'meteor/jquery';
+import { conditionsMet, variables } from '/imports/ui/pages/trial';
 import { Experiments, Sessions, Subjects, Trials } from '/imports/api/collections';
 import { Meteor } from 'meteor/meteor';
 import { Template } from 'meteor/templating';
@@ -44,7 +45,7 @@ Template.data.helpers({
 Template.data.onCreated(function () {
     this.counts = new ReactiveVar({});
     this.dataTemplate = new ReactiveVar('');
-    this.format = new ReactiveVar('xlsx');
+    this.format = new ReactiveVar('csv');
     this.precision = new ReactiveVar(true);
     this.session = new ReactiveVar('');
     this.selected = new ReactiveVar([]);
@@ -106,6 +107,7 @@ Template.dataMenu.events({
 						format = template.$('#formats').dropdown('get value'),
 						filename = `${ getSubjects(session.subjects) }[${ moment(session.date).format('YY.MM.DD.HH.mm') }]`
 							+ `[${ dataTemplate }].${ format }`,
+						rules = _.filter(session.settings.inputs[ 0 ], (i) => (i.event === 'click')),
 						addClicks = (correct, cross, origin = false) => {
 							const c = correct[ 'true' ],
 								f = correct[ 'false' ],
@@ -122,10 +124,10 @@ Template.dataMenu.events({
 							if (stimulus && _.has(stimulus, 'orientation')) {
 								if (stimulus.orientation.value === 0) {
 									content.push('V\t');
-									if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => isLess(c, region[ 0 ], axis));
+									if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => isLess(c, region, axis));
 								} else {
 									content.push('H\t');
-									if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => !isLess(c, region[ 0 ], axis));
+									if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => !isLess(c, region, axis));
 								}
 
 								content.push((clicks.length > 0) ? _.has(correct, 'true') ? '0\t' : '1\t' : '2\t');
@@ -140,8 +142,13 @@ Template.dataMenu.events({
 							content.push('\t' + getTime(trial.timeOrigin, 0, false, true) + '\n\n');
 							if (headers) content.push(headers.join('\t') + '\n');
 						},
-						getClickType = (e, region) => (isCross(e, region, 'y') ? isCross(e, region, 'x') ? 'mm': isLess(e, region, 'x')
-							? 'lm' : 'rm' : isLess(e, region, 'y') ? isLess(e, region, 'x') ? 'lt' : 'rt' : isLess(e, region, 'x') ? 'lb' : 'rb'),
+						getClickType = (e, region) =>
+							(isCross(e, region, 'y')
+								? isCross(e, region, 'x') ? 'mm'
+								: (isLess(e, region, 'x') ? 'lm' : 'rm')
+							: isLess(e, region, 'y')
+								? (isLess(e, region, 'x') ? 'lt' : 'rt')
+								: (isLess(e, region, 'x') ? 'lb' : 'rb')),
 						getIR = (groups, filter = dataTemplate, key = 'request.ir.0') => {
 							const fn = {
 									'sensor': (e) => (true), // Return all
@@ -165,11 +172,32 @@ Template.dataMenu.events({
 
 							return _.filter(groups[ key ], (e) => fn[ filter ](e)); // TODO: Generalize to more groups & indices (sensor template)
 						},
-						getRegion = (region, axis) => ((1 + region.offset[ axis ]) * ((axis === 'y') ? height : width) / 2),
+						getRegions = (rules) => _.map(rules, (r) => {
+							const getAxis = (p) => p.replace('client', '').toLowerCase();
+							let region = { x: {}, y: {} };
+
+							_.each(r.conditions, (c) => {
+								let axis, property = {};
+
+								if (c.comparison === '<') {
+									_.each(c.objects, (o) => (o.name === 'number') ? property[ 'min' ] = o.property : axis = getAxis(o.property));
+									_.each(c.subjects, (s) => (s.name === 'number') ? property[ 'max' ] = s.property : axis = getAxis(s.property));
+								}
+
+								if (axis) region[ axis ] = _.extend(region[ axis ] || {}, property);
+							});
+
+							/** Default to middle of screen if no bounds given: */
+							region = _.mapObject(region, (r, key) => (!_.isEmpty(r)) ? r
+								: (key === 'x') ? { min: width / 2, max: width / 2 } : { min: height / 2, max: height / 2 });
+
+							return region;
+						}),
+						region = _.first(getRegions(rules)), // TODO: Generalize for multirule paradigms
 						isCross = (coordinate, region, axis) =>
-							(coordinate[ 'client' + axis.toUpperCase() ] > getRegion(region, axis) - (region.span / 2)
-							&& coordinate[ 'client' + axis.toUpperCase() ] < getRegion(region, axis) + (region.span / 2)),
-						isLess = (coordinate, region, axis) => (coordinate[ 'client' + axis.toUpperCase() ] < getRegion(region, axis));
+							(coordinate[ 'client' + axis.toUpperCase() ] > region[ axis ][ 'min' ]
+							&& coordinate[ 'client' + axis.toUpperCase() ] < region[ axis ][ 'max' ]),
+						isLess = (coordinate, region, axis) => (coordinate[ 'client' + axis.toUpperCase() ] < region[ axis ][ 'max' ]);
 
 					switch (dataTemplate) {
 						case 'indices':
@@ -181,7 +209,7 @@ Template.dataMenu.events({
 
 								if (n === 0) addOrigin(trial, headers);
 								
-								content.push(trial.number + '\t');
+								content.push(`${ trial.number }\t`);
 								content.push(trial.index + '\t\n');
 							});
 
@@ -201,7 +229,7 @@ Template.dataMenu.events({
 										msgs = _.filter(stage, (e) => (_.has(services, e.type.split('.')[0])));
 
 									if (_.size(msgs) > 0) {
-										content.push(trial.number + '\t');
+										content.push(`${ trial.number }\t`);
 										_.each(msgs, (e, i) => (content.push(`${ e.type } ${ 
 											(e.request) ? JSON.stringify(_.omit(e.request, 'timeStamp')) : '' }\t`)));
 										content.push('\n\t');
@@ -216,17 +244,18 @@ Template.dataMenu.events({
 							headers = [ 'Trial No' ],
 							content = defaultContent(session);
 
+							
+
 							_.each(session.trials, (id, n) => {
 								const trial = Trials.findOne(id),
-									clicks = _.map(trial.data, (stage) => _.filter(stage, (e) => (e.type === 'click'))),
-									region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross')));
+									clicks = _.map(trial.data, (stage) => _.filter(stage, (e) => (e.type === 'click')));
 
 								if (n === 0) addOrigin(trial, headers);
 								
-								content.push(trial.number + '\t');
+								content.push(`${ trial.number }\t`);
 								
 								_.each(clicks, (stage) => _.each(stage, (e) =>  content.push(
-									getClickType(e, region[ 0 ]) + ' (' + e.clientX + ', ' + e.clientY + ')\t'
+									getClickType(e, region) + ' (' + e.clientX + ', ' + e.clientY + ')\t'
 									+ getTime(e.timeStamp, trial.timeOrigin) + '\t')));
 								
 								content.push('\n');
@@ -258,7 +287,7 @@ Template.dataMenu.events({
 									});
 								});
 
-								content.push(trial.number + '\t');
+								content.push(`${ trial.number }\t`);
 								content.push(dispense + '\t');
 								content.push(amount + '\t');
 
@@ -401,7 +430,7 @@ Template.dataMenu.events({
 
 								if (n === 0) addOrigin(trial, headers);
 
-								content.push(trial.number + '\t');
+								content.push(`${ trial.number }\t`);
 
 								_.each(trial.data, (stage, i) => {
 									const groups = getGroups(stage, i),
@@ -410,9 +439,9 @@ Template.dataMenu.events({
 									_.each(events[ i ], (g) => {
 										if (g !== 'request.ir.0' && groups[ g ]) {
 											_.each(groups[ g ], (e) => {
-												if (g !== 'reward' || e.request.reward === 'off') content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t'); });
+												if (g !== 'reward' || e.request.reward === 'off') content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`); });
 										} else if (ir) {
-											_.each(ir, (e) => (content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t')));
+											_.each(ir, (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
 										} else {
 											content.push('\t');
 										}
@@ -434,16 +463,16 @@ Template.dataMenu.events({
 
 								if (n === 0) addOrigin(trial, headers);
 
-								content.push(trial.number + '\t');
+								content.push(`${ trial.number }\t`);
 
 								_.each(trial.data, (stage, i) => {
 									const groups = getGroups(stage, i),
 										ir = getIR(groups);
 
-									_.each(groups[ 'trial.start' ], (e) => (content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t')));
+									_.each(groups[ 'trial.start' ], (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
 
 									if (clicks.length > 0) content.push(getTime(clicks[ 0 ].timeStamp, trial.timeOrigin) + '\t');
-									if (ir) _.each(ir, (e) => (content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t')));
+									if (ir) _.each(ir, (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
 								});
 
 								content.push('\n');
@@ -465,11 +494,10 @@ Template.dataMenu.events({
 								if (n === 0) addOrigin(trial, headers);
 
 								if (data2 && data2.length > 0) {
-									const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
-										clicks = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis))),
-										cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
+									const clicks = _.filter(data2, (e) => (e.type === 'click' && !isCross(e, region, axis))),
+										cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region, axis)));
 
-									content.push(trial.number + '\t');
+									content.push(`${ trial.number }\t`);
 									correct = addCorrect(clicks, region, trial.stages[ 1 ][ 0 ], axis);
 
 									_.each(trial.data, (stage, i) => {
@@ -480,45 +508,7 @@ Template.dataMenu.events({
 											if (g !== 'click') content.push((groups[ g ]) ? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t' : '\t'); });
 
 										if (_.contains(events[ i ], 'click')) addClicks(correct, cross);								
-										if (ir) _.each(ir, (e) => (content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t')));
-									});
-
-									content.push('\n');
-								}
-							});
-
-							break;
-						case 'shaping4v':
-							axis = 'y', // Analyze w/ vertical mask parameters
-							headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Trial Start', 'Stimulus Start', 'Response',
-								'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
-							events = [ [ 'trial.start' ], [ 'stimuli.start', 'click' ] ],
-							content = defaultContent(session);
-
-							_.each(session.trials, (id, n) => {
-								let correct = {};
-								const trial = Trials.findOne(id),
-									data2 = trial.data[ 1 ];
-
-								if (n === 0) addOrigin(trial, headers);
-
-								if (data2 && data2.length > 0) {
-									const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
-										clicks = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis))),
-										cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
-
-									content.push(trial.number + '\t');
-									correct = addCorrect(clicks, region, trial.stages[ 1 ][ 0 ], axis);
-
-									_.each(trial.data, (stage, i) => {
-										const groups = getGroups(stage, i),
-											ir = getIR(groups, 'shaping4');
-
-										_.each(events[ i ], (g) => {
-											if (g !== 'click') content.push((groups[ g ]) ? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t' : '\t'); });
-
-										if (_.contains(events[ i ], 'click')) addClicks(correct, cross);								
-										if (ir) _.each(ir, (e) => (content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t')));
+										if (ir) _.each(ir, (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
 									});
 
 									content.push('\n');
@@ -541,11 +531,10 @@ Template.dataMenu.events({
 								if (n === 0) addOrigin(trial, headers);
 
 								if (data2 && data2.length > 0) {
-									const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
-										clicks = _.filter(data2, (e) => (e.type === 'click' && !isCross(e, region[ 0 ], axis))),
-										cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
+									const clicks = _.filter(data2, (e) => (e.type === 'click' && !isCross(e, region, axis))),
+										cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region, axis)));
 
-									content.push(trial.number + '\t');
+									content.push(`${ trial.number }\t`);
 									correct = addCorrect(clicks, region, trial.stages[ 1 ][ 0 ], axis);
 									_.each(trial.data, (stage, i) => {
 										const groups = getGroups(stage, i),
@@ -555,7 +544,7 @@ Template.dataMenu.events({
 											if (g !== 'click') content.push((groups[ g ]) ? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t' : '\t'); });
 
 										if (_.contains(events[ i ], 'click')) addClicks(correct, cross);								
-										if (ir) _.each(ir, (e)=> (content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t')));
+										if (ir) _.each(ir, (e)=> (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
 									});
 
 									content.push('\n');
@@ -563,10 +552,48 @@ Template.dataMenu.events({
 							});
 
 							break;
+						case 'shaping4v':
 						case 'shaping6v':
 							axis = 'y', // Analyze w/ vertical mask parameters
-							headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
+							headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Trial Start', 'Stimulus Start', 'Response',
 								'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
+							events = [ [ 'trial.start' ], [ 'stimuli.start', 'click' ] ],
+							content = defaultContent(session);
+
+							_.each(session.trials, (id, n) => {
+								let correct = {};
+								const trial = Trials.findOne(id),
+									data2 = trial.data[ 1 ];
+
+								if (n === 0) addOrigin(trial, headers);
+
+								if (data2 && data2.length > 0) {
+									const clicks = _.filter(data2, (e) => (e.type === 'click' && !isCross(e, region, axis))),
+										cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region, axis)));
+
+									content.push(`${ trial.number }\t`);
+									correct = addCorrect(clicks, region, trial.stages[ 1 ][ 0 ], axis);
+
+									_.each(trial.data, (stage, i) => {
+										const groups = getGroups(stage, i),
+											ir = getIR(groups, 'shaping4');
+
+										_.each(events[ i ], (g) => {
+											if (g !== 'click') content.push((groups[ g ]) ? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t' : '\t'); });
+
+										if (_.contains(events[ i ], 'click')) addClicks(correct, cross);								
+										if (ir) _.each(ir, (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
+									});
+
+									content.push('\n');
+								}
+							});
+
+							break;
+						case 'shaping8v':
+							axis = 'y', // Analyze w/ vertical mask parameters
+							headers = [ 'Trial No', 'Target Contrast', 'Target Orientation', 'Outcome', 'Flanker Contrast', 'Flanker Orientation',
+								'Flanker Position', 'Stage Start', 'Stimulus Start', 'Response', 'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
 							events = [ [ 'cross.start' ], [ 'stimuli.start', 'click' ] ],
 							content = defaultContent(session);
 
@@ -578,12 +605,20 @@ Template.dataMenu.events({
 								if (n === 0) addOrigin(trial, headers);
 
 								if (data2 && data2.length > 0) {
-									const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
-										clicks = _.filter(data2, (e) => (e.type === 'click' && !isCross(e, region[ 0 ], axis))),
-										cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
+									const clicks = _.filter(data2, (e) => (e.type === 'click' && !isCross(e, region, axis))),
+										cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region, axis))),
+										target = _.find(trial.stages[ 1 ], (e) => (e.number === 1)),
+										flanker = _.find(trial.stages[ 1 ], (e) => (e.number === 2)),
+										grid = _.get(flanker, [ 'grid', 'x' ], '-'),
+										pos = _.get(flanker, [ 'location', 'x' ], '-'),
+										orientation = _.get(flanker, [ 'orientation', 'value' ], '-');
 
-									content.push(trial.number + '\t');
-									correct = addCorrect(clicks, region, trial.stages[ 1 ][ 0 ], axis);
+									content.push(`${ trial.number }\t`);
+									content.push(`${ _.get(target, 'contrast', '-') }\t`);
+									correct = addCorrect(clicks, region, target, axis);
+									content.push(`${ _.get(flanker, 'contrast', '-') }\t`);
+									content.push(`${ (orientation !== '-') ? (orientation > 0 ? 'H' : 'V') : '-' }\t`);
+									content.push(`${ (pos !== '-' && grid !== '-') ? (pos < Math.round(grid / 2) ? 'L' : 'R') : '-' }\t`);
 
 									_.each(trial.data, (stage, i) => {
 										const groups = getGroups(stage, i),
@@ -593,7 +628,7 @@ Template.dataMenu.events({
 											if (g !== 'click') content.push((groups[ g ]) ? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t' : '\t'); });
 
 										if (_.contains(events[ i ], 'click')) addClicks(correct, cross);								
-										if (ir) _.each(ir, (e) => (content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t')));
+										if (ir) _.each(ir, (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
 									});
 
 									content.push('\n');
@@ -616,11 +651,10 @@ Template.dataMenu.events({
 								if (n === 0) addOrigin(trial, headers);
 
 								if (data2 && data2.length > 0) {
-									const region = _.map(trial.stages, (stage) => _.find(stage, (i) => (i.type === 'cross'))),
-										clicks = _.filter(data2, (e) => (e.type === 'click' && !isCross(e, region[ 0 ], axis))),
-										cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region[ 0 ], axis)));
+									const clicks = _.filter(data2, (e) => (e.type === 'click' && !isCross(e, region, axis))),
+										cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region, axis)));
 
-									content.push(trial.number + '\t');
+									content.push(`${ trial.number }\t`);
 									correct = addCorrect(clicks, region, trial.stages[ 1 ][ 1 ], axis);
 
 									_.each(trial.data, (stage, i) => {
@@ -649,7 +683,7 @@ Template.dataMenu.events({
 											}
 										}
 
-										if (ir) _.each(ir, (e) => (content.push(getTime(e.timeStamp, trial.timeOrigin) + '\t')));
+										if (ir) _.each(ir, (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
 									});
 
 									content.push('\n');
