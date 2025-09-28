@@ -245,6 +245,7 @@ Template.trial.helpers({
 
 Template.trial.onCreated(function () {
     this.center = calculateCenter($(window).height(), $(window).width());
+    this.incorrect = new ReactiveVar([ [ -1, 0 ], [ -1, 0 ] ]);
     this.index = new ReactiveVar(0);
 
     this.autorun(() => {
@@ -345,21 +346,51 @@ Template.trial.onCreated(function () {
                 /** Proceed to next trial or exit: */
                 if (session.settings.session.duration || next < session.settings.stages.length) {
                     const getIndex = () => {
-                            const i = this.index.get();
+                            const i = this.index.get(),
+                                incorrect = this.incorrect.get(),
+                                j = incorrect[ 0 ],
+                                storeIncorrect = () => {
+                                    incorrect[ (j[ 0 ] > -1 && i < j[ 0 ] + 2) ? 1 : 0 ] = [ i, duplicate ];
+                                    this.incorrect.set(incorrect);
+                                };
 
-                            if (!duplicate) {
-                                this.index.set(i + 1);
-                            } else {
+                            /** Correction Trials: */
+                            if (j[ 0 ] > -1 && i === j[ 0 ] + 1) {
                                 /** A second asynchronous index simulates a cache for comparing to previous trials.
                                  *  If a trial has not been duplicated or replayed beyond a specified limit, a new
                                  *  trial identical to the first at this index is added: */
-                                const n = Trials.find({ index: i }).count();
+                                const n = Trials.find({ index: j[ 0 ] }).count();
 
-                                /** If the number of duplicate trials, where the next trial added would be n,
-                                 *  exceeds the specified amount, stop duplicating the original trial at index i: */
-                                if (n > duplicate) this.index.set(i + 1);
+                                /** If no correction trials have yet been generated at index j[ 0 ], n = 1, and a "gap trial"
+                                 *  is run to offset the correction trials from the incorrect trial that spawned them.
+                                 *  Otherwise, correction trials repeat until rejoining the main branch of tracked indices. */
+                                if (n > 1) {
+                                    if (duplicate) {
+                                        /** Repeat correction trial:
+                                         *  If the number of duplicate trials, j[ 1 ], where the next trial added would be n,
+                                         *  exceeds the specified amount, stop duplicating the original trial at index j[ 0 ]. */
+                                        if (n <= j[ 1 ]) return j[ 0 ];
+                                    }
+
+                                    /** Proceed to next index:
+                                     *  Shift the next stored gap trial index to the upcoming correction trial slot, incorrect[ 0 ],
+                                     *  then allow the index to update to i + 1. */
+                                    if (j[ 0 ] < incorrect[ 1 ][ 0 ]) {
+                                        incorrect[ 0 ] = incorrect[ 1 ];
+                                        this.incorrect.set(incorrect);
+                                    }
+                                }
+                                /** A "Gap trial" is always followed by correction trials for a previous incorrect trial, but it may
+                                 *  also spawn its own set of correction trials if identified as incorrect: */
+                                else {
+                                    if (duplicate) storeIncorrect();
+                                    return j[ 0 ];
+                                }
                             }
+                            /** Incorrect Non-Correction Trials: */
+                            else if (duplicate) { storeIncorrect(); }
 
+                            this.index.set(i + 1);
                             return this.index.get();
                         };
 

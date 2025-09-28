@@ -244,8 +244,6 @@ Template.dataMenu.events({
 							headers = [ 'Trial No' ],
 							content = defaultContent(session);
 
-							
-
 							_.each(session.trials, (id, n) => {
 								const trial = Trials.findOne(id),
 									clicks = _.map(trial.data, (stage) => _.filter(stage, (e) => (e.type === 'click')));
