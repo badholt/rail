@@ -1,5 +1,14 @@
 <template name="settingsForm">
     <form id="settings-form" class="ui inverted form">
+        {{#if users}}
+            {{#if status.client}}
+                <div class="field">
+                    <label>Active Messaging Client(s)</label>
+                    {{> clientList}}
+                </div>
+            {{/if}}
+        {{/if}}
+
         <div class="ui equal width fields">
             <div class="field">
                 <label>Authorized Users</label>
@@ -13,24 +22,31 @@
         </div>
 
         <button class="ui black fluid button" type="submit">Save</button>
-		
-		{{> clientList}}
     </form>
 </template>
 
 <template name="clientList">
-	<div id="clients" class="ui compact segments">
+	<div id="clients" class="ui cards">
 		{{#each users}}
       		{{#each clients status.client}}
-    			<div class="ui black inverted segment">
-    				<i class="{{#if connected}}{{#if disconnecting}}red loading notched {{else}}green {{/if}}{{else}}{{#if disconnected}}{{#if reconnecting}}green loading notched {{else}}red {{/if}}{{/if}}{{/if}}circle icon"></i>
-    				<span class="ui {{#if ../status.online}}green{{else}}red{{/if}} inverted header">{{../profile.name}}</span> ({{options.clientId}})
-    				<br>
+    			<div class="ui inverted card">
+                    <div class="content">
+        				<div class="ui inverted {{#if ../status.online}}green{{else}}red{{/if}} header">
+                            <i class="left floated inverted {{#if connected}}{{#if disconnecting}}red loading notched {{else}}green {{/if}}{{else}}{{#if disconnected}}{{#if reconnecting}}green loading notched {{else}}red {{/if}}{{else}}red {{/if}}{{/if}}circle icon"></i>
 
-    				<div class="ui mini buttons">
-    					<button id="connect-{{options.clientId}}" class="ui black button" type="button" value="{{options.clientId}}">Connect</button>
-    					<button id="disconnect-{{options.clientId}}" class="ui black button" type="button" value="{{options.clientId}}">Disconnect</button>
-    				</div>
+                            {{../profile.name}}
+                        </div>
+
+                        <div class="meta">({{options.clientId}})</div>
+
+        				<div class="description">
+                            <div class="ui inverted mini buttons">
+            					<button id="connect-{{options.clientId}}" class="ui button" type="button" value="{{options.clientId}}">Connect</button>
+                                <div class="or"></div>
+            					<button id="disconnect-{{options.clientId}}" class="ui grey button" type="button" value="{{options.clientId}}">Disconnect</button>
+            				</div>
+                        </div>
+                    </div>
     			</div>
     		{{/each}}
 		{{/each}}

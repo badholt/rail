@@ -34,6 +34,6 @@ Please visit the [RAIL wiki](https://github.com/badholt/rail/wiki/) for detailed
 [hw-logo]: https://img.shields.io/badge/Hardware-brown?style=flat-square
 [sw-link]: https://github.com/badholt/rail/wiki/Software
 [sw-logo]: https://img.shields.io/badge/Software-grey?style=flat-square
-[meteor-logo]: https://img.shields.io/badge/v1.9.3-red?style=flat-square&logo=meteor&label=meteor&color=%23DE4F4F
+[meteor-logo]: https://img.shields.io/badge/v2.16-red?style=flat-square&logo=meteor&label=meteor&color=%23DE4F4F
 [node-logo]: https://img.shields.io/badge/v14.21.3-brightgreen?style=flat-square&logo=nodedotjs&label=node&color=%235FA04E
 [rpi-logo]: https://img.shields.io/badge/Bookworm-%23A22846?style=flat-square&logo=meteor&label=Raspbian&color=%23A22846

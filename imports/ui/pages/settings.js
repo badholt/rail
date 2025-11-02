@@ -3,21 +3,21 @@ import './settings.html';
 import '/imports/ui/components/dropdown/authorized';
 import '/imports/ui/components/dropdown/template';
 
-import {clients as clients} from '/imports/api/server.methods';
-import {Template} from 'meteor/templating';
-import {Meteor} from 'meteor/meteor';
-import {Templates} from "../../api/collections";
+import { clients as clients } from '/imports/api/server.methods';
+import { Template } from 'meteor/templating';
+import { Meteor } from 'meteor/meteor';
+import { Templates } from "../../api/collections";
 
 Template.clientList.events({
     'click .button[id^=connect]'(e, template) {
 		const id = e.target.value;
-        console.log('connect', id, e, template);
+
 		Meteor.call('updateClient', id, 'connect');
         Meteor.call('getClients');
     },
     'click .button[id^=disconnect]'(e, template) {
 		const id = e.target.value;
-        console.log('disconnect', id, e, template);
+
 		Meteor.call('updateClient', id, 'end');
         Meteor.call('getClients');
     }
@@ -28,12 +28,12 @@ Template.clientList.helpers({
         return _.values(list);
     },
 	users() {
-		return Meteor.users.find({'profile.device': {$type: 'string'}});
+		return Meteor.users.find({ 'profile.device': { $type: 'string' } });
 	}
 });
 
 Template.clientList.onCreated(function () {
-    this.autorun(() => this.subscribe('users', {'profile.device': {$type: 'string'}}));
+    this.autorun(() => this.subscribe('users', { 'profile.device': { $type: 'string' } }));
 	Meteor.call('getClients');
 });
 
@@ -49,11 +49,7 @@ Template.settingsForm.events({
 });
 
 Template.settingsForm.onRendered(function () {
-    $('.ui.form').form({
-        fields: {
-            users: 'empty'
-        }
-    });
+    $('.ui.form').form({ fields: { users: 'notEmpty' } });
 });
 
 Template.templateItem.events({
@@ -78,7 +74,7 @@ Template.templateItem.helpers({
 
 Template.templateList.helpers({
     templates() {
-        return Templates.find({}, {sort: {name: 1}});
+        return Templates.find({}, { sort: { name: 1 } });
     }
 });
 

@@ -1,7 +1,7 @@
 <template name="devicePanel">
     <div class="ui padded grid">
         <div class="column">
-            <div class="ui centered cards">
+            <div class="ui basic centered cards">
                 {{#each devices}}
                     {{> deviceCard}}
                 {{/each}}
@@ -11,7 +11,7 @@
 </template>
 
 <template name="deviceCard">
-    <div class="ui {{color status}} card">
+    <div class="ui grey card">
         {{#if status.message}}{{>deviceCardMessage (status.message)}}{{/if}}
 
         {{#with status.active.session}}
@@ -54,7 +54,7 @@
                             </div>
                         </a>
                     {{else}}
-                        <div class="ui inverted placeholder segment">
+                        <div class="ui inverted segment">
                             <a id="calibrate-audio-{{../profile.username}}">
                                 <h5 class="ui inverted image header">
                                     <i class="volume up icon"></i>
@@ -79,7 +79,7 @@
                             </div>
                         </a>
                     {{else}}
-                        <div class="ui inverted placeholder segment">
+                        <div class="ui inverted segment">
                             <a id="calibrate-screen-{{../profile.username}}">
                                 <h5 class="ui inverted image header">
                                     <i class="expand icon"></i>
@@ -103,7 +103,7 @@
                             </div>
                         </a>
                     {{else}}
-                        <div class="ui inverted placeholder segment">
+                        <div class="ui inverted segment">
                             <a id="calibrate-water-{{../profile.username}}">
                                 <h5 class="ui inverted image header">
                                     <i class="tint icon"></i>
@@ -119,7 +119,7 @@
                         {{> Template.dynamic template=window}}
                     {{/with}}
                 {{else}}
-                    <div class="ui disabled inverted placeholder segment">
+                    <div class="ui disabled inverted segment">
                         <h5 class="ui image header">
                             <i class="expand icon"></i>
                             <span class="content">
@@ -128,7 +128,7 @@
                         </h5>
                     </div>
 
-                    <div class="ui disabled inverted placeholder segment">
+                    <div class="ui disabled inverted segment">
                         <h5 class="ui image header">
                             <i class="tint icon"></i>
                             <span class="content">

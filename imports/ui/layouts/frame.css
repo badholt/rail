@@ -8,6 +8,30 @@ body, html {
     background: none;
 }
 
+.editable .form .field .transparent.input > input[type="text"] {
+    border: none;
+    margin-top: -4px;
+    padding: 0;
+    width: 90px;
+}
+
+nav#main-menu a.item {
+    border-radius: 4px 4px 0 0;
+    margin: 0 1px;
+}
+
+nav#main-menu > .right.menu > a.item {
+    padding: 10px 20px;
+}
+
+:not(.nocturnal) nav#main-menu a.active.item, :not(.nocturnal) nav#main-menu a.item:active {
+    background: rgba(255,255,255,.15);
+}
+
+:not(.nocturnal) nav#main-menu.ui.menu a.item:hover {
+    background: rgba(255,255,255,.08);
+}
+
 .ui.accordion .form input {
     text-align: center;
 }
@@ -16,6 +40,7 @@ body, html {
     color: #FFF !important;
     text-align: center;
 }
+
 
 /**------ IDs: ------*/
 #blacklist {
@@ -48,6 +73,7 @@ body, html {
     background: #000;
 }
 
+
 /**------ CLASSES: ------*/
 .fade {
     opacity: 0;
@@ -56,8 +82,4 @@ body, html {
 
 .fade:hover {
     opacity: 1;
-}
-
-.ui.vertical.tabular.menu .active.item {
-    color: rgba(0, 0, 0, 0.95) !important;
 }

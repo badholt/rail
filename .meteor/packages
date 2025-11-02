@@ -21,7 +21,6 @@ shell-server            # Server-side component of the `meteor shell` command
 aldeed:template-extension
 dburles:mongo-collection-instances
 dburles:collection-helpers
-less
 raix:handlebar-helpers
 spacebars
 underscore
@@ -35,18 +34,14 @@ zimme:active-route
 
 # [ STYLING ]
 aldeed:tabular
-#juliancwirko:postcss
-semantic:ui
 
 
 # [ USER ACCOUNTS ]
 accounts-base
-accounts-google
 accounts-password
 accounts-ui
 mizzao:user-status
 service-configuration
-useraccounts:core
 useraccounts:flow-routing
 useraccounts:semantic-ui
 

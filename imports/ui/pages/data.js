@@ -7,16 +7,6 @@ import '/imports/ui/components/profile';
 import '/imports/ui/components/tablesort';
 import '/imports/startup/tables';
 
-import autofill from 'datatables.net-autofill-se';
-import buttons from 'datatables.net-buttons-se';
-import colVis from 'datatables.net-buttons/js/buttons.colVis';
-import keytable from 'datatables.net-keytable-se';
-import print from 'datatables.net-buttons/js/buttons.print';
-import responsive from 'datatables.net-responsive-se';
-import rowgroup from 'datatables.net-rowgroup-se';
-import select from 'datatables.net-select-se';
-import semantic from 'datatables.net-se';
-
 import _ from 'underscore';
 import moment from 'moment/moment';
 
@@ -505,7 +495,7 @@ Template.dataMenu.events({
 										_.each(events[ i ], (g) => {
 											if (g !== 'click') content.push((groups[ g ]) ? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t' : '\t'); });
 
-										if (_.contains(events[ i ], 'click')) addClicks(correct, cross);								
+										if (_.contains(events[ i ], 'click')) addClicks(correct, cross, trial.timeOrigin);								
 										if (ir) _.each(ir, (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
 									});
 
@@ -541,7 +531,7 @@ Template.dataMenu.events({
 										_.each(events[ i ], (g) => {
 											if (g !== 'click') content.push((groups[ g ]) ? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t' : '\t'); });
 
-										if (_.contains(events[ i ], 'click')) addClicks(correct, cross);								
+										if (_.contains(events[ i ], 'click')) addClicks(correct, cross, trial.timeOrigin);								
 										if (ir) _.each(ir, (e)=> (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
 									});
 
@@ -579,7 +569,7 @@ Template.dataMenu.events({
 										_.each(events[ i ], (g) => {
 											if (g !== 'click') content.push((groups[ g ]) ? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t' : '\t'); });
 
-										if (_.contains(events[ i ], 'click')) addClicks(correct, cross);								
+										if (_.contains(events[ i ], 'click')) addClicks(correct, cross, trial.timeOrigin);								
 										if (ir) _.each(ir, (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
 									});
 
@@ -625,7 +615,7 @@ Template.dataMenu.events({
 										_.each(events[ i ], (g) => {
 											if (g !== 'click') content.push((groups[ g ]) ? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t' : '\t'); });
 
-										if (_.contains(events[ i ], 'click')) addClicks(correct, cross);								
+										if (_.contains(events[ i ], 'click')) addClicks(correct, cross, trial.timeOrigin);								
 										if (ir) _.each(ir, (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
 									});
 
@@ -774,16 +764,6 @@ Template.sessionsView.helpers({
 Template.sessionsView.onCreated(function () {
     this.subscribe('subjects.experiment', this.data._id);
     this.subscribe('users', { $or: [ { _id: { $in: this.data.users } }, { 'profile.device': { $ne: false } } ] });
-
-    autofill(window, $);
-    buttons(window, $);
-    colVis(window, $);
-    keytable(window, $);
-    print(window, $);
-    responsive(window, $);
-    rowgroup(window, $);
-    select(window, $);
-    semantic(window, $);
 });
 
 Template.settingsList.helpers({

@@ -1,17 +1,17 @@
 import './subjects.html';
+import '../components/forms/subject';
 
-import moment from "moment";
-
-import {Template} from "meteor/templating";
-import {Experiments, Subjects} from "../../api/collections";
+import { Experiments, Subjects } from '../../api/collections';
+import { Template } from 'meteor/templating';
 
 Template.subjectCard.events({
-    'click .balance.scale'(event, template) {
-        console.log(template);
-    },
     'click .edit'(event, template) {
         /** Set modal form to selected subject:  */
-        template.parent().edit.set(template.data._id);
+        template.parent().subject.set(template.data);
+        template.parent().bday.set(template.data.birthday);
+
+        /** Initialize calendar units: */
+        $('#subject-form').form('set value', 'unit', 'weeks');
 
         /** Open modal: */
         $('#subject-modal').modal('show');
@@ -20,7 +20,7 @@ Template.subjectCard.events({
 
 Template.subjectCard.helpers({
     experiment(ids) {
-        return Experiments.find({_id: {$in: ids}});
+        return Experiments.find({ _id: { $in: ids } });
     },
 	user(ids) {
 		return _.contains(ids, Meteor.userId());
@@ -31,77 +31,51 @@ Template.subjectCard.onCreated(function () {
     this.autorun(() => this.subscribe('experiment.subject', Template.currentData()._id));
 });
 
-Template.subjectForm.helpers({
-    experiments() {
-        /** Find all subscribed experiments for user and subjects: */
-        return Experiments.find();
-    }
-});
-
-Template.subjectForm.onRendered(function () {
-    const panel = Template.instance().parent(2);
-
-    $('#subject-form').form({
-        onSuccess(event, fields) {
-            /** Prevent default browser form submission: */
-            event.preventDefault();
-
-            /** Create new subject or update current profile: */
-            const id = panel.edit.get();
-
-            console.log(id, fields);
-            if (id) Meteor.call('updateSubject', id, fields); else Meteor.call('addSubject', fields);
-
-            /** Clear form: */
-            panel.edit.set('');
-            $(this).form('clear values');
-
-            /** Close modal: */
-            $('#subject-modal').modal('hide');
-        }
-    });
-});
-
 Template.subjectModal.onRendered(function () {
-    $('#subject-modal .dropdown').dropdown({allowAdditions: true});
+    const panel = Template.instance().parent();
+
     $('#subject-modal')
-        .modal({context: '#main-panel'})
+        .modal({
+            detachable: false,
+            onHidden() {
+                /** Clear form: */
+                panel.subject.set({});
+                $(this).form('clear values');
+            },
+            onShow() {
+                $.when( $(this).form('get values', [ 'experiments', 'sex', 'strain', 'tags' ]) )
+                    .then( () => {
+                        /** Initialize calendar & dropdowns: */
+                        $('.ui.calendar').calendar({ onChange(date) { panel.bday.set(date); },
+                            today: true, type: 'date' });
+                        $('.ui.dropdown').dropdown({ allowAdditions: true });
+                        $('#units').dropdown({ onChange(value) { panel.units.set(value); } });
+                    });
+            }
+        })
         .modal('attach events', '#add-subject', 'show');
 });
 
 Template.subjectPanel.helpers({
     subject() {
-        const id = Template.instance().edit.get(),
-            subject = Subjects.findOne(id);
-
-        if (subject) {
-            const age = moment(subject.birthday).fromNow(true).split(' ');
-
-            /** Restore current values for editing: */
-            subject.age = age[0];
-            subject.unit = age[1];
-            $('#subject-form').form('set values', subject);
-
-            return subject;
-        } else {
-            return {};
-        }
+        return Template.instance().subject.get();
     },
     subjects() {
-        return Subjects.find({}, {sort: {identifier: 1}});
+        return Subjects.find({}, { sort: { identifier: 1 } });
     }
 });
 
 Template.subjectPanel.onCreated(function () {
     this.autorun(() => {
-		const user = Meteor.user({fields: {_id: 1, profile: 1}});
+		const user = Meteor.user({ fields: { _id: 1, profile: 1 } });
 
 		if (user) {
 			this.subscribe('subjects.user', user._id);
-			
 			_.each(user.profile.experiments, (i) => (this.subscribe('subjects.experiment', i)));
 		}
 	});
-	
-    this.edit = new ReactiveVar('');
+
+    this.bday = new ReactiveVar('');
+    this.subject = new ReactiveVar({});
+    this.units = new ReactiveVar('weeks');
 });

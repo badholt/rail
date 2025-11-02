@@ -1,15 +1,14 @@
 import './menu.html';
 import './profile.html';
 import '../pages/calibrate';
-
 import '/imports/api/collections';
 import '/imports/ui/components/profile';
 
-import {Experiments, Sessions} from '../../api/collections';
-import {FlowRouter} from 'meteor/kadira:flow-router';
-import {Meteor} from 'meteor/meteor';
-import {ReactiveVar} from 'meteor/reactive-var';
-import {Template} from 'meteor/templating';
+import { Experiments, Sessions } from '../../api/collections';
+import { FlowRouter } from 'meteor/kadira:flow-router';
+import { Meteor } from 'meteor/meteor';
+import { ReactiveVar } from 'meteor/reactive-var';
+import { Template } from 'meteor/templating';
 
 Template.calibrationWindow.onCreated(function () {
     if (this.data.cross) FlowRouter.go('/calibrate');
@@ -17,21 +16,18 @@ Template.calibrationWindow.onCreated(function () {
 
 Template.menu.events({
     'click .ui.menu > a.item'(event, template) {
-        const item = $('.tabular.menu .active.item').get(0);
+        const item = $('.labeled.menu .active.item').get(0);
 
         if (item) {
             const action = item.getAttribute('id'),
-                link = '/experiments/' + FlowRouter.getParam('link'),
+                link = `/experiments/${ FlowRouter.getParam('link') }`,
                 tabs = template.tabs.get(),
-                experiment = Experiments.findOne({link: link});
-            console.log(tabs);
+                experiment = Experiments.findOne({ link: link });
 
             if (experiment) {
-                tabs[experiment._id] = '/' + action;
+                tabs[ experiment._id ] = `/${ action }`;
                 template.tabs.set(tabs);
             }
-        } else {
-            console.log(template.tabs.get());
         }
     }
 });
@@ -41,10 +37,10 @@ Template.menu.helpers({
         return Experiments.find();
     },
     session() {
-        return Sessions.find({trials: {$size: 1}});
+        return Sessions.find({ trials: { $size: 1 } });
     },
     tabs(id) {
-        return Template.instance().tabs.get()[id.toString()] || '/run';
+        return Template.instance().tabs.get()[ id.toString() ] || '/run';
     }
 });
 
@@ -68,5 +64,5 @@ Template.menu.onCreated(function () {
 Template.sessionWindow.onCreated(function () {
     //TODO: Handle multiple Sessions in the queue (ready at once)
     Meteor.call('updateUser', this.data.device, 'status.active.session', 'set', this.data._id);
-    FlowRouter.go('/session/' + this.data._id);
+    FlowRouter.go(`/session/${ this.data._id }`);
 });

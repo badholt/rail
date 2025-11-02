@@ -1,0 +1,94 @@
+<template name="atForm-rail">
+  <div class="ui stackable two column grid">
+    <div class="center aligned column">
+      <img src="images/ishihara_neuron.svg" height="400px"/>
+    </div>
+
+    <div class="column">
+      {{#unless hide}}
+        {{#if showTitle}}
+          {{> atTitle}}
+          {{#if showOauthServices}}
+            <div class="ui divider"></div>
+          {{/if}}
+        {{/if}}
+        {{#if showOauthServices}}
+          {{> atOauth}}
+        {{/if}}
+        {{#if showServicesSeparator}}
+          {{> atSep}}
+        {{/if}}
+        {{#if showPwdForm}}
+          {{> atPwdForm}}
+        {{/if}}
+        {{#if showError}}
+          {{> atError}}
+        {{/if}}
+        {{#if showResult}}
+          {{> atResult}}
+        {{/if}}
+        {{#if showMessage}}
+          {{> atMessage}}
+        {{/if}}
+        {{#if any showTermsLink showSignInLink showSignUpLink showResendVerificationEmailLink}}
+          <div class="ui large inverted stacked message segment">
+            {{#if showTermsLink}}
+              {{> atTermsLink}}
+            {{/if}}
+            {{#if showSignInLink}}
+              {{> atSigninLink}}
+            {{/if}}
+            {{#if showSignUpLink}}
+              {{> atSignupLink}}
+            {{/if}}
+            {{#if showResendVerificationEmailLink}}
+              {{> atResendVerificationEmailLink}}
+            {{/if}}
+          </div>
+        {{/if}}
+      {{/unless}}
+    </div>
+  </div>
+</template>
+
+<template name="atPwdForm-rail">
+  <div class="at-pwd-form">
+    <form id="at-pwd-form" action="#" method="POST" novalidate class="ui large inverted form">
+      <div class="ui inverted stacked segment">
+        {{#each fields}}
+          {{> atInput}}
+        {{/each}}
+        {{#if showReCaptcha}}
+          {{> atReCaptcha}}
+        {{/if}}
+        {{#if showForgotPasswordLink}}
+          {{> atPwdLink}}
+        {{/if}}
+        {{> atPwdFormBtn}}
+      </div>
+    </form>
+  </div>
+</template>
+
+<template name="atRadioInput-rail">
+  <div class="fields">
+    {{#each values}}
+        <div class="at-input field">
+            {{#if $eq @index 0}}<label>{{../displayName}}</label>{{/if}}
+
+            <div class="ui radio checkbox">
+                <input id="at-field-{{id}}-choice-{{value}}" type="radio" name="at-field-{{id}}" value= {{value}} tabindex="0" class="hidden">
+                <label for="at-field-{{id}}-choice-{{value}}">{{text}}</label>
+            </div>
+        </div>
+    {{/each}}
+  </div>
+</template>
+
+<template name="atTitle-rail">
+  <div class="at-title">
+    <h1 class="ui center aligned inverted huge header">
+      {{title}}
+    </h1>
+  </div>
+</template>

@@ -32,7 +32,7 @@
     <div id="precision" class="ui tiny toggle checkbox item" style="padding-top: 0.1em;padding-bottom: 0;">
       <input type="checkbox" name="precision">
       <label for="precision" style="padding-top: 0;">
-        <div class="ui tiny black inverted label">
+        <div class="ui tiny black label">
             {{#if precision}}Precision <div class="detail">( 24000.00000000000 )</div>
             {{else}}Human-Readable <div class="detail">( 24:00:00.000 )</div>{{/if}}
         </div>
@@ -55,7 +55,7 @@
 </template>
 
 <template name="sessionsView">
-    <h2 class="ui inverted breadcrumb header">
+    <h2 class="ui huge inverted breadcrumb">
         <i class="inverted grey right chevron icon divider"></i>
 
         <i class="inverted grey calendar icon divider"></i>
@@ -64,7 +64,7 @@
 
     {{> dataMenu}}
 
-    <div id="sessions-panel" class="ui bottom attached inverted padded segment">
+    <div id="sessions-panel" class="ui basic bottom attached inverted padded segment">
         {{> tabular selector=filters table=TabularTables.Sessions
                 class="ui basic celled center aligned inverted small selectable table"}}
     </div>
@@ -205,10 +205,12 @@
 </template>
 
 <template name="subjectsCell">
-    {{#each subject subjects}}
-        <i class="fitted {{#if $eq sex 'm'}}blue mars{{else}}pink venus{{/if}} icon"></i>
-        {{identifier}}
-    {{/each}}
+    <div class="ui basic inverted segment">
+        {{#each subject subjects}}
+            <i class="fitted {{#if $eq sex 'm'}}blue mars{{else}}pink venus{{/if}} icon"></i>
+            {{identifier}}
+        {{/each}}
+    </div>
 </template>
 
 <template name="trialCell">

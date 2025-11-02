@@ -65,23 +65,22 @@ Template.deviceCard.events({
         return template.data;
     },
     'click .editable'(event, template) {
-        template.edit.set(event.currentTarget.title);
+        const key = event.currentTarget.title,
+            fields = {
+                address: [ 'notEmpty' ],
+                name: [ 'notEmpty', 'minLength[4]']
+            };
 
-        $('.ui.form').form({
-            fields: {
-                address: ['empty'],
-                name: ['empty', 'minLength[4]']
-            },
+        template.edit.set(key);
+
+        if (_.has(fields, key)) $('.ui.form').form({
+            fields: _.pick(fields, key),
             inline: true,
             on: 'blur',
-            onSuccess(event, fields) {
-                Meteor.call('updateUser', template.data._id, 'profile.name', 'set', fields.name);
-                template.edit.set('');
-            },
             onValid() {
-                const value = $(this[0]).val();
+                const value = $(this[ 0 ]).val();
 
-                Meteor.call('updateUser', template.data._id, 'profile.name', 'set', value);
+                Meteor.call('updateUser', template.data._id, 'profile.' + [ key ], 'set', value);
                 template.edit.set('');
             }
         });
@@ -104,7 +103,7 @@ Template.deviceCard.events({
             ? {command: "detect", detect: "off"}
             : {command: "detect", detect: "on"};
 
-        Meteor.call('mqttSend', 'test_' + template.data._id, 'sensor', _.extend(messages, template.getContext()));
+        Meteor.call('mqttSend', `test_${ template.data._id }`, 'sensor', _.extend(messages, template.getContext()));
         template.ir.set(!ir);
         Meteor.call('getClients');
     },
@@ -114,7 +113,7 @@ Template.deviceCard.events({
             ? {command: "off"}
             : {command: "on"};
 
-        Meteor.call('mqttSend', 'test_' + template.data._id, 'reward', _.extend(messages, template.getContext()));
+        Meteor.call('mqttSend', `test_${ template.data._id }`, 'reward', _.extend(messages, template.getContext()));
         template.reward.set(!reward);
         Meteor.call('getClients');
     }
@@ -162,7 +161,7 @@ Template.deviceCard.onCreated(function () {
 
 Template.deviceCard.onDestroyed(function () {
     if (this.data.status.client && this.data.status.client.hasOwnProperty(this.data._id)) {
-        Meteor.call('mqttSend', 'test_' + this.data._id, 'client', {command: 'disconnect'});
+        Meteor.call('mqttSend', `test_${ this.data._id }`, 'client', {command: 'disconnect'});
     }
 });
 
@@ -222,7 +221,7 @@ Template.deviceQueue.helpers({
         return Template.instance().open.get();
     },
     sessions(id) {
-        return Sessions.find({$and: [{device: id}, {$or: [{trials: {$size: 1}}, {trials: []}]}]});
+        return Sessions.find({ $and: [ { device: id }, { $or: [ { trials: { $size: 1 } }, { trials: [] } ] } ] });
     }
 });
 

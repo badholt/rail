@@ -1,9 +1,9 @@
-import {Accounts} from 'meteor/accounts-base';
-import {AccountsTemplates} from 'meteor/useraccounts:core';
-
-const pwd = AccountsTemplates.removeField('password');
+import { Accounts } from 'meteor/accounts-base';
+import { AccountsTemplates } from 'meteor/useraccounts:core';
 
 AccountsTemplates.removeField('email');
+AccountsTemplates.removeField('password');
+
 AccountsTemplates.addFields([
     {
         _id: 'device',
@@ -12,10 +12,10 @@ AccountsTemplates.addFields([
         required: true,
         select: [
             {
-                text: 'This account will be assigned to a training box.',
+                text: 'Training Box',
                 value: 'device',
             }, {
-                text: 'This account will be assigned to an experimenter.',
+                text: 'Experimenter',
                 value: 'user',
             }
         ],
@@ -23,37 +23,53 @@ AccountsTemplates.addFields([
     {
         _id: 'username',
         type: 'text',
-        displayName: 'username',
+        displayName: 'Username',
+        placeholder: 'username',
         required: true,
         minLength: 5,
     },
     {
-        _id: 'email',
-        type: 'email',
-        required: false,
-        displayName: 'email',
-        re: /.+@(.+){2,}\.(.+){2,}/,
-        errStr: 'Invalid email',
+        _id: 'password',
+        type: 'password',
+        displayName: {
+            "default": "Password",
+            changePwd: "Change Password",
+            resetPwd: "Reset Password"
+        },
+        placeholder: {
+            "default": "password",
+            changePwd: "password",
+            resetPwd: "password"
+        },
+        required: true
     },
-    pwd
+    {
+        _id: 'password_again',
+        type: 'password',
+        displayName: {
+            "default": "Repeat Password",
+            changePwd: "Repeat Password",
+            resetPwd: "Repeat Password"
+        },
+        placeholder: {
+            "default": "password",
+            changePwd: "password",
+            resetPwd: "password"
+        },
+        required: true
+    }
 ]);
 
 AccountsTemplates.configure({
     // Behavior
     confirmPassword: true,
-    enablePasswordChange: true,
     overrideLoginErrors: false,
     lowercaseUsername: true,
     focusFirstInput: true,
-    sendVerificationEmail: true,
-    socialLoginStyle: "popup",
 
     // Appearance
-    showAddRemoveServices: true,
-    showForgotPasswordLink: false,
     showLabels: true,
     showPlaceholders: true,
-    showResendVerificationEmailLink: true,
 
     // Client-side Validation
     continuousValidation: true,
@@ -70,22 +86,35 @@ AccountsTemplates.configure({
     // Texts
     texts: {
         button: {
+            signIn: "Log In",
             signUp: "Register Now!"
         },
-        socialSignUp: "Register",
-        title: {
-            forgotPwd: "Recover Your Password"
+        errors: {
+            loginForbidden: "Login forbidden",
+            mustBeLoggedIn: "Must be logged in",
+            pwdMismatch: "Passwords don't match"
         },
+        navSignIn: "Log In",
+        navSignOut: "Log Out",
+        resendVerificationEmailLink_pre: "",
+        resendVerificationEmailLink_link: "",
+        signInLink_pre: "Already have an account?",
+        signInLink_link: "Sign In",
+        signUpLink_pre: "Don't have an account?",
+        signUpLink_link: "Register",
+        title: {
+            forgotPwd: "Recover Your Password",
+            signIn: "Welcome!",
+            signUp: "Create an Account"
+        }
     },
 
     // Routing
-    defaultLayoutType: 'blaze',
-    defaultTemplate: 'home',
     defaultLayout: 'frame',
     defaultLayoutRegions: {},
     defaultContentRegion: 'main'
 });
 
-Accounts.onLoginFailure(function (error) {
-    console.log(error);
+Accounts.onLoginFailure((error) => {
+    console.log(`\x1b[91m━━━━━ Failed login attempt at ${ error.connection.clientAddress }: ${ error.error.reason } ━━━━━\x1b[39m`);
 });

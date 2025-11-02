@@ -2,7 +2,7 @@
     <div id="panel" class="ui equal width padded stackable grid">
         <div class="row">
             <div class="column">
-                <div class="ui centered cards container">
+                <div class="ui basic centered cards container">
                     {{#each subjects}}
                         {{> subjectCard}}
                     {{/each}}
@@ -10,27 +10,24 @@
             </div>
 
             <div class="two wide right floated column">
-                <label id="add-subject" class="ui small fluid black button">
-                    <i class="big icons">
+                <span id="add-subject" class="ui huge black icon button">
+                    <i class="icons">
                         <i class="grey paw icon"></i>
                         <i class="grey corner inverted add icon"></i>
                     </i>
                     New Subject
-                </label>
+                </span>
             </div>
         </div>
 
-        {{#if subject}}
-            {{> subjectModal subject}}
-        {{/if}}
+        {{#if subject}}{{> subjectModal (subject)}}{{/if}}
     </div>
 </template>
 
 <template name="subjectCard">
-    <div class="ui {{#if user users}}green{{else}}grey{{/if}} card">
+    <div class="ui grey {{#unless user users}}disabled {{/unless}}card">
         <div class="center aligned content">
-            {{#if user users}}<i class="left floated grey link edit icon"></i>{{/if}}
-            <i class="right floated grey link balance scale icon"></i>
+            {{#if user users}}<i class="right floated grey link edit icon"></i>{{/if}}
 
             <div class="ui tiny icon header">
                 <i class="{{#if user users}}green{{else}}grey{{/if}} inverted large circular paw icon"></i>
@@ -61,28 +58,20 @@
             </div>
 
             <div class="description">
-                <div class="ui tiny segments">
-                    {{#if description}}
-                        <div class="ui message segment">
-                            {{description}}
-                        </div>
-                    {{/if}}
+                {{#if description}}
+                    <div class="ui grey inverted segment">
+                        {{description}}
+                    </div>
+                {{/if}}
 
-                    <div class="ui segment">
-                        <div class="ui list">
-                            <div class="ui tiny header">
-                                Experiments
-                            </div>
-
-                            {{#each experiment experiments}}
-                                <div class="item">
-                                    <i class="linkify icon"></i>
-                                    <div class="content">
-                                        <a href="{{link}}">{{title}}</a>
-                                    </div>
-                                </div>
-                            {{/each}}
-                        </div>
+                <div class="ui grey inverted segment">
+                    <div class="ui labels">
+                        {{#each experiment experiments}}
+                            <a class="ui label" href="{{link}}">
+                                <i class="linkify icon"></i>
+                                {{title}}
+                            </a>
+                        {{/each}}
                     </div>
                 </div>
             </div>
@@ -98,138 +87,23 @@
             </div>
 
             <span class="left floated">
-                    <i class="clipboard list icon"></i>
-                {{protocol}}
-                </span>
+                <i class="clipboard list icon"></i>
+            {{protocol}}
+            </span>
 
             <span class="right floated">
-                    <i class="clock icon"></i>
-                    last session
-                </span>
+                <i class="clock icon"></i>
+                last session
+            </span>
         </div>
     </div>
 </template>
 
-<template name="subjectForm">
-    <form id="subject-form" class="ui mini form">
-        <div class="three fields">
-            <div class="field">
-                <label>Identifier</label>
-                <input name="identifier" placeholder="ex: M16" type="text">
-            </div>
-
-            <div class="field">
-                <label class="ui inverted header">
-                    Name
-                    <span class="content">
-                        <span class="sub header">(optional)</span>
-                    </span>
-                </label>
-
-                <input name="name" placeholder="ex: Toffee" type="text">
-            </div>
-
-            <div class="field">
-                <label>Protocol</label>
-
-                <select name="protocol" class="ui compact search dropdown">
-                    <option value="">ex: MO17A81</option>
-                    <option value="MO17A81">MO20A20</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="three fields">
-            <div class="field">
-                <label>Age</label>
-
-                <div class="ui right labeled input">
-                    <input name="age" type="number" placeholder="ex: 8">
-
-                    <div class="ui dropdown label">
-                        <input name="unit" type="hidden" value="weeks">
-                        <div class="text">weeks</div>
-                        <i class="dropdown icon"></i>
-
-                        <div class="menu">
-                            <div class="item">days</div>
-                            <div class="item">weeks</div>
-                            <div class="item">months</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="field">
-                <label>Sex</label>
-
-                <select name="sex" class="ui compact dropdown">
-                    <option value="">ex: Female</option>
-                    <option value="f">Female</option>
-                    <option value="m">Male</option>
-                </select>
-            </div>
-
-            <div class="field">
-                <label>Strain</label>
-
-                <select name="strain" class="ui compact search dropdown">
-                    <option value="">ex: c57</option>
-                    <option value="wt">C57BL/6</option>
-                    <option value="dat">DAT-Cre</option>
-                    <option value="vgat">VGAT-Cre</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="field">
-            <label>Participation</label>
-
-            <select multiple name="experiments" class="ui compact multiple search dropdown">
-                <option value="">Experiments</option>
-                {{#each experiments}}
-                    <option value="{{_id}}">{{title}}</option>
-                {{/each}}
-            </select>
-        </div>
-
-        <div class="field">
-            <label>Tags</label>
-
-            <select multiple name="tags" class="ui fluid multiple search selection dropdown">
-                <option value="">Tags (ENTER or TAB)</option>
-            </select>
-        </div>
-
-        <div class="field">
-            <label>Description</label>
-            <textarea autocomplete="off" name="description" placeholder="Miscellaneous commentary" rows="2"></textarea>
-        </div>
-
-        <button class="ui fluid green icon submit button" type="button">
-            <i class="check icon"></i>
-        </button>
-    </form>
-</template>
-
 <template name="subjectModal">
-    <div id="subject-modal" class="ui modal">
+    <div id="subject-modal" class="ui inverted modal">
         <i class="close icon"></i>
 
         <div class="content">
-            <div class="ui huge green dividing header">
-                <i class="icons">
-                    <i class="green paw icon"></i>
-                    <i class="corner inverted add icon"></i>
-                </i>
-
-                {{#if identifier}}
-                    {{identifier}}
-                {{else}}
-                    New Subject
-                {{/if}}
-            </div>
-
             {{> subjectForm}}
         </div>
     </div>
