@@ -11,15 +11,16 @@ import _ from 'underscore';
 import moment from 'moment/moment';
 
 import { $ } from 'meteor/jquery';
-import { conditionsMet, variables } from '/imports/ui/pages/trial';
+import { alert } from './run';
 import { Experiments, Sessions, Subjects, Trials } from '/imports/api/collections';
+import { flipOrientation } from './trial';
 import { Meteor } from 'meteor/meteor';
 import { Template } from 'meteor/templating';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { saveAs } from 'file-saver';
 
 Template.data.events({
-    'click #session'(event, template) {
+    'click #session'(_event, template) {
         template.session.set('');
     }
 });
@@ -42,7 +43,32 @@ Template.data.onCreated(function () {
 });
 
 Template.dataMenu.events({
-    'click #download'(event, template) {
+	'click #delete'(_event, template) {
+		const table = template.parent().$('table').DataTable(),
+			selected = table.rows('.active').data(),
+			ids = _.pluck(selected, '_id'),
+			removeSession = (id) => Meteor.call('removeSession', id, trials, (error) => {
+            	if (error) return alert('error', 'Deletion Failure', 'Session could not be deleted.');
+            	alert('success', 'Deletion Success', (trials > 0) ? `All ${ trials } were removed.`
+            		: `Empty session was removed.`);
+            });
+
+		_.each(ids, (id) => Meteor.subscribe('sessions.single', id, { onReady: () => {
+			Meteor.subscribe('trials.session', id, { onReady: () => {
+				const session = Sessions.findOne(id);
+
+				/** Along w/ the session, delete all trials: */
+				if (session.trials) return Meteor.call('removeTrials', session.trials, (error, trials) => {
+	                if (error) return alert('error', 'Deletion Failure', 'Trials could not be deleted.');
+	                removeSession(id, trials);
+	            });
+
+				/** Delete empty sessions w/ no trials: */
+				removeSession(id, 0);
+			}});
+		}}));
+	},
+    'click #download'(_event, template) {
     	let axis, headers, events, content;
 
     	const defaultContent = (data, headers = false) => {
@@ -51,20 +77,20 @@ Template.dataMenu.events({
 					user = Meteor.users.findOne(data.user),
 					subjects = getSubjects(data.subjects),
 					content = [
-						'Experiment\t' + experiment.title + '\n',
-						'Date\t' + moment(data.date).format('dddd, MMMM Do HH:mm') + '\n',
-						'Subject\t' + subjects + '\n',
-						'Device\t' + device.profile.name + '\n',
-						'Experimenter\t' + user.profile.name + '\n'							
+						`Experiment\t${ experiment.title }\n`,
+						`Date\t${ moment(data.date).format('dddd, MMMM Do HH:mm') }\n`,
+						`Subject\t${ subjects }\n`,
+						`Device\t${ device.profile.name }\n`,
+						`Experimenter\t${ user.profile.name }\n`							
 					];
 
-				if (headers) content.push(headers.join('\t') + '\n');
+				if (headers) content.push(`${ headers.join('\t') }\n`);
 				return content;
 			},
-			getGroups = (stage, i) => {
+			getGroups = (stage) => {
 				const p = [ 'request', 'ir' ];
 				return _.groupBy(stage, (e) => ((_.property(p)(e) !== undefined)
-					? p.join('.') + '.' + _.property(p)(e)
+					? `${ p.join('.')}.${_.property(p)(e) }`
 					: e.type.replace(/(\.?(re)?[\d]+\.)+/ig, '.')));
 			},
 			getSubjects = (subjects) => _.map(subjects, (id) => {
@@ -99,25 +125,27 @@ Template.dataMenu.events({
 							+ `[${ dataTemplate }].${ format }`,
 						rules = _.filter(session.settings.inputs[ 0 ], (i) => (i.event === 'click')),
 						addClicks = (correct, cross, origin = false) => {
-							const c = correct[ 'true' ],
-								f = correct[ 'false' ],
+							const c = correct.true,
+								f = correct.false,
 								click = (c) ? c[ 0 ] : (f) ? f[ 0 ] : '',
 								t = (origin) ? getTime(click.timeStamp, origin) : click.timeStamp;
 
-							content.push((t) ? t + '\t' : '\t');
-							content.push((f) ? f.length + '\t' : 0 + '\t');
-							content.push((cross) ? cross.length + '\t' : 0 + '\t');
+							content.push((t) ? `${ t }\t` : '\t');
+							content.push((f) ? `${ f.length }\t` : `${ 0 }\t`);
+							content.push((cross) ? `${ cross.length }\t` : `${ 0 }\t`);
 						},
-						addCorrect = (clicks, region, stimulus, axis = 'x') => {
+						addCorrect = (clicks, region, stimulus, axis = 'x', bias = false) => {
 							let correct = {};
 
-							if (stimulus && _.has(stimulus, 'orientation')) {
-								if (stimulus.orientation.value === 0) {
+							if (stimulus?.orientation) {
+								const orientation = (!bias) ? stimulus.orientation.value : flipOrientation(stimulus.orientation.value);
+
+								if (orientation === 0) {
 									content.push('V\t');
-									if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => isLess(c, region, axis));
+									if (clicks.length > 0) correct = _.groupBy(clicks, (c) => isLess(c, region, axis));
 								} else {
 									content.push('H\t');
-									if (clicks.length > 0) correct = _.groupBy(clicks, (c, i) => !isLess(c, region, axis));
+									if (clicks.length > 0) correct = _.groupBy(clicks, (c) => !isLess(c, region, axis));
 								}
 
 								content.push((clicks.length > 0) ? _.has(correct, 'true') ? '0\t' : '1\t' : '2\t');
@@ -128,9 +156,9 @@ Template.dataMenu.events({
 							return correct;
 						},
 						addOrigin = (trial, headers = false) => {
-							content.push('Time Origin\t' + trial.timeOrigin + '\n');
-							content.push('\t' + getTime(trial.timeOrigin, 0, false, true) + '\n\n');
-							if (headers) content.push(headers.join('\t') + '\n');
+							content.push(`Time Origin\t${ trial.timeOrigin }\n`);
+							content.push(`\t${ getTime(trial.timeOrigin, 0, false, true) }\n\n`);
+							if (headers) content.push(`${ headers.join('\t') }\n`);
 						},
 						getClickType = (e, region) =>
 							(isCross(e, region, 'y')
@@ -141,7 +169,7 @@ Template.dataMenu.events({
 								: (isLess(e, region, 'x') ? 'lb' : 'rb')),
 						getIR = (groups, filter = dataTemplate, key = 'request.ir.0') => {
 							const fn = {
-									'sensor': (e) => (true), // Return all
+									'sensor': () => (true), // Return all
 									'shaping1': (e) => { // Shaping 1
 										if (groups[ 'audio.start' ]) {
 											const tone = groups[ 'audio.start' ][ 0 ];
@@ -155,7 +183,7 @@ Template.dataMenu.events({
 										}
 									},
 									'shaping4': (e) => { // Shaping 4, 4v, 6, & 6v
-										const on = _.find(groups[ 'reward' ], (r) => (r.request.reward === "on"));
+										const on = _.find(groups.reward, (r) => (r.request.reward === "on"));
 										return (on) ? (e.timeStamp - on.timeStamp) > 150 : false; // Any ir event after 150ms post-reward "flicker" period
 									}
 								};
@@ -170,8 +198,8 @@ Template.dataMenu.events({
 								let axis, property = {};
 
 								if (c.comparison === '<') {
-									_.each(c.objects, (o) => (o.name === 'number') ? property[ 'min' ] = o.property : axis = getAxis(o.property));
-									_.each(c.subjects, (s) => (s.name === 'number') ? property[ 'max' ] = s.property : axis = getAxis(s.property));
+									_.each(c.objects, (o) => (o.name === 'number') ? property.min = o.property : axis = getAxis(o.property));
+									_.each(c.subjects, (s) => (s.name === 'number') ? property.max = s.property : axis = getAxis(s.property));
 								}
 
 								if (axis) region[ axis ] = _.extend(region[ axis ] || {}, property);
@@ -185,13 +213,13 @@ Template.dataMenu.events({
 						}),
 						region = _.first(getRegions(rules)), // TODO: Generalize for multirule paradigms
 						isCross = (coordinate, region, axis) =>
-							(coordinate[ 'client' + axis.toUpperCase() ] > region[ axis ][ 'min' ]
-							&& coordinate[ 'client' + axis.toUpperCase() ] < region[ axis ][ 'max' ]),
-						isLess = (coordinate, region, axis) => (coordinate[ 'client' + axis.toUpperCase() ] < region[ axis ][ 'max' ]);
+							(coordinate[ `client${ axis.toUpperCase() }` ] > region[ axis ].min
+							&& coordinate[ `client${ axis.toUpperCase() }` ] < region[ axis ].max),
+						isLess = (coordinate, region, axis) => (coordinate[ `client${ axis.toUpperCase() }` ] < region[ axis ].max);
 
 					switch (dataTemplate) {
 						case 'indices':
-							headers = [ 'Trial No', 'Trial Index' ],
+							headers = [ 'Trial No', 'Trial Index' ];
 							content = defaultContent(session);
 
 							_.each(session.trials, (id, n) => {
@@ -200,12 +228,12 @@ Template.dataMenu.events({
 								if (n === 0) addOrigin(trial, headers);
 								
 								content.push(`${ trial.number }\t`);
-								content.push(trial.index + '\t\n');
+								content.push(`${ trial.index }\t\n`);
 							});
 
 							break;
 						case 'mqtt':
-							headers = [ 'Trial No', 'Message(s)' ],
+							headers = [ 'Trial No', 'Message(s)' ];
 							content = defaultContent(session);
 
 							_.each(session.trials, (id, n) => {
@@ -213,17 +241,17 @@ Template.dataMenu.events({
 
 								if (n === 0) addOrigin(trial, headers);
 
-								_.each(trial.data, (stage, i) => {
+								_.each(trial.data, (stage) => {
 									const cmds = _.filter(stage, (e) => ((/(.sent)|(.fired)$/g).test(e.type))),
-										services = _.groupBy(cmds, (e) => (e.type.split('.')[0])),
+										services = _.groupBy(cmds, (e) => (e.type.split('.')[ 0 ])),
 										msgs = _.filter(stage, (e) => (_.has(services, e.type.split('.')[0])));
 
 									if (_.size(msgs) > 0) {
 										content.push(`${ trial.number }\t`);
-										_.each(msgs, (e, i) => (content.push(`${ e.type } ${ 
+										_.each(msgs, (e) => (content.push(`${ e.type } ${ 
 											(e.request) ? JSON.stringify(_.omit(e.request, 'timeStamp')) : '' }\t`)));
 										content.push('\n\t');
-										_.each(msgs, (e, i) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
+										_.each(msgs, (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
 										content.push('\n');
 									}
 								});
@@ -231,7 +259,7 @@ Template.dataMenu.events({
 
 							break;
 						case 'responses':
-							headers = [ 'Trial No' ],
+							headers = [ 'Trial No' ];
 							content = defaultContent(session);
 
 							_.each(session.trials, (id, n) => {
@@ -251,7 +279,7 @@ Template.dataMenu.events({
 
 							break;
 						case 'reward':
-							headers = [ 'Trial No', 'Dispense Time', 'Amount Dispensed', 'TimeStamp' ],
+							headers = [ 'Trial No', 'Dispense Time', 'Amount Dispensed', 'TimeStamp' ];
 							content = defaultContent(session);
 
 							_.each(session.trials, (id, n) => {
@@ -265,7 +293,7 @@ Template.dataMenu.events({
 								_.each(trial.data, (stage, i) => {
 									const groups = getGroups(stage, i);
 
-									if (groups[ 'reward' ]) _.each(groups[ 'reward' ], (e) => {
+									if (groups.reward) _.each(groups.reward, (e) => {
 										if (e.request.dispense) {
 											amount += ((e.request.dispense - device.profile.calibration.water.intercept) / device.profile.calibration.water.slope);
 											dispense += e.request.dispense;
@@ -276,22 +304,21 @@ Template.dataMenu.events({
 								});
 
 								content.push(`${ trial.number }\t`);
-								content.push(dispense + '\t');
-								content.push(amount + '\t');
+								content.push(`${ dispense }\t`);
+								content.push(`${ amount }\t`);
 
-								_.each(timeStamps, (timeStamp, i) => (content.push(getTime(timeStamp, trial.timeOrigin) + '\t')));
+								_.each(timeStamps, (timeStamp) => (content.push(`${ getTime(timeStamp, trial.timeOrigin) }\t`)));
 
 								content.push('\n');
 							});
 
 							break;
 						case 'sensor':
-							headers = [ 'Trial', 'Stage', 'Sensor Status', 'TimeStamp' ],
+							headers = [ 'Trial', 'Stage', 'Sensor Status', 'TimeStamp' ];
 							content = defaultContent(session);
 
 							_.each(session.trials, (id, n) => {
 								const trial = Trials.findOne(id);
-								let ir = [];
 
 								if (n === 0) addOrigin(trial, headers);
 
@@ -306,15 +333,15 @@ Template.dataMenu.events({
 							});
 
 							break;
-						case 'settings':
-							headers = [ 'Stage', 'Rule', 'Event' ],
+						case 'settings': {
+							headers = [ 'Stage', 'Rule', 'Event' ];
 							content = defaultContent(session);
 
 							content.push('Session\n');
-							_.each(session.settings.session, (value, key) => { content.push(key + '\t' + value + '\n'); });
+							_.each(session.settings.session, (value, key) => { content.push(`${ key }\t${ value }\n`); });
 
 							const compare = (condition, indent) => {
-									_.each(condition.objects, (object, o) => {
+									_.each(condition.objects, (object) => {
 										_.times(indent, () => content.push('\t'));
 										content.push(object.name);
 
@@ -324,21 +351,21 @@ Template.dataMenu.events({
 											_.each(object.property, (value, key) => {
 												if (key !== 'conditions') {
 													_.times(indent + 1, () => content.push('\t'));
-													content.push(key + '\t' + value + '\n');
+													content.push(`${key}\t${value}\n`);
 												} else {
 													_.each(object.property.conditions, (c) => compare(c, indent + 1));
 													content.push('\n');
 												}
 											});
 										} else {
-											content.push('\t' + object.property + '\n');
+											content.push(`\t${object.property}\n`);
 										}
 									});
 
 									_.times(indent, () => content.push('\t'));
-									content.push(condition.comparison + '\n');
+									content.push(`${condition.comparison}\n`);
 
-									_.each(condition.subjects, (subject, s) => {
+									_.each(condition.subjects, (subject) => {
 										_.times(indent, () => content.push('\t'));
 										content.push(subject.name);
 
@@ -348,14 +375,14 @@ Template.dataMenu.events({
 											_.each(subject.property, (value, key) => {
 												if (key !== 'conditions') {
 													_.times(indent + 1, () => content.push('\t'));
-													content.push(key + '\t' + value + '\n');
+													content.push(`${key}\t${value}\n`);
 												} else {
 													_.each(subject.property.conditions, (c) => compare(c, indent + 1));
 													content.push('\n');
 												}
 											});
 										} else {
-											content.push('\t' + subject.property + '\n');
+											content.push(`\t${subject.property}\n`);
 										}
 									});
 								},
@@ -366,7 +393,7 @@ Template.dataMenu.events({
 											content.push(key);
 
 											if (!_.isObject(value)) {
-												content.push('\t' + value + '\n');
+												content.push(`\t${value}\n`);
 											} else {
 												content.push('\n');
 												properties(value, indent + 1);
@@ -374,43 +401,44 @@ Template.dataMenu.events({
 										});
 									} else {
 										_.times(indent, () => content.push('\t'));
-										content.push(target + '\n');
+										content.push(`${target}\n`);
 									}
 								};
 
-							content.push('\n' + headers.join('\t'));
+							content.push(`\n${ headers.join('\t') }`);
 
 							_.each(session.settings.inputs, (stage, i) => _.each(stage, (rule, j) => {
-								content.push('\n' + (i + 1) + '\t' + (j + 1) + '\t' + rule.event + '\n');
+								content.push(`\n${ i + 1 }\t${ j + 1 }\t${rule.event}\n`);
 								content.push((rule.conditions.length > 0) ? '\t\tConditions:\n' : '\t\tConditions:\n\t\t\tAlways\n');
 
-								_.each(rule.conditions, (condition, k) => compare(condition, 3));
+								_.each(rule.conditions, (condition) => compare(condition, 3));
 
 								if (rule.correct.length > 0) {
 									content.push('\t\tIf conditions met:\n');
 
-									_.each(rule.correct, (correct, k) => {
-										_.each(correct.targets, (target, l) => {
-											content.push('\t\t\tAfter ' + correct.delay + ' ms\t' + correct.action + '\t' + (target.type || target) + '\n');
+									_.each(rule.correct, (correct) => {
+										_.each(correct.targets, (target) => {
+											content.push(`\t\t\tAfter ${ correct.delay } ms\t${ correct.action }\t${ target.type || target }\n`);
 											if (_.isObject(target)) properties(_.omit(target, 'type'), 6);
 										});
-										_.each(correct.specifications, (value, key) => content.push('\t\t\t\t\t' + key + '\t' + value + '\n'));
+										_.each(correct.specifications, (value, key) => content.push(`\t\t\t\t\t${ key }\t${ value }\n`));
 									});
 								}
 								
 								if (rule.incorrect.length > 0) {
 									content.push('\t\tIf conditions not met:\n');
 
-									_.each(rule.incorrect, (incorrect, k) => _.each(incorrect.targets, (target, l) => {
-										content.push('\t\t\tAfter ' + incorrect.delay + ' ms\t' + incorrect.action + '\t' + (target.type || target) + '\n');
+									_.each(rule.incorrect, (incorrect) => _.each(incorrect.targets, (target) => {
+										content.push(`\t\t\tAfter ${ incorrect.delay } ms\t${ incorrect.action }\t${ target.type || target }\n`);
 									}));
 								}
 							}));
 
 							break;
+						}
 						case 'shaping1':
-							headers = [ 'Trial No', 'Trial Start', 'Tone Start', 'Reward Stop', 'IR Entry (Post-Tone)' ],
-							events = [ [ 'trial.start', 'audio.start', 'reward', 'request.ir.0' ] ],
+							headers = [ 'Trial No', 'Trial Start', 'Tone Start', 'Reward Stop', 'IR Entry (Post-Tone)' ];
+							events = [ [ 'trial.start', 'audio.start', 'reward', 'request.ir.0' ] ];
 							content = defaultContent(session);
 
 							_.each(session.trials, (id, n) => {
@@ -441,8 +469,8 @@ Template.dataMenu.events({
 
 							break;
 						case 'shaping2':
-							headers = [ 'Trial No', 'Trial Start', 'Initial Poke', 'IR Entry' ],
-							events = [ [ 'cross.start', 'click', 'request.ir.0' ] ],
+							headers = [ 'Trial No', 'Trial Start', 'Initial Poke', 'IR Entry' ];
+							events = [ [ 'cross.start', 'click', 'request.ir.0' ] ];
 							content = defaultContent(session);
 
 							_.each(session.trials, (id, n) => {
@@ -459,7 +487,7 @@ Template.dataMenu.events({
 
 									_.each(groups[ 'trial.start' ], (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
 
-									if (clicks.length > 0) content.push(getTime(clicks[ 0 ].timeStamp, trial.timeOrigin) + '\t');
+									if (clicks.length > 0) content.push(`${ getTime(clicks[ 0 ].timeStamp, trial.timeOrigin) }\t`);
 									if (ir) _.each(ir, (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
 								});
 
@@ -468,10 +496,10 @@ Template.dataMenu.events({
 
 							break;
 						case 'shaping4':
-							axis = 'x', // Analyze w/ horizontal mask parameters
+							axis = 'x'; // Analyze w/ horizontal mask parameters
 							headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Trial Start', 'Stimulus Start', 'Response',
-								 'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
-							events = [ [ 'trial.start' ], [ 'stimuli.start', 'click' ] ],
+								 'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ];
+							events = [ [ 'trial.start' ], [ 'stimuli.start', 'click' ] ];
 							content = defaultContent(session);
 
 							_.each(session.trials, (id, n) => {
@@ -493,7 +521,8 @@ Template.dataMenu.events({
 											ir = getIR(groups);
 
 										_.each(events[ i ], (g) => {
-											if (g !== 'click') content.push((groups[ g ]) ? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t' : '\t'); });
+											if (g !== 'click') content.push((groups[ g ])
+												? `${ getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) }\t` : '\t'); });
 
 										if (_.contains(events[ i ], 'click')) addClicks(correct, cross, trial.timeOrigin);								
 										if (ir) _.each(ir, (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
@@ -505,10 +534,10 @@ Template.dataMenu.events({
 
 							break;
 						case 'shaping6':
-							axis = 'x', // Analyze w/ horizontal mask parameters
+							axis = 'x'; // Analyze w/ horizontal mask parameters
 							headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Stage Start', 'Stimulus Start', 'Response',
-								'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
-							events = [ [ 'cross.start' ], [ 'stimuli.start', 'click' ] ],
+								'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ];
+							events = [ [ 'cross.start' ], [ 'stimuli.start', 'click' ] ];
 							content = defaultContent(session);
 
 							_.each(session.trials, (id, n) => {
@@ -529,7 +558,8 @@ Template.dataMenu.events({
 											ir = getIR(groups, 'shaping4');
 
 										_.each(events[ i ], (g) => {
-											if (g !== 'click') content.push((groups[ g ]) ? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t' : '\t'); });
+											if (g !== 'click') content.push((groups[ g ])
+												? `${ getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) }\t` : '\t'); });
 
 										if (_.contains(events[ i ], 'click')) addClicks(correct, cross, trial.timeOrigin);								
 										if (ir) _.each(ir, (e)=> (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
@@ -542,10 +572,10 @@ Template.dataMenu.events({
 							break;
 						case 'shaping4v':
 						case 'shaping6v':
-							axis = 'y', // Analyze w/ vertical mask parameters
-							headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Trial Start', 'Stimulus Start', 'Response',
-								'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
-							events = [ [ 'trial.start' ], [ 'stimuli.start', 'click' ] ],
+							axis = 'y'; // Analyze w/ vertical mask parameters
+							headers = [ 'Trial No', 'Bias', 'Trial Type', 'Outcome', 'Trial Start', 'Stimulus Start', 'Response',
+								'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ];
+							events = [ [ 'trial.start' ], [ 'stimuli.start', 'click' ] ];
 							content = defaultContent(session);
 
 							_.each(session.trials, (id, n) => {
@@ -560,14 +590,15 @@ Template.dataMenu.events({
 										cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region, axis)));
 
 									content.push(`${ trial.number }\t`);
-									correct = addCorrect(clicks, region, trial.stages[ 1 ][ 0 ], axis);
+									content.push(`${ trial.bias }\t`);
+									correct = addCorrect(clicks, region, trial.stages[ 1 ][ 0 ], axis, trial.bias);
 
 									_.each(trial.data, (stage, i) => {
 										const groups = getGroups(stage, i),
 											ir = getIR(groups, 'shaping4');
 
 										_.each(events[ i ], (g) => {
-											if (g !== 'click') content.push((groups[ g ]) ? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t' : '\t'); });
+											if (g !== 'click') content.push((groups[ g ]) ? `${ getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) }\t` : '\t'); });
 
 										if (_.contains(events[ i ], 'click')) addClicks(correct, cross, trial.timeOrigin);								
 										if (ir) _.each(ir, (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
@@ -579,10 +610,10 @@ Template.dataMenu.events({
 
 							break;
 						case 'shaping8v':
-							axis = 'y', // Analyze w/ vertical mask parameters
+							axis = 'y'; // Analyze w/ vertical mask parameters
 							headers = [ 'Trial No', 'Target Contrast', 'Target Orientation', 'Outcome', 'Flanker Contrast', 'Flanker Orientation',
-								'Flanker Position', 'Stage Start', 'Stimulus Start', 'Response', 'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ],
-							events = [ [ 'cross.start' ], [ 'stimuli.start', 'click' ] ],
+								'Flanker Position', 'Stage Start', 'Stimulus Start', 'Response', 'Incorrect Response(s)', 'Cross Poke(s)', 'IR Entry' ];
+							events = [ [ 'cross.start' ], [ 'stimuli.start', 'click' ] ];
 							content = defaultContent(session);
 
 							_.each(session.trials, (id, n) => {
@@ -613,7 +644,8 @@ Template.dataMenu.events({
 											ir = getIR(groups, 'shaping4');
 
 										_.each(events[ i ], (g) => {
-											if (g !== 'click') content.push((groups[ g ]) ? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t' : '\t'); });
+											if (g !== 'click') content.push((groups[ g ])
+												? `${ getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) }\t` : '\t'); });
 
 										if (_.contains(events[ i ], 'click')) addClicks(correct, cross, trial.timeOrigin);								
 										if (ir) _.each(ir, (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
@@ -625,10 +657,10 @@ Template.dataMenu.events({
 
 							break;
 						case 'optogenetics': // Update 6v for addition of optogenetics command
-							axis = 'y', // Analyze w/ vertical mask parameters
+							axis = 'y'; // Analyze w/ vertical mask parameters
 							headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Trial Start', 'Stage Start', 'Stimulus Start', 'Response',
-								'Incorrect Response(s)', 'Cross Poke(s)', 'Stimulation', 'Rising Edge', 'IR Entry' ],
-							events = [ [ 'trial.start', 'cross.start' ], [ 'stimuli.start', 'click' ] ],
+								'Incorrect Response(s)', 'Cross Poke(s)', 'Stimulation', 'Rising Edge', 'IR Entry' ];
+							events = [ [ 'trial.start', 'cross.start' ], [ 'stimuli.start', 'click' ] ];
 							content = defaultContent(session);
 
 							_.each(session.trials, (id, n) => {
@@ -651,7 +683,7 @@ Template.dataMenu.events({
 
 										_.each(events[ i ], (g) => {
 											if (g !== 'click') content.push((groups[ g ])
-												? getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) + '\t'
+												? `${ getTime(groups[ g ][ 0 ].timeStamp, trial.timeOrigin) }\t`
 												: '\t'); });
 
 										if (_.contains(events[ i ], 'click')) {
@@ -664,7 +696,7 @@ Template.dataMenu.events({
 											content.push(_.isEmpty(command) ? 'OFF\t' : 'ON\t');
 
 											if (ttl) {
-												epoch = ttl.timeStamp - ttl.request.timeStamp, // Fix timeStamp
+												epoch = ttl.timeStamp - ttl.request.timeStamp; // Fix timeStamp
 												content.push(`${ getTime(epoch, trial.timeOrigin, false) }\t`);
 											} else {
 												content.push('\t\t');
@@ -738,10 +770,10 @@ Template.precisionTimeCheckbox.onRendered(function () {
 });
 
 Template.sessionsView.events({
-    'click tbody > tr'(event, template) {
-        const prev = template.parent().session.get(),
-            table = template.$('table').DataTable(),
-            session = table.row(event.currentTarget).data(),
+    'click tbody > tr'(_event, template) {
+        // const prev = template.parent().session.get(),
+        const table = template.$('table').DataTable(),
+            // session = table.row(event.currentTarget).data(),
             selected = table.rows('.active').data(),
 			ids = _.pluck(selected, '_id');
 
@@ -752,11 +784,7 @@ Template.sessionsView.events({
 
 Template.sessionsView.helpers({
     filters() {
-        const experiment = Template.currentData(),
-            filters = {
-                subjects: { subjects: { $all: [""] } }
-            };
-
+        const experiment = Template.currentData();
         return { "experiment": experiment._id };
     }
 });
@@ -785,7 +813,7 @@ Template.settingsList.helpers({
     }
 });
 
-Template.settingsList.onRendered(function () {
+Template.settingsList.onRendered(() => {
     $('.ui.accordion').accordion();
     $('table').tablesort();
 });
@@ -990,8 +1018,7 @@ Template.trialList.helpers({
 });
 
 Template.trialList.onCreated(function () {
-    const stages = _.flatten(_.unique(this.data.settings.stages,
-        (trial) => JSON.stringify(trial)), true);
+    const stages = _.flatten(_.unique(this.data.settings.stages, (trial) => JSON.stringify(trial)), true);
 
     this.analyzeTrials = (stages, trials) => {
         const list = [],
@@ -1012,11 +1039,11 @@ Template.trialList.onCreated(function () {
                 const s = 0,
                     groups = _.map(trial.data, (stage) => _.groupBy(stage, (element) =>
                         (element.type) ? element.type.split('.')[0] : element.sender)),
-                    session = _.flatten([ groups[ s ][ 'session' ], groups[ s ][ 'trial' ] ]),
+                    session = _.flatten([ groups[ s ].session, groups[ s ].trial ]),
                     time = _.groupBy(_.compact(session), (e) => _.last(e.type.split('.'))),
                     types = _.map(stages, (stage, i) => _.map(stage, (e) =>
                         (groups[ i ]) ? (groups[ i ][ e.type || e.sender ] || []) : [])),
-                    cells = _.flatten([ [ time[ 'start' ] ], ...types, [ time[ 'end' ] || time [ 'abort' ] ] ], true);
+                    cells = _.flatten([ [ time.start ], ...types, [ time.end || time .abort ] ], true);
 
                 /** Distribute events by timestamp rather than event: */
                 const events = _.flatten(trial.data),
@@ -1052,8 +1079,8 @@ Template.trialList.onCreated(function () {
                                     }
                                 }
                             } else if (_.has(step.request, 'dispense')) {
-                                counts.amount += step.request[ 'amount' ];
-                                counts.dispensed += step.request[ 'dispense' ];
+                                counts.amount += step.request.amount;
+                                counts.dispensed += step.request.dispense;
                             }
                         }
 
@@ -1080,7 +1107,7 @@ Template.trialList.onCreated(function () {
     });
 });
 
-Template.trialList.onRendered(function () {
+Template.trialList.onRendered(() => {
     Template.instance().$('table').tablesort().data('tablesort').sort($("th.sorted:first-child"));
 });
 

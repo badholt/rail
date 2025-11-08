@@ -16,28 +16,37 @@ import '/imports/ui/components/forms/session';
 import '/imports/ui/components/forms/template';
 
 import _ from 'underscore';
-import update from "immutability-helper";
+import update from 'immutability-helper';
 
-import {Meteor} from 'meteor/meteor';
-import {ReactiveVar} from 'meteor/reactive-var';
-import {Template} from 'meteor/templating';
-import {Templates} from "../../api/collections";
+import { Meteor } from 'meteor/meteor';
+import { ReactiveVar } from 'meteor/reactive-var';
+import { Template } from 'meteor/templating';
+import { Templates } from '../../api/collections';
 
-const hasTemplate = (id, data) => {
-    const templates = Templates.find({$or: [{users: 'any'}, {users: {$elemMatch: {$eq: id}}}]}).fetch();
+const alertIcons = { error: 'cancel', success: 'check', warning: 'warning' },
+    hasTemplate = (id, data) => {
+        const templates = Templates.find({$or: [{users: 'any'}, {users: {$elemMatch: {$eq: id}}}]}).fetch();
 
-    return _.some(templates, (template) => {
-        const a = _.pick(template, 'inputs', 'session', 'stages'),
-            b = _.pick(data, 'inputs', 'session', 'stages'),
-            inputs = _.isEqual(a.inputs, b.inputs),
-            session = _.isEqual(a.session, b.session),
-            stages = _.isEqual(
-                _.map(a.stages, (stage) => _.map(stage, (element) => _.omit(element, 'index'))),
-                _.map(a.stages, (stage) => _.map(stage, (element) => _.omit(element, 'index'))));
+        return _.some(templates, (template) => {
+            const a = _.pick(template, 'inputs', 'session', 'stages'),
+                b = _.pick(data, 'inputs', 'session', 'stages'),
+                inputs = _.isEqual(a.inputs, b.inputs),
+                session = _.isEqual(a.session, b.session),
+                stages = _.isEqual(
+                    _.map(a.stages, (stage) => _.map(stage, (element) => _.omit(element, 'index'))),
+                    _.map(a.stages, (stage) => _.map(stage, (element) => _.omit(element, 'index'))));
 
-        return inputs && session && stages;
+            return inputs && session && stages;
+        });
+    };
+
+export const alert = (type, title, message) => $.toast({ class: `centered ${ type }`, title, message,
+        className: { title: 'ui large header' },
+        newestOnTop: true,
+        position: 'bottom attached',
+        showIcon: alertIcons[ type ],
+        showProgress: 'bottom'
     });
-};
 
 Template.sessionSetup.helpers({
     inputs() {
@@ -51,9 +60,6 @@ Template.sessionSetup.helpers({
     },
     stages() {
         return Template.instance().stages.get();
-    },
-    success() {
-        return Template.instance().success.get();
     },
     template(id) {
         const template = Templates.findOne(id);
@@ -82,76 +88,82 @@ Template.sessionSetup.onCreated(function () {
             experiment = this.parent().getExperiment()._id,
             elements = (device, el) => {
                 switch (el.type) {
-                    case 'audio':
+                    case 'audio': {
                         if (!_.has(el.source, 'wave')) return el;
                         const frequency = el.source.wave.frequency + _.get(device.profile.calibration, [ 'audio', 'frequency' ], 0);
                         return update(el, { source: { wave: { frequency: { $set: frequency } } } });
-                    case 'cross':
-                        const cross = device.profile.calibration.screen['cross'];
+                    }
+                    case 'cross': {
+                        const cross = device.profile.calibration.screen.cross;
+
                         return update(el, { offset: {
                             x: { $apply: (x) => (x + cross.offset.x) },
                             y: { $apply: (y) => (y + cross.offset.y) }
                         } });
-                    case 'reward':
+                    }
+                    case 'reward': {
                         const commands = _.map(el.commands, (command) => {
-                            /**
-                                Valve opens in ~0.013 s
-                                Water rate increases up to 0.19 mL/s
-                            */
-                            let duration = 0;
+                            /** Valve opens in ~0.013 s
+                             *  Water rate increases up to 0.19 mL/s */
+                            const water = device.profile.calibration.water;
 
-                            if (_.has(command, 'amount')) {
-                                const amount = parseFloat(command.amount) + parseFloat(device.profile.calibration.water.amount);
-                                duration = (parseFloat(device.profile.calibration.water.slope) * Math.max(0, amount)
-                                    + parseFloat(device.profile.calibration.water.intercept));
-                            } else if (_.has(command, 'dispense')) {
-                                duration = parseFloat(command.dispense) + parseFloat(device.profile.calibration.water.dispense);
-                            }
+                            const getDuration = (vol) => (parseFloat(water.slope) * Math.max(0, vol) + parseFloat(water.intercept)),
+                                getTotal = (key) => (parseFloat(command[ key ]) + parseFloat(water[ key ])),
+                                duration = _.has(command, 'amount') ? getDuration(getTotal('amount'))
+                                    : _.has(command, 'dispense') ? getTotal('dispense') : 0;
 
                             return { command: 'dispense', duration: Math.max(0, duration) }; //TODO: More graceful handling of unexpected args; should negative amounts be allowed?
                         });
 
                         return update(el, { commands: { $set: commands } });
+                    }
                     default:
                         return el;
                 }
             };
 
         if (devices) _.each(devices, (id) => {
-            const deviceId = this.cipher[id],
+            if (!id) return alert('warning', 'Session Incomplete', 'At least one device must be selected.');
+
+            const deviceId = this.cipher[ id ],
                 device = Meteor.users.findOne(deviceId),
-                subjects = _.map(form[id], (subject) => this.cipher[subject]);
+                subjects = _.map(form[ id ], (subject) => this.cipher[ subject ]);
+
+            if (subjects.length === 0) {
+                return alert('warning', 'No Subject(s)', `${device.profile.name} must be assigned a subject.`);
+            }
+            if (!device.profile.calibration?.screen?.cross || !device.profile.calibration?.water) {
+                return alert('warning', 'Device Unprepared', `${device.profile.name} must be fully calibrated.`);
+            }
 
             const inputs_adjusted = _.map(inputs, (stage) => _.map(stage, (input) => (update(input, {
-                correct: { $set: _.map(input.correct, (e) => ((e.action === 'insert')
-                    ? update(e, { targets: { $set: _.map(e.targets, (el) => (elements(device, el))) } })
-                    : e)) }
-            }))));
+                correct: { $set: _.map(input.correct, (e) => {
+                    if (e.action === 'insert') {
+                        return update(e, { targets: { $set: _.map(e.targets, (el) => (elements(device, el))) } });
+                    } else if (e.action === '+') {
+                        return _.isBoolean(e?.specifications?.duplicate) ? update(e, { specifications: {
+                            duplicate: { $set: session?.correction.number } } } ) : e;
+                    } else return e;
+                }) } }))));
 
-            const stages_adjusted = _.map(stages, (stage)=> _.map(stage, (el) => (elements(device, el))));
+            const stages_adjusted = _.map(stages, (stage) => _.map(stage, (el) => (elements(device, el))));
 
-            if (subjects.length > 0) Meteor.call('generateTrials', inputs_adjusted, session, stages_adjusted, (error, trials) => {
-                if (!error) Meteor.call('addSession', deviceId, experiment,
-                    inputs_adjusted, session, subjects, trials, (error, session) => {
-                        if (!error) Meteor.call('addTrial', session, 0, 1, Date.now(), () => {
-                            /** A submission success message appears for 5 seconds: */
-                            // this.success.set(true);
-                            // $('#success').transition('fade');
-                            // Meteor.setTimeout(() => this.success.set(false), 5000);
+            if (subjects.length > 0) Meteor.call('generateTrials', inputs_adjusted, session, stages_adjusted,
+                (error, trials) => {
+                    if (error) return alert('error', 'Error', 'Trial generation failed.');
+
+                    Meteor.call('addSession', deviceId, experiment, inputs_adjusted, session, subjects, trials,
+                        (error, session) => {
+                            if (error) return alert('error', 'Error', 'Session creation failed.');
+
+                            Meteor.call('addTrial', session, 0, 1, Date.now(), false, () => {
+                                alert('success', 'Success', `Session added to ${ device.profile.name }'s queue.`);
+                            });
                         });
-                    });
-            });
+                });
         });
     };
-    this.success = new ReactiveVar(false);
     this.templateId = new ReactiveVar(_.last(this.data.templates));
-});
-
-Template.sessionSuccess.onRendered(function () {
-    $('.message .close')
-        .on('click', function () {
-            $(this).closest('.message').transition('fade');
-        });
 });
 
 Template.sessionTemplate.events({
@@ -162,7 +174,7 @@ Template.sessionTemplate.events({
         stages.push([]);
         template.stages.set(stages);
     },
-    'click #save'(event, template) {
+    'click #save'(_event, template) {
         const exists = hasTemplate(Meteor.userId(), _.omit(template.data, '_id'));
 
         if (!exists) {
@@ -189,9 +201,9 @@ Template.sessionTemplate.helpers({
         const template = Template.instance(),
             devices = template.devices.get(),
             cipher = template.parent().cipher,
-            ids = _.map(devices, (encrypted) => cipher[encrypted.value]);
+            ids = _.map(devices, (encrypted) => cipher[ encrypted.value ]);
 
-        return Meteor.users.find({_id: {$in: ids}});
+        return Meteor.users.find({ _id: { $in: ids } });
     },
     hasTemplate() {
         return hasTemplate(Meteor.userId(), Template.currentData());
@@ -223,38 +235,35 @@ Template.sessionTemplate.onRendered(function () {
 });
 
 Template.stageItem.events({
-    'click .stage'(event, template) {
-        Template.instance().parent(2).page.set(template.data.index - 1);
-    }
+    'click .stage'(_event, template) { Template.instance().parent(2).page.set(template.data.index - 1); }
 });
 
 Template.stagePage.helpers({
     forms(type) {
         const forms = {
-            audio: {data: this, form: 'audioForm', icon: 'music', title: 'Audio'},
-            cross: {data: this, form: 'crossForm', icon: 'plus', title: 'Fixation Cross'},
-            lights: {data: this, form: 'lightForm', icon: 'lightbulb', title: 'Lights'},
-            reward: {data: this['element'], form: 'rewardForm', icon: 'star', title: 'Reward'},
-            stimuli: {data: this, form: 'stimuliForm', icon: 'bars', title: 'Stimuli'},
+            audio: { data: this, form: 'audioForm', icon: 'music', title: 'Audio' },
+            cross: { data: this, form: 'crossForm', icon: 'plus', title: 'Fixation Cross' },
+            lights: { data: this, form: 'lightForm', icon: 'lightbulb', title: 'Lights' },
+            reward: { data: this.element, form: 'rewardForm', icon: 'star', title: 'Reward' },
+            stimuli: { data: this, form: 'stimuliForm', icon: 'bars', title: 'Stimuli' },
         };
-        return forms[type];
+
+        return forms[ type ];
     }
 });
 
 // TODO: Allow for multiple crosses??
 Template.stagePage.events({
-    'click .delete.icon'(event, template) {
+    'click .delete.icon'(_event, template) {
         const session = template.parent(2),
             stages = session.stages.get();
 
-        session.stages.set(update(stages, {[template.data.page]: {$splice: [[template.data.i, 1]]}}));
+        session.stages.set(update(stages, { [ template.data.page ]: { $splice: [ [ template.data.i, 1 ] ] } }));
     },
-    'click [id^=cross]'(event, template) {
+    'click [id^=cross]'(_event, template) {
         const opened = template.opened.get();
         if (!opened) template.opened.set(true);
     }
 });
 
-Template.stagePage.onCreated(function () {
-    this.opened = new ReactiveVar(false);
-});
+Template.stagePage.onCreated(function () { this.opened = new ReactiveVar(false); });

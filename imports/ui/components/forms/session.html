@@ -45,6 +45,27 @@
             </div>
         </div>
 
+        {{#if correction}}
+            <div class="ui horizontal inverted divider">Correction Trial Specifications</div>
+            <div class="fields">
+                <div class="field">
+                    <label>Bias <span class="ui mini horizontal label">% Opposing</span></label>
+                    <input type="number" name="session.correction.bias" min="0" max="1" step="0.01"
+                           placeholder="#" value="{{correction.bias}}">
+                </div>
+
+                <div class="field">
+                    <label>Number <span class="ui mini horizontal label">Trials</span></label>
+                    <input type="number" name="session.correction.number" min="0" placeholder="#" value="{{correction.number}}">
+                </div>
+
+                <div class="field">
+                    <label>Offset <span class="ui mini horizontal label">Trials</span></label>
+                    <input type="number" name="session.correction.offset" min="0" placeholder="#" value="{{correction.offset}}">
+                </div>
+            </div>
+        {{/if}}
+
         {{#if distribution}}
             <div class="ui horizontal inverted divider">Stimuli Probability Distribution Specifications</div>
 

@@ -20,8 +20,8 @@ nav#main-menu a.item {
     margin: 0 1px;
 }
 
-nav#main-menu > .right.menu > a.item {
-    padding: 10px 20px;
+nav#main-menu a#home:has(.image) {
+    padding: 9px 5.5px 9px 9px;
 }
 
 :not(.nocturnal) nav#main-menu a.active.item, :not(.nocturnal) nav#main-menu a.item:active {

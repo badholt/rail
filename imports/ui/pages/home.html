@@ -4,6 +4,6 @@
             {{> atForm}}
         </div>
     {{else}}
-
+        {{#unless currentUser.profile.device}}{{> adminPanel}}{{/unless}}
     {{/unless}}
 </template>

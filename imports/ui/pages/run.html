@@ -1,21 +1,7 @@
 <template name="sessionSetup">
     {{#with template templateId}}
         {{> sessionTemplate inputs=inputs page=page session=session stages=stages template=templateId}}
-
-        {{#if success}}
-            {{> sessionSuccess}}
-        {{/if}}
     {{/with}}
-</template>
-
-<template name="sessionSuccess">
-    <div id="success" class="ui icon success message transition hidden in">
-        <i class="exclamation icon"></i>
-        <i class="close icon"></i>
-        <div class="header">
-            Session successfully created.
-        </div>
-    </div>
 </template>
 
 <template name="sessionTemplate">
@@ -109,9 +95,7 @@
 </template>
 
 <template name="stageItem">
-    <a class="stage {{#if active}}active{{/if}} item">
-        {{index}}
-    </a>
+    <a class="stage {{#if active}}active{{/if}} item">{{index}}</a>
 </template>
 
 <template name="stagePage">

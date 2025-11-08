@@ -26,25 +26,35 @@
             {{/unless}}
 
             <div class="right menu">
-                {{#unless currentUser.profile.device}}
-                    <a id="subject-panel" class="{{isActiveRoute 'subjects'}} ui animated button item" href="/subjects">
-                        <div class="visible content">
-                            <i class="fitted inverted large paw icon"></i>
-                        </div>
-                        <div class="hidden content">Subjects</div>
-                    </a>
+                {{#with currentUser}}
+                    {{#unless profile.device}}
+                        <a id="subject-panel" class="{{isActiveRoute 'subjects'}} ui animated button item" href="/subjects">
+                            <div class="visible content">
+                                <i class="fitted inverted large paw icon"></i>
+                            </div>
+                            <div class="hidden content">Subjects</div>
+                        </a>
 
-                    <a id="device-panel" class="{{isActiveRoute 'devices'}} ui animated button item" href="/devices">
-                        <div class="visible content">
-                            <i class="fitted inverted large th icon"></i>
-                        </div>
-                        <div class="hidden content">Devices</div>
-                    </a>
-                {{/unless}}
+                        <a id="device-panel" class="{{isActiveRoute 'devices'}} ui animated button item" href="/devices">
+                            <div class="visible content">
+                                <i class="fitted inverted large th icon"></i>
+                            </div>
+                            <div class="hidden content">Devices</div>
+                        </a>
 
-                <a id="home" class="{{isActiveRoute 'home'}} item" href="/" tabindex="3">
-                    {{> profileAvatar currentUser._id}}
-                </a>
+                        <a id="home" class="{{isActiveRoute 'home'}} item" href="/" tabindex="3">
+                            {{> profileAvatar _id}}
+                        </a>
+                    {{else}}
+                        <a id="home" class="{{isActiveRoute 'home'}} item" href="/" tabindex="3">
+                            <div class="ui inverted tiny header">
+                                <i class="grey cube icon"></i>
+                                <div class="content"> {{profile.name}}</div>
+                            </div>
+                        </a>
+                    {{/unless}}
+                {{/with}}
+
                 {{> atNavButton}}
             </div>
         {{/if}}

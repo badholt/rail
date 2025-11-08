@@ -1,0 +1,114 @@
+<template name="adminPanel">
+    {{#with currentUser}}{{> userCard}}{{/with}}
+
+    {{#with devices}}
+        <div class="ui basic compact segment">
+            <h2 class="ui inverted header">Current Messaging Client(s)</h2>
+            <div id="clients" class="ui cards">{{> clientList}}</div>
+        </div>
+    {{/with}}
+</template>
+
+<template name="clientList">
+    {{#each this}}
+        {{#each clients status.client}}
+            <div class="ui inverted card">
+                <div class="content">
+                    <div class="ui inverted {{#if connected}}green{{else}}red{{/if}} header">
+                        <i class="right floated inverted {{#if connected}}{{#if disconnecting}}red loading notched {{else}}green {{/if}}{{else}}{{#if disconnected}}{{#if reconnecting}}green loading notched {{else}}red {{/if}}{{else}}red {{/if}}{{/if}}circle icon"></i>
+
+                        {{../profile.name}}
+                    </div>
+
+                    <div class="meta">({{options.clientId}})</div>
+
+                    <div class="description">
+                        <div class="ui fluid inverted mini buttons">
+                            <button id="connect-{{options.clientId}}" class="ui button" type="button" value="{{options.clientId}}">Connect</button>
+                            <div class="or"></div>
+                            <button id="disconnect-{{options.clientId}}" class="ui grey button" type="button" value="{{options.clientId}}">Disconnect</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {{/each}}
+    {{/each}}
+</template>
+
+<template name="userCard">
+    {{#with profile}}
+        <div class="ui right floated basic compact segment">
+            <div class="ui inverted card">
+                {{#if edit}}
+                    <input type="file" id="upload-file" class="ui invisible file input" name="file">
+                {{/if}}
+
+                <label for="upload-file" class="ui center aligned image {{#if edit}}ui looping pulsating transition{{/if}}">
+                    {{#with img name}}
+                        <img id="user" src="{{this}}">
+                    {{else}}
+                        <div class="ui inverted placeholder"><div class="square image"></div></div>
+                    {{/with}}
+
+                    <div class="ui dimmer">
+                        <div class="content">
+                            <h2 class="ui inverted icon header">
+                                <i class="image folder icon"></i> Upload a Photo
+                            </h2>
+                        </div>
+                    </div>
+                </label>
+
+                <div class="content">
+                    {{#if edit}}
+                        {{> userForm}}
+                    {{else}}
+                        <button id="edit-user" class="ui right floated secondary icon button" style="margin: -0.9em;">
+                            <i class="edit icon"></i>
+                        </button>
+
+                        <div class="header">{{name}}</div>
+
+                        <div class="meta">
+                          <span class="category"><i class="user icon"></i> {{username}}</span>
+                        </div>
+
+                        <div class="description">
+                            <div class="ui inverted list">
+                              <div class="item">
+                                <div class="ui tiny horizontal teal inverted statistic">
+                                    <div class="value">{{getLength experiments}}</div>
+                                    <div class="label">experiments <i class="teal vial icon"></i></div>
+                                </div>
+                              </div>
+
+                              <div class="item">
+                                <i class="hourglass icon"></i>
+                                <div class="content">
+                                    last login:
+
+                                    <div class="right floated content">
+                                         <span class="ui info text">{{relativeDate status.lastLogin.date false}}</span>
+                                    </div>
+                                </div>
+                              </div>
+
+                              <div class="item">
+                                <i class="mail icon"></i>
+                                <div class="content">
+                                  email:
+
+                                    <div class="right floated content">
+                                         {{#if email}}<a href="mailto:{{email}}">{{email}}</a>
+                                         {{else}}<span class="ui info text">none</span>{{/if}}
+                                    </div>
+                                </div>
+                              </div>
+                            </div>
+                        </div>
+                    {{/if}}
+                </div>
+            </div>
+        </div>
+    {{/with}}
+</template>

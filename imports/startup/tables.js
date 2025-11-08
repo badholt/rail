@@ -1,6 +1,5 @@
 import _ from "underscore";
 import Tabular from 'meteor/aldeed:tabular';
-import DataTable from 'datatables.net-se';
 
 import 'datatables.net-buttons';
 import 'datatables.net-buttons-se';
@@ -14,7 +13,7 @@ import { Sessions, Trials } from '/imports/api/collections';
 import { Template } from 'meteor/templating';
 
 const sessions = new Tabular.Table({
-        drawCallback(settings) {
+        drawCallback(_settings) {
             $('.dtcc-button').addClass([ 'ui', 'basic', 'inverted', 'button' ]);
             $('nav > .ui.pagination.menu').first().addClass('inverted');
         },
@@ -25,7 +24,8 @@ const sessions = new Tabular.Table({
                 data: 'subjects',
                 orderable: false,
                 title: 'Subject(s)',
-                tmpl: Meteor.isClient && Template.subjectsCell
+                tmpl: Meteor.isClient && Template.subjectsCell,
+                width: "15%"
             },
             {
                 columnControl: { content: [ 'orderAsc', 'orderDesc' ], target: 'tfoot' },
@@ -40,13 +40,15 @@ const sessions = new Tabular.Table({
                 orderable: false,
                 title: 'Device',
                 tmpl: Meteor.isClient && Template.deviceCell,
-                tmplContext(session) { return Meteor.users.findOne(session.device); }
+                tmplContext(session) { return Meteor.users.findOne(session.device); },
+                width: "15%"
             },
             {
                 data: 'user',
                 orderable: false,
                 title: 'User',
-                tmpl: Meteor.isClient && Template.userCell
+                tmpl: Meteor.isClient && Template.userCell,
+                width: "12%"
             }
         ],
         dom: '<<i>t<"ui equal width grid"<"column"l><"right aligned column"p>>>',
@@ -107,16 +109,16 @@ const trials = new Tabular.Table({
                             }, s = 0,
                             groups = _.map(trial.data, (stage) =>
                                 _.groupBy(stage, (element) => (element.type) ? element.type.split('.')[ 0 ] : element.sender)),
-                            session = _.flatten([ groups[ s ][ 'session' ], groups[ s ][ 'trial' ] ]),
+                            session = _.flatten([ groups[ s ].session, groups[ s ].trial ]),
                             time = _.groupBy(_.compact(session), (e) => _.last(e.type.split('.'))),
                             types = _.map(trial.stages, (stage, i) => _.compact(_.map(stage, (e) => {
                                 const group = e.type || e.sender;
                                 return (group !== 'click') ? groups[ i ][ group ] : false;
                             }))),
-                            cells = _.flatten([ [ time[ 'start' ] ], ...types, [ time[ 'end' ] ] ], true);
+                            cells = _.flatten([ [ time.start ], ...types, [ time.end ] ], true);
 
                         // /** Distribute clicks by timestamp rather than event: */
-                        const clicks = _.flatten([ groups[ s ][ 'click' ] ]);
+                        const clicks = _.flatten([ groups[ s ].click ]);
                         if (clicks) counts.clicks += _.compact(clicks).length;
 
                         let n = 0;
@@ -127,8 +129,8 @@ const trials = new Tabular.Table({
                                     list.splice(j, 0, click);
                                     click = clicks[ n++ ];
                                 } else if (_.has(e.request, 'dispense')) {
-                                    counts.amount += e.request[ 'amount' ];
-                                    counts.dispensed += e.request[ 'dispense' ];
+                                    counts.amount += e.request.amount;
+                                    counts.dispensed += e.request.dispense;
                                 }
                             });
                         });

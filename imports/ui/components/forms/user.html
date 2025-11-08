@@ -1,0 +1,32 @@
+<template name="userForm">
+    <form id="user-form" class="ui inverted form">
+    	<div class="field">
+            <div class="ui fluid left icon right action input">
+                <i class="image icon"></i>
+                <input type="url" id="upload-url" name="picture" title="Enter an image url"
+                       placeholder="https://myprofile.pic" value="{{picture}}">
+
+                <button id="delete-pic" class="ui secondary icon button"><i class="trash icon"></i></button>
+                <button id="edit-user" class="ui secondary icon submit button" style="margin: 0em;">
+		            <i class="save icon"></i>
+		        </button>
+            </div>
+        </div>
+
+        <div class="two fields">
+            <div class="field">
+                <label>Name</label>
+                <input type="text" name="name" placeholder="ex: Jane Doe" value="{{name}}">
+            </div>
+            <div class="disabled field">
+                <label>Username</label>
+                <input type="text" name="username" placeholder="ex: janedoe1" value="{{username}}">
+            </div>
+        </div>
+
+        <div class="field">
+            <label>Email</label>
+            <input type="text" name="email" placeholder="ex: jane@jh.edu" value="{{email}}">
+        </div>
+    </form>
+</template>

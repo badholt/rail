@@ -1,4 +1,3 @@
-import { Accounts } from 'meteor/accounts-base';
 import { AccountsTemplates } from 'meteor/useraccounts:core';
 
 AccountsTemplates.removeField('email');
@@ -113,8 +112,4 @@ AccountsTemplates.configure({
     defaultLayout: 'frame',
     defaultLayoutRegions: {},
     defaultContentRegion: 'main'
-});
-
-Accounts.onLoginFailure((error) => {
-    console.log(`\x1b[91m━━━━━ Failed login attempt at ${ error.connection.clientAddress }: ${ error.error.reason } ━━━━━\x1b[39m`);
 });

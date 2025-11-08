@@ -9,12 +9,12 @@ import { Template } from "meteor/templating";
 Template.sessionForm.events({
     'input input'(event, template) {
         const target = event.target || event.srcElement,
-            value = parseFloat($('#' + target.form.id).form('get value', target.name));
+            value = parseFloat($(`#${ target.form.id }`).form('get value', target.name));
 
         if (!_.isNaN(value)) {
             const form = template.parent(2),
                 split = target.name.split('.'),
-                property = split[1],
+                property = split[ 1 ],
                 session = form.session.get();
 
             switch (property) {
@@ -28,26 +28,37 @@ Template.sessionForm.events({
                 case 'duration':
                 case 'iti':
                     session[ property ] = value;                    
-                    if (session.distribution) session[ 'distribution' ][ 'size' ] = calculateTotal(session);
+                    if (session.distribution) session.distribution.size = calculateTotal(session);
                     form.session.set(session);
+                    break;
+                case 'correction':
+                    switch (split[ 2 ]) {
+                        case 'bias':
+                        case 'number':
+                        case 'offset':
+                            if (session.correction) session[ property ][ split[ 2 ] ] = value;
+                            form.session.set(session);
+                            break;
+                    }
                     break;
                 case 'distribution':
                     switch (split[ 2 ]) {
                         case 'multiplier':
                             session[ property ][ split[ 2 ] ] = value;
-                            session[ property ][ 'size' ] = calculateTotal(session);
+                            session[ property ].size = calculateTotal(session);
                             form.session.set(session);
                             break;
-                        case 'size':
+                        case 'size': {
                             session[ property ][ split[ 2 ] ] = value;
 
                             /** Calculate default distribution size w/ multiplier of 1: */
                             const n = calculateTotal(_.defaults({ 'distribution': { 'multiplier': 1 } }, session));
                             
-                            session[ property ][ 'size' ] = value;
-                            session[ property ][ 'multiplier' ] = parseFloat((value / n).toFixed(5));
+                            session[ property ].size = value;
+                            session[ property ].multiplier = parseFloat((value / n).toFixed(5));
                             form.session.set(session);
                             break;
+                        }
                         default:
                             session[ property ][ split[ 2 ] ] = value;
                             form.session.set(session);
@@ -61,7 +72,7 @@ Template.sessionForm.events({
 
 Template.sessionForm.helpers({
     base() {
-        return calculateTotal(_.defaults({'distribution': {'multiplier': 1}}, Template.currentData()));
+        return calculateTotal(_.defaults({ 'distribution': { 'multiplier': 1 } }, Template.currentData()));
     },
     modify() {
         return Template.instance().modify.get();
@@ -71,15 +82,15 @@ Template.sessionForm.helpers({
         return parseFloat((1 - p).toFixed(5));
     },
     sample(ratio, size) {
-        const colors = ['blue', 'orange', 'green', 'red', 'yellow', 'violet', 'pink', 'brown', 'teal', 'purple', 'olive', 'grey'],
-        combinations = [{'orientation': 0}, {'orientation': 90}],
-        weights = [ratio, parseFloat((1 - ratio).toFixed(5))], // DUMMY VAR
-        portion = (w) => Math.floor(size * w),
-        sum = _.map(weights, (w) => portion(w)).reduce((memo, p) => memo + p);
+        const colors = [ 'blue', 'orange', 'green', 'red', 'yellow', 'violet', 'pink', 'brown', 'teal', 'purple', 'olive', 'grey' ],
+            combinations = [ { 'orientation': 0 }, { 'orientation': 90 } ],
+            weights = [ ratio, parseFloat((1 - ratio).toFixed(5)) ], // DUMMY VAR
+            portion = (w) => Math.floor(size * w),
+            sum = _.map(weights, (w) => portion(w)).reduce((memo, p) => memo + p);
 
         return _.map(weights, (w, i) => ({
-            'color': colors[i],
-            'variable': (combinations[i]['orientation'] !== 0) ? 'H' : 'V', // DUMMY VARS
+            'color': colors[ i ],
+            'variable': (combinations[ i ].orientation !== 0) ? 'H' : 'V', // DUMMY VARS
             'weight': (i < weights.length - 1 || sum === size) ? portion(w) : portion(w) + Math.floor(size - sum)
         }));
     }
@@ -89,15 +100,11 @@ Template.sessionForm.onCreated(function () {
     this.modify = new ReactiveVar(false);
 });
 
-Template.sessionForm.onRendered(function () {
+Template.sessionForm.onRendered(() => {
     const template = Template.instance();
 
     $('.ui.checkbox').checkbox({
-        onChecked: function() {
-          template.modify.set(true);
-        },
-        onUnchecked: function() {
-          template.modify.set(false);
-        }
+        onChecked: () => template.modify.set(true),
+        onUnchecked: () => template.modify.set(false)
     });
 });

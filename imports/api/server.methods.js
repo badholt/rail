@@ -1,27 +1,28 @@
 import './client.methods';
 
-import _ from 'underscore';
-import moment from 'moment/moment';
 import * as mqtt from 'mqtt';
 
-import {Experiments, Sessions, Subjects, Templates, Trials} from './collections';
-import {Meteor} from 'meteor/meteor';
+import _ from 'underscore';
+import moment from 'moment/moment';
+
+import { Experiments, Sessions, Subjects, Templates, Trials } from './collections';
+import { Meteor } from 'meteor/meteor';
 
 export const clients = new Map();
-const clientClosed = (n) => ('\v\x1b[45;97m Connection Closed, reasonCode: ' + n + ' \x1b[39;49m\v\r'),
-status = (client, id, title) => {
-    const statuses = ['connected', 'disconnecting', 'reconnecting'];
-    let status = '\n\x1b[43;30m ' + id + ' \x1b[0m  \x1b[33m' + title + '\n\x1b[33m━━━━━\x1b[39;49m';
-    
-    _.each(statuses, (s) => {
-        const color = (client[s]) ? ';32' : ';37',
-        tabs = (s !== 'disconnecting') ? '\t\t' : '\t';
+const clientClosed = (n) => (`\v\x1b[45;97m Connection Closed, reasonCode: ${ n } \x1b[39;49m\v\r`),
+    status = (client, id, title) => {
+        const statuses = [ 'connected', 'disconnecting', 'reconnecting' ];
+        let status = `\n\x1b[43;30m ${ id } \x1b[0m  \x1b[33m${ title }\n\x1b[33m━━━━━\x1b[39;49m`;
+        
+        _.each(statuses, (s) => {
+            const color = (client[ s ]) ? ';32' : ';37',
+            tabs = (s !== 'disconnecting') ? '\t\t' : '\t';
 
-        status +='\n\x1b[33m⦿ ' + s + ':\x1b[39;49m' + tabs + '\x1b[1' + color + 'm' + client[s] + '\x1b[22;39m';
-    });
+            status +=`\n\x1b[33m⦿ ${ s }:\x1b[39;49m${ tabs }\x1b[1${ color }m${client[ s ]}\x1b[22;39m`;
+        });
 
-    return status + '\x1b[22m\n\x1b[33m━━━━━\n';
-};
+        return `${ status }\x1b[22m\n\x1b[33m━━━━━\n`;
+    };
 
 if (Meteor.isServer) Meteor.methods({
     'addExperiment': (fields) => {
@@ -30,19 +31,19 @@ if (Meteor.isServer) Meteor.methods({
         return Experiments.insert({
             investigator: {
                 id: Meteor.userId(),
-                name: {first: fields['investigator-first'], last: fields['investigator-last']}
+                name: { first: fields[ 'investigator-first' ], last: fields[ 'investigator-last' ] }
             },
-            link: '/experiments/' + fields.title.replace(/( )|(\W)/g, '-'),
-            templates: [template._id],
+            link: `/experiments/${fields.title.replace(/( )|(\W)/g, '-')}`,
+            templates: [ template._id ],
             title: fields.title,
-            users: [Meteor.userId()]
+            users: [ Meteor.userId() ]
         });
     },
     'addSession': (device, experiment, inputs, session, subjects, trials) => Sessions.insert({
         date: new Date(),
         device: device,
         experiment: experiment,
-        settings: {inputs: inputs, session: session, stages: trials},
+        settings: { inputs: inputs, session: session, stages: trials },
         subjects: subjects,
         trials: [],
         user: Meteor.userId()
@@ -57,7 +58,7 @@ if (Meteor.isServer) Meteor.methods({
         sex: fields.sex,
         strain: fields.strain,
         tags: fields.tags,
-        users: [Meteor.userId()]
+        users: [ Meteor.userId() ]
     }),
     'addTemplate': (template) => Templates.insert({
         _id: template._id || Random.id(),
@@ -69,14 +70,15 @@ if (Meteor.isServer) Meteor.methods({
         number: template.number,
         session: template.session,
         stages: template.stages,
-        users: (template.users) ? template.users : [Meteor.userId()]
+        users: (template.users) ? template.users : [ Meteor.userId() ]
     }),
-    'addTrial': (id, index, number, origin) => {
+    'addTrial': (id, index, number, origin, bias) => {
         const session = Sessions.findOne(id),
             stages = session.settings.stages[index];
 
         if (stages) {
             const trial = Trials.insert({
+                bias,
                 data: Array.from(stages, () => []),
                 date: new Date(),
                 experiment: session.experiment,
@@ -85,48 +87,32 @@ if (Meteor.isServer) Meteor.methods({
                 session: id,
                 stages: stages,
                 subjects: session.subjects,
-                timeOrigin: origin,
+                timeOrigin: origin
             });
 
             if (trial) Meteor.call('updateSession', id, 'trials', trial);
             return trial;
         }
     },
-    'addUser': (username, id) => Meteor.users.update({'profile.username': username}, {
-        $push: {'profile.experiments': id}
+    'addUser': (username, id) => Meteor.users.update({ 'profile.username': username }, {
+        $push: { 'profile.experiments': id }
     }),
-    'countCollection': (collection) => Sessions.find().count(),
     'getClients': () => clients.forEach((value, key) => {
-        const client = _.pick(value, 'options', 'connected', 'disconnecting', 'nextId', 'reconnecting', 'disconnected', '_deferredReconnect');
+        const client = _.pick(value, 'options', 'connected', 'disconnecting', 'nextId',
+            'reconnecting', 'disconnected', '_deferredReconnect');
 
-        Meteor.users.update({_id: key.replace('test_', '')}, {
-            $set: {['status.client.' + key]: client}
+        Meteor.users.update({ _id: key.replace('test_', '') }, {
+            $set: { [ `status.client.${ key }` ]: client }
         });
     }),
     'getTemplates': (ids, params) => Templates.find(ids, params).fetch(),
-    'updateClient': (id, command) => {
-        if (clients.has(id)) {
-            const client = clients.get(id);
-
-            if (command === 'end') {
-                client.end(false, {reasonCode: 4}, () => console.log(clientClosed(4)));
-            } else if (command === 'connect') {
-                if (client.reconnecting !== true && !client.connected) {
-                    client.end(false, {reasonCode: 5}, () => {
-                        console.log(clientClosed(5));
-                        client.reconnect();
-                    });
-                }
-            }
-        }
-    },
     'mqttConnect': (id, options) => {
         /** If client already exists, reconnect: */
         if (clients.has(id)) {
             const client = clients.get(id);
 
             if (client.reconnecting !== true && !client.connected) {
-                client.end(false, {reasonCode: 5}, () => {
+                client.end(false, { reasonCode: 5 }, () => {
                     console.log(clientClosed(5));
                     client.reconnect();
                 });
@@ -135,7 +121,10 @@ if (Meteor.isServer) Meteor.methods({
             /** If client does not exist for device, create a new client with its IP address: */
             const device = Meteor.users.findOne(id.replace('test_', '')),
                 // client = mqtt.connect('mqtt://' + device.profile.address, options),
-                client = mqtt.connect( _.extend(options, {host: 'ws://' + device.profile.address + ':8080/mqtt', hostname: device.profile.address})),
+                client = mqtt.connect( _.extend(options, {
+                    host: `ws://${ device.profile.address }:8080/mqtt`,
+                    hostname: device.profile.address
+                })),
                 syncMessage = Meteor.bindEnvironment((topic, payload) => {
                 /** Instructs mqtt client on how to handle all incoming messages: */
                 if (topic === 'response') {
@@ -155,22 +144,22 @@ if (Meteor.isServer) Meteor.methods({
                                 Meteor.call('updateUser', message.context.device, 'status.message', 'set', message);
                             } else {
                                 const context = (message.context.topic) ? message.context.topic.split('/') : '',
-                                    session = Sessions.findOne(context[1] || message.context.session);
+                                    session = Sessions.findOne(context[ 1 ] || message.context.session);
 
                                 if (session) {
                                     const stage = (context[ 3 ] || message.context.stage) - 1,
-                                        trial = session.trials[(context[ 2 ] || message.context.trial) - 1],
-                                        timeStamp = (message.timeStamp || (message[ 't1' ] - message[ 't0' ])) * 1000 + message.context.timeStamp;
+                                        trial = session.trials[ (context[ 2 ] || message.context.trial) - 1 ],
+                                        timeStamp = (message.timeStamp || (message.t1 - message.t0)) * 1000 + message.context.timeStamp;
 
-                                    Meteor.call('updateTrial', trial, 'data.' + stage, 'push', {
+                                    Meteor.call('updateTrial', trial, `data.${ stage }`, 'push', {
                                         pins: message.pins,
                                         request: _.extend(message.request, { timeStamp: message.context.timeStamp }),
                                         /** Timestamps t0 & t1 are in seconds since the epoch, and
                                          *  message.context.timeStamp is in milliseconds since the
                                          *  browser loaded. The following converts the timestamps
                                          *  from the box to the box browser's frame of reference: */
-                                        t0: message['t0'],
-                                        t1: message['t1'],
+                                        t0: message.t0,
+                                        t1: message.t1,
                                         timeStamp: timeStamp,
                                         status: message.status,
                                         type: message.sender
@@ -185,7 +174,7 @@ if (Meteor.isServer) Meteor.methods({
 
                     if (message.command) switch (message.command) {
                         case 'disconnect':
-                            client.end(false, {reasonCode: 6}, () => console.log(clientClosed(6)));
+                            client.end(false, { reasonCode: 6 }, () => console.log(clientClosed(6)));
                             break;
                         case 'reconnect':
                             client.reconnect();
@@ -223,16 +212,16 @@ if (Meteor.isServer) Meteor.methods({
             const client = clients.get(id);
 
             if (client.reconnecting !== true && !client.connected) {
-                client.end(false, {reasonCode: 1}, ()=> {
+                client.end(false, { reasonCode: 1 }, ()=> {
                     console.log(clientClosed(1));
                     client.reconnect();
                 });
             }
 
-            client.publish(topic, JSON.stringify(message), {qos: 0}, (e) => {
+            client.publish(topic, JSON.stringify(message), { qos: 0 }, (e) => {
                 if (!e) {
-                    console.log('\n⦿ \x1b[33mEstablished\x1b[0;39;49m client \x1b[43;30m ' + id + ' \x1b[39;49m publishes: \x1b[7;33m', message.command, '\x1b[27;39;49m', ' to \x1b[7;33m', topic, '\x1b[27;39;49m');
-                    if (id.startsWith('test_') && message.detect && message.detect !== 'on') client.end(false, {reasonCode: 2}, () => console.log(clientClosed(2)));
+                    console.log(`\n⦿ \x1b[33mEstablished\x1b[0;39;49m client \x1b[43;30m ${ id } \x1b[39;49m publishes: \x1b[7;33m`, message.command, '\x1b[27;39;49m', ' to \x1b[7;33m', topic, '\x1b[27;39;49m');
+                    if (id.startsWith('test_') && message.detect && message.detect !== 'on') client.end(false, { reasonCode: 2 }, () => console.log(clientClosed(2)));
                 }
             });
         } else if (message.command !== 'disconnect') {
@@ -251,81 +240,83 @@ if (Meteor.isServer) Meteor.methods({
             Meteor.call('mqttConnect', id, options, (error) => {
                 /** Now that a client exists for this device, publish message to its hosted mqtt server:  */
                 const client = clients.get(id);
-                console.log('\x1b[93m━━━━━\n\x1b[93mCreated client \x1b[103;30m ' + id, '\x1b[39;49m\n\x1b[33mUpdated clients list: ', clients.keys(), '\x1b[39;49m\n\x1b[93m━━━━━');
-                if (!error) client.publish(topic, JSON.stringify(message), {qos: 0}, (e) => {
+                console.log(`\x1b[93m━━━━━\n\x1b[93mCreated client \x1b[103;30m ${ id }`, '\x1b[39;49m\n\x1b[33mUpdated clients list: ', clients.keys(), '\x1b[39;49m\n\x1b[93m━━━━━');
+                if (!error) client.publish(topic, JSON.stringify(message), { qos: 0 }, (e) => {
                     if (!e) {
-                        console.log('\n⦿ \x1b[93mNew\x1b[39;49m client \x1b[103;30m ' + id + ' \x1b[39;49m publishes: \x1b[103;30m', message.command, '\x1b[39;49m');
-                        if (id.startsWith('test_') && message.detect && message.detect !== 'on') client.end(false, {reasonCode: 3}, () => console.log(clientClosed(3)));
+                        console.log(`\n⦿ \x1b[93mNew\x1b[39;49m client \x1b[103;30m ${ id } \x1b[39;49m publishes: \x1b[103;30m`, message.command, '\x1b[39;49m');
+                        if (id.startsWith('test_') && message.detect && message.detect !== 'on') client.end(false, { reasonCode: 3 }, () => console.log(clientClosed(3)));
                     }
                 });
             });
         }
     },
-    'removeTemplate': (id) => Templates.remove({_id: id}, (error, result) => {
-        if (!error) Experiments.update({}, {
-            $pull: {templates: id}
-        }, {multi: true});
+    'removeTemplate': (id) => Templates.remove({ _id: id }, (error, _result) => {
+        if (!error) Experiments.update({}, { $pull: { templates: id } }, { multi: true });
     }),
-    'removeSession': (id) => Sessions.remove({_id: id}),
-    'removeTrials': (ids) => Trials.remove({_id: {$in: ids}}),
-    'removeUser': (username, id) => Meteor.users.update({'profile.username': username}, {
-        $pull: {'profile.experiments': id}
+    'removeSession': (id) => Sessions.remove({ _id: id }),
+    'removeTrials': (ids) => Trials.remove({ _id: { $in: ids } }),
+    'removeUser': (username, id) => Meteor.users.update({ 'profile.username': username }, {
+        $pull: { 'profile.experiments': id }
     }),
     'setDefaultTemplate': (id, template) => {
-        Experiments.update(id, {
-            $pull: {
-                templates: template
-            }
-        });
-        Experiments.update(id, {
-            $push: {
-                templates: template
-            }
-        });
+        Experiments.update(id, { $pull: { templates: template } });
+        Experiments.update(id, { $push: { templates: template } });
     },
-    'updateExperiment': (experiment, values) => {
-        const users = Meteor.users.find({'profile.username': {$in: values.users}}).fetch(),
-            ids = _.pluck(users, '_id');
+    'updateAuthorized': (experiment, values) => {
+        const users = Meteor.users.find({ 'profile.username': { $in: values.users } }).fetch(),
+            ids = _.pluck(users, '_id'),
+            add =  _.difference(ids, experiment.users),
+            remove = _.difference(experiment.users, ids);
 
-        _.difference(experiment.users, ids).forEach((id) => {
+        add.forEach((id) => {
             Meteor.call('removeUser', id, experiment._id);
+            Meteor.call('updateUser', id, 'profile.experiments', 'pull', experiment._id);
         });
-        _.difference(ids, experiment.users).forEach((id) => {
+        remove.forEach((id) => {
             Meteor.call('addUser', id, experiment._id);
+            Meteor.call('updateUser', id, 'profile.experiments', 'addToSet', experiment._id);
         });
 
-        Experiments.update(experiment._id, {
-            $set: {
-                users: ids
-            }
-        });
+        Experiments.update(experiment._id, { $set: { users: ids } });
+
+        const added = Meteor.users.find({_id: {$in: add } }, { fields: { 'profile.name': 1 } }).fetch(),
+            removed = Meteor.users.find({_id: {$in: remove } }, { fields: { 'profile.name': 1 } }).fetch();
+
+        return {
+            added: _.map(added, (u) => (u.profile.name)),
+            removed: _.map(removed, (u) => (u.profile.name))
+        };
     },
-    'updateSession': (session, key, value) => {
-        if (key === 'trials') {
-            Sessions.update(session, {
-                $currentDate: {
-                    lastModified: true
-                },
-                $push: {
-                    trials: value
+    'updateClient': (id, command) => {
+        if (clients.has(id)) {
+            const client = clients.get(id);
+
+            if (command === 'end') {
+                client.end(false, { reasonCode: 4 }, () => console.log(clientClosed(4)));
+            } else if (command === 'connect') {
+                if (client.reconnecting !== true && !client.connected) {
+                    client.end(false, { reasonCode: 5 }, () => {
+                        console.log(clientClosed(5));
+                        client.reconnect();
+                    });
                 }
-            });
-        } else {
-            Sessions.update(session, {
-                $currentDate: {
-                    lastModified: true
-                },
-                $set: {
-                    [key]: value
-                }
-            });
+            }
         }
     },
-    'updateSubject': (id, fields) => Subjects.update({_id: id},
+    'updateProfile': (id, fields) => Meteor.users.update({ _id: id }, {
+        $currentDate: { lastModified: true },
+        $set: _.object(_.map(fields, (v, k) => ([ `profile.${ k }`, v ])))
+    }),
+    'updateSession': (session, key, value) => {
+        if (key === 'trials') {
+            Sessions.update(session, { $currentDate: { lastModified: true }, $push: { trials: value } });
+        } else {
+            Sessions.update(session, { $currentDate: { lastModified: true }, $set: { [ key ]: value } });
+        }
+    },
+    'updateSubject': (id, fields) => Subjects.update({ _id: id },
         {
-            $currentDate: {
-                lastModified: true
-            },
+            $currentDate: { lastModified: true },
             $set: {
                 birthday: moment().subtract(fields.age, fields.unit).toDate(),
                 description: fields.description,
@@ -337,21 +328,11 @@ if (Meteor.isServer) Meteor.methods({
                 strain: fields.strain,
                 tags: fields.tags
             }
-        }, {multi: true}),
-    'updateTrial': (id, key, operation, value) => Trials.update({_id: id}, {
-        $currentDate: {
-            lastModified: true
-        },
-        ['$' + operation]: {
-            [key]: value
-        }
+        }, { multi: true }),
+    'updateTrial': (id, key, operation, value) => Trials.update({ _id: id }, {
+        $currentDate: { lastModified: true }, [`$${ operation }`]: { [ key ]: value }
     }, {multi: true}),
-    'updateUser': (id, key, operation, value) => Meteor.users.update({_id: id}, {
-        $currentDate: {
-            lastModified: true
-        },
-        ['$' + operation]: {
-            [key]: value
-        }
+    'updateUser': (id, key, operation, value) => Meteor.users.update({ _id: id }, {
+        $currentDate: { lastModified: true }, [ `$${ operation }` ]: { [ key ]: value }
     })
 });

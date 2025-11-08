@@ -2,7 +2,7 @@ biome.json
 .idea/
 .meteor/local
 node_modules/
-private/
+private/*
 .vs/ProjectSettings.json
 .vs/rail/v17/.suo
 .vs/slnx.sqlite

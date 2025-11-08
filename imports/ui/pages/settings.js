@@ -3,60 +3,36 @@ import './settings.html';
 import '/imports/ui/components/dropdown/authorized';
 import '/imports/ui/components/dropdown/template';
 
-import { clients as clients } from '/imports/api/server.methods';
-import { Template } from 'meteor/templating';
+import { alert } from './run';
 import { Meteor } from 'meteor/meteor';
-import { Templates } from "../../api/collections";
-
-Template.clientList.events({
-    'click .button[id^=connect]'(e, template) {
-		const id = e.target.value;
-
-		Meteor.call('updateClient', id, 'connect');
-        Meteor.call('getClients');
-    },
-    'click .button[id^=disconnect]'(e, template) {
-		const id = e.target.value;
-
-		Meteor.call('updateClient', id, 'end');
-        Meteor.call('getClients');
-    }
-});
-
-Template.clientList.helpers({
-    clients(list) {
-        return _.values(list);
-    },
-	users() {
-		return Meteor.users.find({ 'profile.device': { $type: 'string' } });
-	}
-});
-
-Template.clientList.onCreated(function () {
-    this.autorun(() => this.subscribe('users', { 'profile.device': { $type: 'string' } }));
-	Meteor.call('getClients');
-});
+import { Template } from 'meteor/templating';
+import { Templates } from '../../api/collections';
 
 Template.settingsForm.events({
-    'submit .form'(e, template) {
+    'submit .form'(e) {
         e.preventDefault();
 
         const target = e.target || e.srcElement,
-            values = $('#' + target.getAttribute('id')).form('get values');
+            values = $(`#${ target.getAttribute('id') }`).form('get values');
 
-        Meteor.call('updateExperiment', this, values);
+        Meteor.call('updateAuthorized', this, values, (err, res) => {
+            if (!err) {
+                _.each(res.added, (u) =>
+                    alert('success', 'Experiment Updated', `${ u } added to authorized users.`));
+                _.each(res.removed, (u) =>
+                    alert('success', 'Experiment Updated', `${ u } removed from authorized users.`));
+            }
+        });
     }
 });
 
-Template.settingsForm.onRendered(function () {
-    $('.ui.form').form({ fields: { users: 'notEmpty' } });
-});
+Template.settingsForm.onRendered(() => $('.ui.form').form({ fields: { users: 'notEmpty' } }));
 
 Template.templateItem.events({
-    'click .delete.icon:not(.disabled)'(e, template) {
+    'click .delete.icon:not(.disabled)'(_e, template) {
         Meteor.call('removeTemplate', template.data._id);
     },
-    'click .star.icon'(e, template) {
+    'click .star.icon'(_e, template) {
         const experiment = template.parent(2);
         Meteor.call('setDefaultTemplate', experiment.data._id, template.data._id);
     }
@@ -65,7 +41,7 @@ Template.templateItem.events({
 Template.templateItem.helpers({
     current(id) {
         const experiment = Template.instance().parent();
-        if (experiment && experiment.data.templates) return (_.last(experiment.data.templates) === id);
+        if (experiment?.data.templates) return (_.last(experiment.data.templates) === id);
     },
     default(users) {
         return _.contains(users, 'any');

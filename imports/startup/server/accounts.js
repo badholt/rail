@@ -1,28 +1,28 @@
-import {Meteor} from 'meteor/meteor';
-import {UserStatus} from 'meteor/mizzao:user-status';
+import { Meteor } from 'meteor/meteor';
+import { UserStatus } from 'meteor/mizzao:user-status';
 
 const services = Meteor.settings.private.oAuth,
     configureServices = () => {
-        if (services) {
-            for (let service in services) {
-                if (services.hasOwnProperty(service)) {
-                    ServiceConfiguration.configurations.upsert({service: service}, {
-                        $set: services[service]
-                    });
-                }
-            }
+        if (!services) return;
+
+        for (const service in services) {
+            if (!_.has(services, 'service')) continue;
+
+            ServiceConfiguration.configurations.upsert({ service: service },
+                { $set: services[ service ] });
         }
     };
 
-Accounts.onCreateUser(function (profile, user) {
+Accounts.onCreateUser((profile, user) => {
     const type = user.services;
 
     if ('device' !== profile.profile.device) {
         user.profile = {
             device: false,
-            email: profile.email || (type.google || {}).email || '',
+            email: profile.email || type.google?.email || '',
+            experiments: [],
             name: profile.profile.name,
-            picture: (type.google || {}).picture || '',
+            picture: type.google?.picture || '',
             username: profile.username || type.google.email
         };
     } else {
@@ -41,14 +41,13 @@ Accounts.onCreateUser(function (profile, user) {
 
 configureServices();
 
-//TODO: Perhaps add a separate setup screen for running code on online boxes
-UserStatus.events.on('connectionLogin', function (fields) {
+UserStatus.events.on('connectionLogin', (fields) => {
     const user = Meteor.users.findOne(fields.userId);
 
     if (user.profile.device) {
         if (user.profile.address !== fields.ipAddr || user.profile.device !== fields.userAgent) {
-            Meteor.users.update(fields.userId, {$set: {'profile.address': fields.ipAddr}});
-            Meteor.users.update(fields.userId, {$set: {'profile.device': fields.userAgent}});
+            Meteor.users.update(fields.userId, { $set: { 'profile.address': fields.ipAddr } });
+            Meteor.users.update(fields.userId, { $set: { 'profile.device': fields.userAgent } });
         }
     }
 });

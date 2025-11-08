@@ -1,14 +1,5 @@
 <template name="settingsForm">
     <form id="settings-form" class="ui inverted form">
-        {{#if users}}
-            {{#if status.client}}
-                <div class="field">
-                    <label>Active Messaging Client(s)</label>
-                    {{> clientList}}
-                </div>
-            {{/if}}
-        {{/if}}
-
         <div class="ui equal width fields">
             <div class="field">
                 <label>Authorized Users</label>
@@ -18,39 +9,11 @@
 
         <div class="field">
             <label>Associated Template(s)</label>
-            {{> templateList}}
+            <div class="ui basic scrolling segment">{{> templateList}}</div>
         </div>
 
         <button class="ui black fluid button" type="submit">Save</button>
     </form>
-</template>
-
-<template name="clientList">
-	<div id="clients" class="ui cards">
-		{{#each users}}
-      		{{#each clients status.client}}
-    			<div class="ui inverted card">
-                    <div class="content">
-        				<div class="ui inverted {{#if ../status.online}}green{{else}}red{{/if}} header">
-                            <i class="left floated inverted {{#if connected}}{{#if disconnecting}}red loading notched {{else}}green {{/if}}{{else}}{{#if disconnected}}{{#if reconnecting}}green loading notched {{else}}red {{/if}}{{else}}red {{/if}}{{/if}}circle icon"></i>
-
-                            {{../profile.name}}
-                        </div>
-
-                        <div class="meta">({{options.clientId}})</div>
-
-        				<div class="description">
-                            <div class="ui inverted mini buttons">
-            					<button id="connect-{{options.clientId}}" class="ui button" type="button" value="{{options.clientId}}">Connect</button>
-                                <div class="or"></div>
-            					<button id="disconnect-{{options.clientId}}" class="ui grey button" type="button" value="{{options.clientId}}">Disconnect</button>
-            				</div>
-                        </div>
-                    </div>
-    			</div>
-    		{{/each}}
-		{{/each}}
-	</div>
 </template>
 
 <template name="templateList">
@@ -70,8 +33,20 @@
             </div>
 
             <div class="content">
-                <div class="description">{{#each users}}{{> profileAvatar this}}{{/each}}</div>
-                <div class="header">{{#if name}}{{name}}{{/if}}</div>
+                <div class="header">
+                    {{#each users}}
+                        {{#if $eq this "any"}}
+                            <i class="icons">
+                              <i class="big circle outline icon"></i>
+                              <i class="user icon"></i>
+                            </i>
+                        {{else}}
+                            {{> profileAvatar this}}
+                        {{/if}}
+                    {{/each}}
+
+                    {{#if name}}{{name}}{{/if}}
+                </div>
             </div>
         </div>
     </div>
