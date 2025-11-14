@@ -10,7 +10,7 @@
             </div>
 
             <div class="two wide right floated column">
-                <span id="add-subject" class="ui huge black icon button">
+                <span id="add-subject" class="ui large black icon button">
                     <i class="icons">
                         <i class="grey paw icon"></i>
                         <i class="grey corner inverted add icon"></i>
@@ -64,16 +64,18 @@
                     </div>
                 {{/if}}
 
-                <div class="ui grey inverted segment">
-                    <div class="ui labels">
-                        {{#each experiment experiments}}
-                            <a class="ui label" href="{{link}}">
-                                <i class="linkify icon"></i>
-                                {{title}}
-                            </a>
-                        {{/each}}
+                {{#if $gt experiments.length 0}}
+                    <div class="ui grey inverted segment">
+                        <div class="ui labels">
+                            {{#each experiment experiments}}
+                                <a class="ui label" href="{{link}}">
+                                    <i class="linkify icon"></i>
+                                    {{title}}
+                                </a>
+                            {{/each}}
+                        </div>
                     </div>
-                </div>
+                {{/if}}
             </div>
         </div>
 
@@ -102,9 +104,6 @@
 <template name="subjectModal">
     <div id="subject-modal" class="ui inverted modal">
         <i class="close icon"></i>
-
-        <div class="content">
-            {{> subjectForm}}
-        </div>
+        <div class="scrolling content">{{> subjectForm}}</div>
     </div>
 </template>

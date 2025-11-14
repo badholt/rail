@@ -9,19 +9,19 @@
 <template name="dataMenu">
     <div class="ui top attached tabular menu">
         <div class="ui inverted right floated stackable menu">
-            {{#if getVar dataTemplate}}
-                {{#if selected}}
-                    <a id="download" class="ui mini animated {{#if selected}}active blue{{/if}} button item">
-                        <div class="hidden content">Download</div>
-                        <div class="visible content"><i class="large download icon"></i></div>
-                    </a>
+            {{#if selected}}
+                <a id="delete" class="ui mini animated {{#if selected}}active red{{/if}} button item">
+                    <div class="hidden content">Delete</div>
+                    <div class="visible content"><i class="large trash icon"></i></div>
+                </a>
 
+                {{#if getVar dataTemplate}}
                     {{> formatDropdown default=format}}
                     {{> precisionTimeCheckbox}}
 
-                    <a id="delete" class="ui mini animated {{#if selected}}active red{{/if}} button item">
-                        <div class="hidden content">Delete</div>
-                        <div class="visible content"><i class="large trash icon"></i></div>
+                    <a id="download" class="ui mini animated {{#if selected}}active blue{{/if}} button item">
+                        <div class="hidden content">Download</div>
+                        <div class="visible content"><i class="large download icon"></i></div>
                     </a>
                 {{/if}}
             {{/if}}

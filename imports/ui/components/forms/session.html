@@ -63,6 +63,13 @@
                     <label>Offset <span class="ui mini horizontal label">Trials</span></label>
                     <input type="number" name="session.correction.offset" min="0" placeholder="#" value="{{correction.offset}}">
                 </div>
+
+                <div class="inline field">
+                    <div class="ui toggle inverted checkbox">
+                      <input type="checkbox" name="session.correction.abort" class="hidden" checked="{{correction.abort}}">
+                      <label>Abort On Correct</label>
+                    </div>
+                </div>
             </div>
         {{/if}}
 
@@ -119,7 +126,7 @@
 
                 <div class="inline field">
                     <div class="ui toggle inverted checkbox">
-                      <input type="checkbox" tabindex="0" class="hidden">
+                      <input type="checkbox" name="session.distribution.modify" class="hidden">
                       <label>Modify Base Size</label>
                     </div>
                 </div>

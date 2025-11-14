@@ -104,7 +104,7 @@
     <div id="modal-calibrate-{{profile.username}}" class="ui basic modal">
         <div class="header">Calibrate Screen for {{profile.name}}</div>
         
-        <div class="content">
+        <div class="scrolling content">
             {{#with preview 'cross'}}
                 <svg id="cross-preview" style="{{#with screen}}height: {{height}}; width: {{width}};{{/with}}background: #1b1c1d; border-left-color: #2185d0; border-top-color: #f2711c; display: block; margin: 0 auto 1.5em auto;">
                     <text x="20" y="20" style="fill: #f2711c;">{{screen.width}}</text>

@@ -73,6 +73,23 @@ nav#main-menu a#home:has(.image) {
     background: #000;
 }
 
+[id^="modal-calibrate-"] ::-webkit-scrollbar-button, #subject-modal ::-webkit-scrollbar-button {
+    height: 4em;
+}
+
+[id^="modal-calibrate-"] ::-webkit-scrollbar-thumb, #subject-modal ::-webkit-scrollbar-thumb {
+    background: rgb(255 255 255 / 25%);
+}
+
+[id^="modal-calibrate-"] ::-webkit-scrollbar-thumb:hover, #subject-modal ::-webkit-scrollbar-thumb:hover {
+    background: rgb(255 255 255 / 80%);
+}
+
+[id^="modal-calibrate-"] ::-webkit-scrollbar-track, #subject-modal ::-webkit-scrollbar-track {
+    background: rgb(255 255 255 / 10%);
+    border-radius: 1em;
+}
+
 
 /**------ CLASSES: ------*/
 .fade {
@@ -82,4 +99,8 @@ nav#main-menu a#home:has(.image) {
 
 .fade:hover {
     opacity: 1;
+}
+
+.italicized {
+    font-style: italic;
 }

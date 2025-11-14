@@ -103,7 +103,16 @@ Template.sessionForm.onCreated(function () {
 Template.sessionForm.onRendered(() => {
     const template = Template.instance();
 
-    $('.ui.checkbox').checkbox({
+    template.$('.ui.checkbox:has(input[name="session.correction.abort"])').checkbox({
+        onChange: () => {
+            const form = template.parent(2),
+                session = form.session.get();
+
+            session.correction.abort = !session.correction.abort;
+            form.session.set(session);
+        }
+    });
+    template.$('.ui.checkbox:has(input[name="session.distribution.modify"])').checkbox({
         onChecked: () => template.modify.set(true),
         onUnchecked: () => template.modify.set(false)
     });

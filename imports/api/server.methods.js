@@ -49,7 +49,7 @@ if (Meteor.isServer) Meteor.methods({
         user: Meteor.userId()
     }),
     'addSubject': (fields) => Subjects.insert({
-        birthday: moment().subtract(fields.age, fields.unit).calendar(),
+        birthday: fields.birthday,
         description: fields.description,
         experiments: fields.experiments,
         identifier: fields.identifier,
