@@ -21,7 +21,6 @@ By leveraging the power of web development tools, open source software, and Inte
 - ✔️ Dark mode for low-light requirements🌙
 
 ## 🐞 Known Issues
-- [ ] Incompatible video download & deletion scripts for Raspbian Bookworm <sup>(update planned for v1.0.1)</sup>
 - [ ] Not fully-asynchronous for Meteor 3.0 <sup>(upgrade planned for v2.0.0)</sup>
 
 ## ℹ️ Documentation

@@ -71,6 +71,7 @@ const sessions = new Tabular.Table({
     			}
     		}
     	},
+        limit: 500,
         order: [ [ 1, 'desc' ] ],
         orderMulti: false,
         ordering: {

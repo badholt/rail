@@ -3143,6 +3143,24 @@ export const templates = [
               ]
             },
             {
+              "action": "store",
+              "specifications": {
+                "value": "V"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "value": 0
+              },
+              "targets": [
+                "V"
+              ]
+            },
+            {
               "action": "+",
               "delay": 5000,
               "specifications": {
@@ -3305,6 +3323,24 @@ export const templates = [
               ]
             },
             {
+              "action": "store",
+              "specifications": {
+                "value": "H"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "value": 0
+              },
+              "targets": [
+                "H"
+              ]
+            },
+            {
               "action": "+",
               "delay": 5000,
               "specifications": {
@@ -3458,6 +3494,25 @@ export const templates = [
               },
               "targets": [
                 "#main-panel.nocturnal"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "value": "H"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "amount": 1,
+                "type": "+"
+              },
+              "targets": [
+                "H"
               ]
             },
             {
@@ -3618,6 +3673,25 @@ export const templates = [
               ]
             },
             {
+              "action": "store",
+              "specifications": {
+                "value": "V"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "amount": 1,
+                "type": "+"
+              },
+              "targets": [
+                "V"
+              ]
+            },
+            {
               "action": "+",
               "delay": 15000,
               "specifications": {
@@ -3713,7 +3787,56 @@ export const templates = [
           "incorrect": []
         },
         {
-          "conditions": [],
+          "conditions": [
+            {
+              "comparison": "=",
+              "objects": [
+                {
+                  "name": "stimuli",
+                  "property": "0.orientation.value"
+                }
+              ],
+              "subjects": [
+                {
+                  "name": "number",
+                  "property": 0
+                }
+              ]
+            },
+            {
+              "comparison": "=",
+              "objects": [
+                {
+                  "name": "count",
+                  "property": {
+                    "conditions": [
+                      {
+                        "comparison": "<",
+                        "objects": [
+                          {
+                            "name": "number",
+                            "property": 0
+                          }
+                        ],
+                        "subjects": [
+                          {
+                            "name": "event",
+                            "property": "clientY"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "subjects": [
+                {
+                  "name": "number",
+                  "property": 0
+                }
+              ]
+            }
+          ],
           "correct": [
             {
               "action": "clear",
@@ -3724,18 +3847,109 @@ export const templates = [
               ]
             },
             {
-              "action": "+",
+              "action": "store",
+              "specifications": {
+                "value": "V"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
               "specifications": {
                 "amount": 1,
-                "duplicate": true
+                "type": "+"
               },
-              "delay": 0,
               "targets": [
-                "trial"
+                "V"
               ]
             }
           ],
-          "event": "iti.end",
+          "event": "trial.\\d*.end",
+          "incorrect": []
+        },
+        {
+          "conditions": [
+            {
+              "comparison": "=",
+              "objects": [
+                {
+                  "name": "stimuli",
+                  "property": "0.orientation.value"
+                }
+              ],
+              "subjects": [
+                {
+                  "name": "number",
+                  "property": 90
+                }
+              ]
+            },
+            {
+              "comparison": "=",
+              "objects": [
+                {
+                  "name": "count",
+                  "property": {
+                    "conditions": [
+                      {
+                        "comparison": "<",
+                        "objects": [
+                          {
+                            "name": "number",
+                            "property": 0
+                          }
+                        ],
+                        "subjects": [
+                          {
+                            "name": "event",
+                            "property": "clientY"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "subjects": [
+                {
+                  "name": "number",
+                  "property": 0
+                }
+              ]
+            }
+          ],
+          "correct": [
+            {
+              "action": "clear",
+              "delay": 0,
+              "specifications": {},
+              "targets": [
+                "timers"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "value": "H"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "amount": 1,
+                "type": "+"
+              },
+              "targets": [
+                "H"
+              ]
+            }
+          ],
+          "event": "trial.\\d*.end",
           "incorrect": []
         }
       ]
@@ -3747,6 +3961,7 @@ export const templates = [
       "iti": 10000,
       "total": 0,
       "correction": {
+        "after": 3,
         "bias": 0.5,
         "number": 4,
         "offset": 0,
@@ -3759,6 +3974,12 @@ export const templates = [
         "repeats": 3,
         "size": 225,
         "multiplier": 1.25
+      },
+      "storage": {
+        "correction": 0,
+        "stimulus": "",
+        "H": 0,
+        "V": 0
       }
     },
     "stages": [
@@ -3975,7 +4196,7 @@ export const templates = [
               "action": "+",
               "specifications": {
                 "amount": 1,
-                "duplicate": 20
+                "duplicate": true
               },
               "delay": 0,
               "targets": [
@@ -4137,6 +4358,24 @@ export const templates = [
               ]
             },
             {
+              "action": "store",
+              "specifications": {
+                "value": "H"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "value": 0
+              },
+              "targets": [
+                "H"
+              ]
+            },
+            {
               "action": "+",
               "delay": 5000,
               "specifications": {
@@ -4299,6 +4538,24 @@ export const templates = [
               ]
             },
             {
+              "action": "store",
+              "specifications": {
+                "value": "V"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "value": 0
+              },
+              "targets": [
+                "V"
+              ]
+            },
+            {
               "action": "+",
               "delay": 5000,
               "specifications": {
@@ -4452,6 +4709,25 @@ export const templates = [
               },
               "targets": [
                 "#main-panel.nocturnal"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "value": "V"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "amount": 1,
+                "type": "+"
+              },
+              "targets": [
+                "V"
               ]
             },
             {
@@ -4612,6 +4888,25 @@ export const templates = [
               ]
             },
             {
+              "action": "store",
+              "specifications": {
+                "value": "H"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "amount": 1,
+                "type": "+"
+              },
+              "targets": [
+                "H"
+              ]
+            },
+            {
               "action": "+",
               "delay": 15000,
               "specifications": {
@@ -4707,7 +5002,56 @@ export const templates = [
           "incorrect": []
         },
         {
-          "conditions": [],
+          "conditions": [
+            {
+              "comparison": "=",
+              "objects": [
+                {
+                  "name": "stimuli",
+                  "property": "0.orientation.value"
+                }
+              ],
+              "subjects": [
+                {
+                  "name": "number",
+                  "property": 0
+                }
+              ]
+            },
+            {
+              "comparison": "=",
+              "objects": [
+                {
+                  "name": "count",
+                  "property": {
+                    "conditions": [
+                      {
+                        "comparison": "<",
+                        "objects": [
+                          {
+                            "name": "number",
+                            "property": 0
+                          }
+                        ],
+                        "subjects": [
+                          {
+                            "name": "event",
+                            "property": "clientY"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "subjects": [
+                {
+                  "name": "number",
+                  "property": 0
+                }
+              ]
+            }
+          ],
           "correct": [
             {
               "action": "clear",
@@ -4718,18 +5062,109 @@ export const templates = [
               ]
             },
             {
-              "action": "+",
+              "action": "store",
+              "specifications": {
+                "value": "V"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
               "specifications": {
                 "amount": 1,
-                "duplicate": true
+                "type": "+"
               },
-              "delay": 0,
               "targets": [
-                "trial"
+                "V"
               ]
             }
           ],
-          "event": "iti.end",
+          "event": "trial.\\d*.end",
+          "incorrect": []
+        },
+        {
+          "conditions": [
+            {
+              "comparison": "=",
+              "objects": [
+                {
+                  "name": "stimuli",
+                  "property": "0.orientation.value"
+                }
+              ],
+              "subjects": [
+                {
+                  "name": "number",
+                  "property": 90
+                }
+              ]
+            },
+            {
+              "comparison": "=",
+              "objects": [
+                {
+                  "name": "count",
+                  "property": {
+                    "conditions": [
+                      {
+                        "comparison": "<",
+                        "objects": [
+                          {
+                            "name": "number",
+                            "property": 0
+                          }
+                        ],
+                        "subjects": [
+                          {
+                            "name": "event",
+                            "property": "clientY"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "subjects": [
+                {
+                  "name": "number",
+                  "property": 0
+                }
+              ]
+            }
+          ],
+          "correct": [
+            {
+              "action": "clear",
+              "delay": 0,
+              "specifications": {},
+              "targets": [
+                "timers"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "value": "H"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "amount": 1,
+                "type": "+"
+              },
+              "targets": [
+                "H"
+              ]
+            }
+          ],
+          "event": "trial.\\d*.end",
           "incorrect": []
         }
       ]
@@ -4741,6 +5176,7 @@ export const templates = [
       "iti": 10000,
       "total": 0,
       "correction": {
+        "after": 3,
         "bias": 0.5,
         "number": 4,
         "offset": 0,
@@ -4753,6 +5189,12 @@ export const templates = [
         "repeats": 3,
         "size": 225,
         "multiplier": 1.25
+      },
+      "storage": {
+        "correction": 0,
+        "stimulus": "",
+        "H": 0,
+        "V": 0
       }
     },
     "stages": [
@@ -5131,6 +5573,24 @@ export const templates = [
               ]
             },
             {
+              "action": "store",
+              "specifications": {
+                "value": "V"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "value": 0
+              },
+              "targets": [
+                "V"
+              ]
+            },
+            {
               "action": "+",
               "delay": 5000,
               "specifications": {
@@ -5293,6 +5753,24 @@ export const templates = [
               ]
             },
             {
+              "action": "store",
+              "specifications": {
+                "value": "H"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "value": 0
+              },
+              "targets": [
+                "H"
+              ]
+            },
+            {
               "action": "+",
               "delay": 5000,
               "specifications": {
@@ -5446,6 +5924,25 @@ export const templates = [
               },
               "targets": [
                 "#main-panel.nocturnal"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "value": "H"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "amount": 1,
+                "type": "+"
+              },
+              "targets": [
+                "H"
               ]
             },
             {
@@ -5606,6 +6103,25 @@ export const templates = [
               ]
             },
             {
+              "action": "store",
+              "specifications": {
+                "value": "V"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "amount": 1,
+                "type": "+"
+              },
+              "targets": [
+                "V"
+              ]
+            },
+            {
               "action": "+",
               "delay": 15000,
               "specifications": {
@@ -5701,7 +6217,56 @@ export const templates = [
           "incorrect": []
         },
         {
-          "conditions": [],
+          "conditions": [
+            {
+              "comparison": "=",
+              "objects": [
+                {
+                  "name": "stimuli",
+                  "property": "0.orientation.value"
+                }
+              ],
+              "subjects": [
+                {
+                  "name": "number",
+                  "property": 0
+                }
+              ]
+            },
+            {
+              "comparison": "=",
+              "objects": [
+                {
+                  "name": "count",
+                  "property": {
+                    "conditions": [
+                      {
+                        "comparison": "<",
+                        "objects": [
+                          {
+                            "name": "number",
+                            "property": 0
+                          }
+                        ],
+                        "subjects": [
+                          {
+                            "name": "event",
+                            "property": "clientY"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "subjects": [
+                {
+                  "name": "number",
+                  "property": 0
+                }
+              ]
+            }
+          ],
           "correct": [
             {
               "action": "clear",
@@ -5712,18 +6277,109 @@ export const templates = [
               ]
             },
             {
-              "action": "+",
+              "action": "store",
+              "specifications": {
+                "value": "V"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
               "specifications": {
                 "amount": 1,
-                "duplicate": true
+                "type": "+"
               },
-              "delay": 0,
               "targets": [
-                "trial"
+                "V"
               ]
             }
           ],
-          "event": "iti.end",
+          "event": "trial.\\d*.end",
+          "incorrect": []
+        },
+        {
+          "conditions": [
+            {
+              "comparison": "=",
+              "objects": [
+                {
+                  "name": "stimuli",
+                  "property": "0.orientation.value"
+                }
+              ],
+              "subjects": [
+                {
+                  "name": "number",
+                  "property": 90
+                }
+              ]
+            },
+            {
+              "comparison": "=",
+              "objects": [
+                {
+                  "name": "count",
+                  "property": {
+                    "conditions": [
+                      {
+                        "comparison": "<",
+                        "objects": [
+                          {
+                            "name": "number",
+                            "property": 0
+                          }
+                        ],
+                        "subjects": [
+                          {
+                            "name": "event",
+                            "property": "clientY"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "subjects": [
+                {
+                  "name": "number",
+                  "property": 0
+                }
+              ]
+            }
+          ],
+          "correct": [
+            {
+              "action": "clear",
+              "delay": 0,
+              "specifications": {},
+              "targets": [
+                "timers"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "value": "H"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "amount": 1,
+                "type": "+"
+              },
+              "targets": [
+                "H"
+              ]
+            }
+          ],
+          "event": "trial.\\d*.end",
           "incorrect": []
         }
       ]
@@ -5735,6 +6391,7 @@ export const templates = [
       "iti": 10000,
       "total": 0,
       "correction": {
+        "after": 3,
         "bias": 0.5,
         "number": 4,
         "offset": 0,
@@ -5747,6 +6404,12 @@ export const templates = [
         "repeats": 3,
         "size": 225,
         "multiplier": 1.25
+      },
+      "storage": {
+        "correction": 0,
+        "stimulus": "",
+        "H": 0,
+        "V": 0
       }
     },
     "stages": [
@@ -5820,7 +6483,7 @@ export const templates = [
     "_id": "shp6b_vert_hup",
     "author": "",
     "devices": "any",
-    "icon": "",
+    "icon": "default bars",
     "inputs": [
       [
         {
@@ -5937,7 +6600,8 @@ export const templates = [
               "action": "+",
               "delay": 30000,
               "specifications": {
-                "amount": 1
+                "amount": 1,
+                "duplicate": true
               },
               "targets": [
                 "trial"
@@ -5962,7 +6626,7 @@ export const templates = [
               "action": "+",
               "specifications": {
                 "amount": 1,
-                "duplicate": 20
+                "duplicate": true
               },
               "delay": 0,
               "targets": [
@@ -6124,6 +6788,24 @@ export const templates = [
               ]
             },
             {
+              "action": "store",
+              "specifications": {
+                "value": "H"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "value": 0
+              },
+              "targets": [
+                "H"
+              ]
+            },
+            {
               "action": "+",
               "delay": 5000,
               "specifications": {
@@ -6286,6 +6968,24 @@ export const templates = [
               ]
             },
             {
+              "action": "store",
+              "specifications": {
+                "value": "V"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "value": 0
+              },
+              "targets": [
+                "V"
+              ]
+            },
+            {
               "action": "+",
               "delay": 5000,
               "specifications": {
@@ -6442,10 +7142,30 @@ export const templates = [
               ]
             },
             {
+              "action": "store",
+              "specifications": {
+                "value": "V"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "amount": 1,
+                "type": "+"
+              },
+              "targets": [
+                "V"
+              ]
+            },
+            {
               "action": "+",
               "delay": 15000,
               "specifications": {
-                "amount": 1
+                "amount": 1,
+                "duplicate": true
               },
               "targets": [
                 "trial"
@@ -6598,10 +7318,30 @@ export const templates = [
               ]
             },
             {
+              "action": "store",
+              "specifications": {
+                "value": "H"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "amount": 1,
+                "type": "+"
+              },
+              "targets": [
+                "H"
+              ]
+            },
+            {
               "action": "+",
               "delay": 15000,
               "specifications": {
-                "amount": 1
+                "amount": 1,
+                "duplicate": true
               },
               "targets": [
                 "trial"
@@ -6692,7 +7432,56 @@ export const templates = [
           "incorrect": []
         },
         {
-          "conditions": [],
+          "conditions": [
+            {
+              "comparison": "=",
+              "objects": [
+                {
+                  "name": "stimuli",
+                  "property": "0.orientation.value"
+                }
+              ],
+              "subjects": [
+                {
+                  "name": "number",
+                  "property": 0
+                }
+              ]
+            },
+            {
+              "comparison": "=",
+              "objects": [
+                {
+                  "name": "count",
+                  "property": {
+                    "conditions": [
+                      {
+                        "comparison": "<",
+                        "objects": [
+                          {
+                            "name": "number",
+                            "property": 0
+                          }
+                        ],
+                        "subjects": [
+                          {
+                            "name": "event",
+                            "property": "clientY"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "subjects": [
+                {
+                  "name": "number",
+                  "property": 0
+                }
+              ]
+            }
+          ],
           "correct": [
             {
               "action": "clear",
@@ -6703,18 +7492,109 @@ export const templates = [
               ]
             },
             {
-              "action": "+",
+              "action": "store",
+              "specifications": {
+                "value": "V"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
               "specifications": {
                 "amount": 1,
-                "duplicate": 20
+                "type": "+"
               },
-              "delay": 0,
               "targets": [
-                "trial"
+                "V"
               ]
             }
           ],
-          "event": "iti.end",
+          "event": "trial.\\d*.end",
+          "incorrect": []
+        },
+        {
+          "conditions": [
+            {
+              "comparison": "=",
+              "objects": [
+                {
+                  "name": "stimuli",
+                  "property": "0.orientation.value"
+                }
+              ],
+              "subjects": [
+                {
+                  "name": "number",
+                  "property": 90
+                }
+              ]
+            },
+            {
+              "comparison": "=",
+              "objects": [
+                {
+                  "name": "count",
+                  "property": {
+                    "conditions": [
+                      {
+                        "comparison": "<",
+                        "objects": [
+                          {
+                            "name": "number",
+                            "property": 0
+                          }
+                        ],
+                        "subjects": [
+                          {
+                            "name": "event",
+                            "property": "clientY"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "subjects": [
+                {
+                  "name": "number",
+                  "property": 0
+                }
+              ]
+            }
+          ],
+          "correct": [
+            {
+              "action": "clear",
+              "delay": 0,
+              "specifications": {},
+              "targets": [
+                "timers"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "value": "H"
+              },
+              "targets": [
+                "stimulus"
+              ]
+            },
+            {
+              "action": "store",
+              "specifications": {
+                "amount": 1,
+                "type": "+"
+              },
+              "targets": [
+                "H"
+              ]
+            }
+          ],
+          "event": "trial.\\d*.end",
           "incorrect": []
         }
       ]
@@ -6725,11 +7605,26 @@ export const templates = [
       "duration": 1800000,
       "iti": 10000,
       "total": 0,
+      "correction": {
+        "after": 3,
+        "bias": 0.5,
+        "number": 4,
+        "offset": 0,
+        "targets": [
+          "stimuli.0.orientation.value"
+        ]
+      },
       "distribution": {
         "ratio": 0.5,
         "repeats": 3,
         "size": 225,
         "multiplier": 1.25
+      },
+      "storage": {
+        "correction": 0,
+        "stimulus": "",
+        "H": 0,
+        "V": 0
       }
     },
     "stages": [

@@ -2,28 +2,31 @@
     <form id="session-form" class="ui equal width inverted form">
         <div class="fields">
             <div class="field">
-                <label>
+                <label for="session-delay">
                     Delay (before session start)
                     <span class="ui mini horizontal label">ms</span>
                 </label>
-                <input type="number" name="session.delay"
+
+                <input type="number" name="session.delay" id="session-delay"
                        min="0" placeholder="#" value="{{delay}}">
             </div>
             <div class="field">
-                <label>
+                <label for="session-iti">
                     Intertrial Interval (ITI)
                     <span class="ui mini horizontal label">ms</span>
                 </label>
-                <input type="number" name="session.iti"
+
+                <input type="number" name="session.iti" id="session-iti"
                        min="0" placeholder="#" value="{{iti}}">
             </div>
             {{#if light}}
                 <div class="field">
-                    <label>
+                    <label for="light-duration">
                         Light Duration
                         <span class="ui mini horizontal label">ms</span>
                     </label>
-                    <input type="number" name="light.duration"
+
+                    <input type="number" name="light.duration" id="light-duration"
                            min="0" placeholder="#" value="{{light.duration}}">
                 </div>
             {{/if}}
@@ -31,125 +34,206 @@
 
         <div class="fields">
             <div class="field">
-                <label>
+                <label for="session-duration">
                     Duration
                     <span class="ui mini horizontal label">ms</span>
                 </label>
-                <input type="number" name="session.duration"
+
+                <input type="number" name="session.duration" id="session-duration"
                        min="0" placeholder="#" value="{{duration}}">
             </div>
 
             <div class="field">
-                <label>No. of Trials</label>
-                <input type="number" name="session.total" min="0" placeholder="#" value="{{total}}">
+                <label for="session-total">No. of Trials</label>
+                <input type="number" name="session.total" id="session-total"
+                       min="0" placeholder="#" value="{{total}}">
             </div>
         </div>
 
-        {{#if correction}}
-            <div class="ui horizontal inverted divider">Correction Trial Specifications</div>
-            <div class="fields">
-                <div class="field">
-                    <label>Bias <span class="ui mini horizontal label">% Opposing</span></label>
-                    <input type="number" name="session.correction.bias" min="0" max="1" step="0.01"
-                           placeholder="#" value="{{correction.bias}}">
-                </div>
-
-                <div class="field">
-                    <label>Number <span class="ui mini horizontal label">Trials</span></label>
-                    <input type="number" name="session.correction.number" min="0" placeholder="#" value="{{correction.number}}">
-                </div>
-
-                <div class="field">
-                    <label>Offset <span class="ui mini horizontal label">Trials</span></label>
-                    <input type="number" name="session.correction.offset" min="0" placeholder="#" value="{{correction.offset}}">
-                </div>
-
-                <div class="inline field">
-                    <div class="ui toggle inverted checkbox">
-                      <input type="checkbox" name="session.correction.abort" class="hidden" checked="{{correction.abort}}">
-                      <label>Abort On Correct</label>
-                    </div>
-                </div>
-            </div>
-        {{/if}}
-
-        {{#if distribution}}
-            <div class="ui horizontal inverted divider">Stimuli Probability Distribution Specifications</div>
-
-            <div class="ui inverted mini message">
-                <div class="ui horizontal inverted list">
-                    <div class="item">
-                        <i class="disabled right triangle icon"></i>
-
-                        <div class="content">
-                            <div class="header" title="Total number of trials in a distribution given a multiplier of one">
-                                base no. trials
-
-                                <div class="description">
-                                    <label class="ui mini grey inverted horizontal label">{{base}}</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="item">
-                        <i class="disabled right triangle icon"></i>
-
-                        <div class="content">
-                            <div class="header" title="Generated sample given current parameters">
-                                sample distribution
-
-                                <div class="description">
-                                    {{#each sample distribution.ratio distribution.size}}
-                                        <label class="ui mini {{color}} inverted horizontal label">
-                                            {{variable}} <span class="detail">{{weight}} trials</span>
-                                        </label>
-                                    {{/each}}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="fields">
-                <div class="{{#unless modify}}disabled{{/unless}} field">
-                    <label>Trials Multiplier</label>
-                    <input type="number" name="session.distribution.multiplier"
-                           min="1" step="0.00001" placeholder="#" value="{{distribution.multiplier}}">
-                </div>
-
-                <div class="{{#unless modify}}disabled{{/unless}} field">
-                    <label>Distribution Size <span class="ui mini horizontal label">Trials</span></label>
-                    <input type="number" name="session.distribution.size" min="0" placeholder="#" value="{{distribution.size}}">
-                </div>
-
-                <div class="inline field">
-                    <div class="ui toggle inverted checkbox">
-                      <input type="checkbox" name="session.distribution.modify" class="hidden">
-                      <label>Modify Base Size</label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="fields">
-                <div class="field">
-                    <label>Orientation Ratio <span class="ui mini horizontal label">% Vertical</span></label>
-                    <input type="number" name="session.distribution.ratio"
-                           min="0" max="1" step="0.01"
-                           placeholder="#" value="{{distribution.ratio}}">
-                </div>
-
-                <div class="disabled field">
-                    <label>Orientation Ratio <span class="ui mini horizontal label">% Horizontal</span></label>
-                    <input type="number" step="0.01" value="{{remainder distribution.ratio}}">
-                </div>
-
-                <div class="disabled field">
-                    <label>Max No. Repeats <span class="ui mini horizontal label">Trials</span></label>
-                    <input type="number" name="session.distribution.repeats" min="0" placeholder="#" value="{{distribution.repeats}}">
-                </div>
-            </div>
-        {{/if}}
+        {{#if $or correction distribution}}{{> trialSpecificationForm}}{{/if}}
     </form>
+</template>
+
+<template name="trialSpecificationForm">
+    {{#if correction}}
+        <div class="ui horizontal inverted divider">Correction Trial Specifications</div>
+        <div class="fields">
+            <div class="field">
+                <label for="session-correction-bias">
+                    Bias <span class="ui mini horizontal label">% Opposing</span>
+                </label>
+
+                <input type="number" name="session.correction.bias" id="session-correction-bias"
+                       min="0" max="1" step="0.01" placeholder="#" value="{{correction.bias}}">
+            </div>
+
+            <div class="field">
+                <label for="session-correction-number">
+                    Number <span class="ui mini horizontal label">Trials</span>
+                </label>
+
+                <input type="number" name="session.correction.number" id="session-correction-number"
+                       min="0" placeholder="#" value="{{correction.number}}">
+            </div>
+        </div>
+
+        <div class="fields">
+            <div class="field">
+                <label for="session-correction-abort">Abort on Correct</label>
+
+                <div class="ui toggle inverted checkbox">
+                  <input type="checkbox" name="session.correction.abort" id="session-correction-abort" class="hidden"
+                         checked="{{correction.abort}}">
+
+                  <label for="session-correction-abort"
+                         title="{{#if correction.abort}}A correct answer will prematurely end a correction trial sequence{{else}}
+                         Correct answers will not prevent a correction trial from completing all trials in a sequence{{/if}}">
+                    {{#if correction.abort}}
+                        <i class="history icon"></i>
+                        Interrupt Sequence
+                    {{else}}
+                        <i class="check double icon"></i>
+                        Do Not Interrupt
+                    {{/if}}
+                  </label>
+                </div>
+            </div>
+
+            <div class="two-tone field">
+                <label for="session-correction-instigate">Instigation Strategy</label>
+
+                <div class="ui toggle inverted checkbox">
+                    <input type="checkbox" name="session.correction.instigate" id="session-correction-instigate" class="hidden"
+                           checked="{{instigate}}">
+
+                    <label for="session-correction-instigate"
+                           title="{{#if instigate}}Correction trial sequences trigger after a set number of incorrect answers per stimulus
+                           {{else}}Correction trial sequences trigger after a set number of gap trials following an incorrect answer{{/if}}">
+                        {{#if instigate}}
+                            <i class="hourglass half icon"></i>
+                            Start Sequence <b class="blue underline">After</b> <em>x</em> Incorrect
+                        {{else}}
+                            <i class="ruler horizontal icon"></i>
+                            <b class="orange underline">Offset</b> Sequence By <em>n</em> Trials
+                        {{/if}}
+                    </label>
+                </div>
+            </div>
+
+            {{#if instigate}}
+                <div class="field">
+                    <label for="session-correction-after">
+                        After <span class="ui mini horizontal label"><em>x</em> Incorrect Trials</span>
+                    </label>
+
+                    <input type="number" name="session.correction.after" id="session-correction-after"
+                           min="0" placeholder="#" value="{{correction.after}}"
+                           title="Correction trial sequences trigger after a set number of incorrect answers for a stimulus">
+                </div>
+            {{else}}
+                <div class="field">
+                    <label for="session-correction-offset">
+                        Offset <span class="ui mini horizontal label"><em>n</em> Gap Trials</span>
+                    </label>
+
+                    <input type="number" name="session.correction.offset" id="session-correction-offset"
+                           min="0" placeholder="#" value="{{correction.offset}}"
+                           title="Correction trial sequences trigger after a set number of gap trials following an incorrect answer">
+                </div>
+            {{/if}}
+        </div>
+    {{/if}}
+
+    {{#if distribution}}
+        <div class="ui horizontal inverted divider">Stimuli Probability Distribution Specifications</div>
+
+        <div class="ui inverted mini message">
+            <div class="ui horizontal inverted list">
+                <div class="item">
+                    <i class="disabled right triangle icon"></i>
+
+                    <div class="content">
+                        <div class="header" title="Total number of trials in a distribution given a multiplier of one">
+                            base no. trials
+
+                            <div class="description">
+                                <span class="ui mini grey inverted horizontal label">{{base}}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="item">
+                    <i class="disabled right triangle icon"></i>
+
+                    <div class="content">
+                        <div class="header" title="Generated sample given current parameters">
+                            sample distribution
+
+                            <div class="description">
+                                {{#each sample distribution.ratio distribution.size}}
+                                    <span class="ui mini {{color}} inverted horizontal label">
+                                        {{variable}} <span class="detail">{{weight}} trials</span>
+                                    </span>
+                                {{/each}}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fields">
+            <div class="{{#unless modify}}disabled{{/unless}} field">
+                <label for="session-distribution-multiplier">Trials Multiplier</label>
+                <input type="number" name="session.distribution.multiplier" id="session-distribution-multiplier"
+                       min="1" step="0.00001" placeholder="#" value="{{distribution.multiplier}}">
+            </div>
+
+            <div class="{{#unless modify}}disabled{{/unless}} field">
+                <label for="session-distribution-size">
+                    Distribution Size <span class="ui mini horizontal label">Trials</span>
+                </label>
+
+                <input type="number" name="session.distribution.size" id="session-distribution-size"
+                       min="0" placeholder="#" value="{{distribution.size}}">
+            </div>
+
+            <div class="inline field">
+                <div class="ui toggle inverted checkbox">
+                  <input type="checkbox" name="session.distribution.modify" id="session-distribution-modify" class="hidden">
+                  <label for="session-distribution-modify">Modify Base Size</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="fields">
+            <div class="field">
+                <label for="session-distribution-ratio-V">
+                    Orientation Ratio <span class="ui mini horizontal label">% Vertical</span>
+                </label>
+
+                <input type="number" name="session.distribution.ratio" id="session-distribution-ratio-V"
+                       min="0" max="1" step="0.01" placeholder="#" value="{{distribution.ratio}}">
+            </div>
+
+            <div class="disabled field">
+                <label for="session-distribution-ratio-H">
+                    Orientation Ratio <span class="ui mini horizontal label">% Horizontal</span>
+                </label>
+
+                <input type="number" name="session.distribution.ratio" id="session-distribution-ratio-H"
+                       step="0.01" value="{{remainder distribution.ratio}}">
+            </div>
+
+            <div class="disabled field">
+                <label for="session-distribution-repeats">
+                    Max No. Repeats <span class="ui mini horizontal label">Trials</span>
+                </label>
+
+                <input type="number" name="session.distribution.repeats" id="session-distribution-repeats"
+                       min="0" placeholder="#" value="{{distribution.repeats}}">
+            </div>
+        </div>
+    {{/if}}
 </template>

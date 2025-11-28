@@ -184,7 +184,7 @@ Template.sessionTemplate.events({
             console.log('Already saved!');
         }
     },
-    'click button'() {
+    'click button[type="submit"]'() {
         const template = Template.instance().parent();
         template.submitForm(template.inputs.get(), template.session.get(), template.stages.get());
     },

@@ -30,7 +30,7 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
 
             /** Delays onset of first trial: */
             template.timers.session.onset = Meteor.setTimeout(() => {
-                template.trial.set(0);
+                template.n.set(0);
                 template.recordEvent({ timeStamp: performance.now(), type: 'session.start' });
 
                 if (template.logging.session) template.printEvent('brown', '🆂 Session started ');
@@ -70,7 +70,7 @@ Template.trial.helpers({
     data(settings, stage, trials) {
         if (settings) {
             const template = Template.instance(),
-                i = template.trial.get(),
+                i = template.n.get(),
                 n = i + 1;
 
             if (n > 0) {
@@ -79,7 +79,9 @@ Template.trial.helpers({
 
                 if (!trial) return;
 
+                /** Run once at trial startup: */
                 if (!template.timers[ n ]) {
+                    /** Initialize trial timers: */
                     const topic = `sensor/${ this._id }/${ n }/${ stage }`,
                         orientation = (trial.stages[ 1 ]?.[ 0 ]?.orientation)
                             ? (trial.stages[ 1 ][ 0 ].orientation.value > 0) ? 'Ｈ' : 'Ｖ'
@@ -92,6 +94,11 @@ Template.trial.helpers({
 
                     trialTimers(settings, n, template);
 
+                    /** Initialize trial template variables: */
+                    if (template.storage.get()) template.storage.set(update(template.storage.get(),
+                        { bias: { $set: trial.bias } }));
+
+                    /** Initialize trial data logging: */
                     Meteor.call('mqttSend', this.device, 'reward', { command: 'set', context: { session: this._id,
                         stage: stage, timeStamp: performance.now(), trial: n } },
                     () => template.recordEvent({ timeStamp: performance.now(), type: 'set.context' }));
@@ -99,6 +106,7 @@ Template.trial.helpers({
                     () => template.recordEvent({ timeStamp: performance.now(), type: 'set.context' }));
                 }
 
+                template.trial.set(trial);
                 return trial;
             }
         }
@@ -116,7 +124,7 @@ Template.trial.helpers({
         return Template.instance().stage.get();
     },
     trial() {
-        return Template.instance().trial.get();
+        return Template.instance().n.get();
     }
 });
 
@@ -149,12 +157,14 @@ Template.trial.onCreated(function () {
     this.active = new ReactiveVar(false);
     this.center = calculateCenter($(window).height(), $(window).width());
     this.events = new ReactiveVar([]);
+    this.i = new ReactiveVar(0);
     this.incorrect = new ReactiveVar([ [ -1, 0 ], [ -1, 0 ] ]);
-    this.index = new ReactiveVar(0);
+    this.n = new ReactiveVar(-1);
     this.responses = new ReactiveVar([]);
     this.stage = new ReactiveVar(1);
+    this.storage = new ReactiveVar({});
     this.timers = {};
-    this.trial = new ReactiveVar(-1);
+    this.trial = new ReactiveVar({});
     this.toggles = {};
 
     this.clearTimers = (timers, type) => {
@@ -185,7 +195,7 @@ Template.trial.onCreated(function () {
                 v = update(this.variables, { event: { $set: (p) => (e[ p ]) } });
             let o = v[ object.name ](object.property);
 
-            if (target && Template.instance().data.trial?.bias) o = flipOrientation(o);
+            if (target && this.trial.get()?.bias) o = flipOrientation(o);
 
             return _.every(condition.subjects, (subject) => {
                 const s = v[ subject.name ](subject.property);
@@ -194,9 +204,9 @@ Template.trial.onCreated(function () {
     }));
     this.nextStage = (delay, increment) => {
         const stage = this.stage.get() + increment,
-            trial = this.index.get() + 1, // Follows index instead of trial number to allow for duplicates
+            trial = this.i.get() + 1, // Follows index instead of trial number to allow for duplicates
             session = this.session.get(),
-            length = session.settings.stages[ trial ].length; // TODO In cases of variable trial paradigms, checks on number of stages in trial
+            length = session.settings.stages[ trial ].length; // TODO: In cases of variable trial paradigms, checks on number of stages in trial
 
         /** Verify that stage exists in current trial: */
         if (stage <= length) {
@@ -204,8 +214,8 @@ Template.trial.onCreated(function () {
             
             const topic = `sensor/${ session._id }/${ trial }/${ stage }`;
 
-            Meteor.call('mqttSend', session.device, 'reward', { command: 'set', context: { session: session._id,
-                stage: stage, timeStamp: performance.now(), trial: trial } },
+            Meteor.call('mqttSend', session.device, 'reward', { command: 'set', context: { session: session._id, stage,
+                timeStamp: performance.now(), trial } },
             () => this.recordEvent({ timeStamp: performance.now(), type: 'set.context' }));
             Meteor.call('mqttSend', session.device, topic, { command: 'set', context: { timeStamp: performance.now() } },
             () => this.recordEvent({ timeStamp: performance.now(), type: 'set.context' }));
@@ -218,7 +228,7 @@ Template.trial.onCreated(function () {
     };
     this.nextTrial = (delay, increment, duplicate) => {
         const stage = this.stage.get(),
-            next = this.trial.get() + increment,
+            next = this.n.get() + increment,
             session = this.session.get();
 
         if (!this.timers[ next ]) this.timers[ next ] = {};
@@ -235,20 +245,65 @@ Template.trial.onCreated(function () {
         /** Sets ITI timer for trial: */
         this.timers[ next ][ stage ][ 'next.trial' ] = Meteor.setTimeout(() => {
             if (next <= session.trials.length) {
-                this.recordEvent({ timeStamp: performance.now(), type: `trial.${ next }.end` });
+                this.processEvent({ timeStamp: performance.now(), type: `trial.${ next }.end` });
                 if (this.logging.trials) this.printEvent('darkslategrey', `🆃 Trial ${ next } ended `);
 
                 /** Proceed to next trial or exit: */
                 if (session.settings.session.duration || next < session.settings.stages.length) {
                     let bias = false;
-                    const getBias = (session) => ((session?.settings?.session?.correction?.bias > 0)
-                            ? (session?.settings?.session?.correction?.bias * 100) >= _.random(100) : false),
+                    const getBias = (session) => ((session.settings.session.correction?.bias > 0)
+                            ? (session.settings.session.correction?.bias * 100) >= _.random(100) : false),
                         getIndex = () => {
-                            const i = this.index.get(),
+                            const storage = this.storage.get(),
+                                i = this.i.get(),
                                 incorrect = this.incorrect.get(),
                                 j = incorrect[ 0 ],
                                 o = session.settings.session?.correction?.offset || 0, // Equivalent to number of "gap trials"
                                 t = (j[ 0 ] > -1) ? j[ 0 ] : i,
+                                correctionTrial = () => {
+                                    /** Counts the number of previous trials copied from index j[ 0 ].  If a trial has not been
+                                     *  duplicated or replayed beyond the specified limit, a new trial identical to the first at
+                                     *  this index is added: */
+                                    const n = Trials.find({ index: t }).count();
+
+                                    /** If no correction trials have yet been generated at index j[ 0 ], n = 1, and o "gap trials"
+                                     *  are run, offseting the correction trials from the incorrect trial that spawned them by o.
+                                     *  Otherwise, correction trials repeat until rejoining the main branch of tracked indices. */
+                                    if (n > 1) {
+                                        /** Repeat correction trial:
+                                         *  If the number of duplicate trials, j[ 1 ], where the next trial added would be n,
+                                         *  exceeds the specified amount, stop duplicating the original trial at index j[ 0 ] &
+                                         *  calculate bias for all but the last incorrect correction trial. */
+                                        if ((duplicate || !session.settings.session?.correction?.abort) && n <= j[ 1 ]) {
+                                            bias = getBias(session);
+                                            return t; // Returns index of instigating incorrect trial
+                                        }
+
+                                        /** Proceed to next index:
+                                         *  If one of the gap trials was incorrect, transfer the stored index to the upcoming
+                                         *  correction trial slot, incorrect[ 0 ], then allow the index to update to i + 1. */
+                                        const k = _.findIndex(incorrect, (gap, slot) => (slot > 0 && gap[ 0 ] > -1));
+
+                                        if (k > -1) {
+                                            incorrect[ 0 ] = incorrect[ k ];
+                                            incorrect[ k ] = [ -1, 0 ];
+                                        } else {
+                                            incorrect[ 0 ] = [ -1, 0 ];
+                                        }
+
+                                        this.incorrect.set(incorrect);
+                                    }
+                                    /** Gap Trials:
+                                     *  Correction trials for a previous incorrect trial will follow after o "gap trials" have passed,
+                                     *  but just like regular trials, an incorrectly answered gap trial will also later spawn its own
+                                     *  set of correction trials if identified as incorrect: */
+                                    else {
+                                        /** Calculate bias if gap trial is instigating trial: */
+                                        if (t + o <= i) bias = getBias(session);
+                                        if (duplicate) storeIncorrect();
+                                        return t; // Returns index of instigating incorrect trial
+                                    }
+                                },
                                 storeIncorrect = () => {
                                     incorrect[ (t > -1 && i < t + o + 1) ? i - t : 0 ] = [ i, duplicate ];
                                     this.incorrect.set(incorrect);
@@ -260,71 +315,52 @@ Template.trial.onCreated(function () {
                                 this.incorrect.set(incorrect);
                             }
 
-                            /** Correction Trials:
-                             *  A second asynchronous index, i, simulates a cache for referencing previous trials.
-                             *  If the current index matches the index of an incorrect trial, j[ 0 ], offset by o,
-                             *  a correction trial sequence commences: */
-                            if ((j[ 0 ] > -1 && i === j[ 0 ] + o) || (duplicate && o === 0)) {
-                                /** Counts the number of previous trials copied from index j[ 0 ].  If a trial has not been
-                                 *  duplicated or replayed beyond the specified limit, a new trial identical to the first at
-                                 *  this index is added: */
-                                const n = Trials.find({ index: t }).count();
 
-                                /** If no correction trials have yet been generated at index j[ 0 ], n = 1, and o "gap trials"
-                                 *  are run, offseting the correction trials from the incorrect trial that spawned them by o.
-                                 *  Otherwise, correction trials repeat until rejoining the main branch of tracked indices. */
-                                if (n > 1) {
-                                    /** Repeat correction trial:
-                                     *  If the number of duplicate trials, j[ 1 ], where the next trial added would be n,
-                                     *  exceeds the specified amount, stop duplicating the original trial at index j[ 0 ]
-                                     *  Calculate bias for all but the last incorrect correction trial. */
-                                    if ((duplicate || !session?.settings?.session?.correction?.abort) && n <= j[ 1 ]) {
-                                        bias = getBias(session);
-                                        return t; // Returns index of instigating incorrect trial
-                                    }
-
-                                    /** Proceed to next index:
-                                     *  If one of the gap trials was incorrect, transfer the stored index to the upcoming
-                                     *  correction trial slot, incorrect[ 0 ], then allow the index to update to i + 1. */
-                                    const k = _.findIndex(incorrect, (gap, slot) => (slot > 0 && gap[ 0 ] > -1));
-
-                                    if (k > -1) {
-                                        incorrect[ 0 ] = incorrect[ k ];
-                                        incorrect[ k ] = [ -1, 0 ];
-                                    } else {
-                                        incorrect[ 0 ] = [ -1, 0 ];
-                                    }
-
-                                    this.incorrect.set(incorrect);
+                            /** Initiate correction trial sequences w/ approach specified in template: */
+                            if (!session.settings.session.correction?.after) {
+                                /** Correction Trials:
+                                 *  A second asynchronous index, i, simulates a cache for referencing previous trials.
+                                 *  If the current index matches the index of an incorrect trial, j[ 0 ], offset by o,
+                                 *  a correction trial sequence commences: */
+                                if ((j[ 0 ] > -1 && i === j[ 0 ] + o) || (duplicate && o === 0)) {
+                                    const ct = correctionTrial();
+                                    if (!_.isUndefined(ct)) return ct;
                                 }
-                                /** Gap Trials:
-                                 *  Correction trials for a previous incorrect trial will follow after o "gap trials" have passed,
-                                 *  but just like regular trials, an incorrectly answered gap trial will also later spawn its own
-                                 *  set of correction trials if identified as incorrect: */
-                                else {
-                                    /** Calculate bias if gap trial is instigating trial: */
-                                    if (t + o <= i) bias = getBias(session);
-                                    if (duplicate) storeIncorrect();
-                                    return t; // Returns index of instigating incorrect trial
-                                }
+                                /** Incorrect Non-Correction Trials:
+                                 *  If correction trials are enabled, store the index of this instigating trial. */
+                                else if (duplicate) { storeIncorrect(); }
+                            } else if (session.settings.session.correction?.after === storage[ storage?.stimulus ]) {
+                                /** Track number of correction trials remaining: */
+                                const abort = session.settings.session?.correction?.abort && !duplicate,
+                                    n = (storage.correction > 0) ? (abort) ? 0 : storage.correction - 1 : duplicate,
+                                    ct = correctionTrial();
+
+                                this.storage.set(update(storage, { correction: { $set: n } }));
+                                Meteor.callAsync('updateTrial', session.trials[ this.n.get() ],
+                                    'storage.correction', 'set', n);
+
+                                /** Reset counter after last correction trial, or after aborting trial: */
+                                if (n === 0) this.storage.set(update(this.storage.get(), {
+                                    [ storage?.stimulus ]: { $set: 0 }
+                                }));
+
+                                if (!_.isUndefined(ct)) return ct;
                             }
-                            /** Incorrect Non-Correction Trials:
-                             *  If correction trials are enabled, the index of this instigating incorrect trial is stored. */
-                            else if (duplicate) { storeIncorrect(); }
 
-                            this.index.set(i + 1);
-                            return this.index.get(); // Returns unused next index
+                            this.i.set(i + 1);
+                            return this.i.get(); // Returns unused next index
                         };
 
                     const d = update(this.events.get(), { [ next ]: { $set: _.times(session.settings.inputs.length,
                         () => []) } });
 
+                    // TODO: Verify all local data has been uploaded to DB
                     this.events.set(d);
                     Meteor.call('addTrial', session._id, getIndex(), next + 1, performance.timeOrigin, bias);
                     
                     this.responses.set([]);
                     this.stage.set(1);
-                    this.trial.set(next);
+                    this.n.set(next);
                 } else { this.shutdown(); }
             }
         }, delay);
@@ -339,20 +375,22 @@ Template.trial.onCreated(function () {
         const session = this.session.get();
 
         _.each(session.settings.inputs[ this.stage.get() - 1 ], (input) => {
-            if (input.event === event.type) {
-                const correct = this.conditionsMet(event, input);
+            /** Match event types w/ either literal strings or regex expressions: */
+            const pattern = new RegExp(input.event);
+            if (!pattern.test(event.type)) return;
 
-                _.each((correct) ? input.correct : input.incorrect, (action) =>
-                    _.each(action.targets, (target) =>
-                        this.variables[ action.action ](action.delay, action.specifications, target)));
-            }
+            const correct = this.conditionsMet(event, input);
+
+            _.each((correct) ? input.correct : input.incorrect, (action) =>
+                _.each(action.targets, (target) =>
+                    this.variables[ action.action ](action.delay, action.specifications, target)));
         });
 
         this.recordEvent(event);
     };
     this.recordEvent = (e) => {
         /** If session aborts prematurely, save events to default first trial: */
-        const n = (this.trial.get() > -1) ? this.trial.get() : 0,
+        const n = (this.n.get() > -1) ? this.n.get() : 0,
             stage = this.stage.get() - 1,
             d = update(this.events.get(), { [ n ]: { [ stage ]: { $push: [ e ] } } }),
             storeEvent = (n, stage) => {
@@ -377,7 +415,7 @@ Template.trial.onCreated(function () {
     };
     this.shutdown = (type = 'end') => {
         const session = this.session.get(),
-            n = this.trial.get();
+            n = this.n.get();
 
         /** Shut down mqtt background services: */
         Meteor.call('mqttSend', session.device, 'sensor', { command: 'detect', detect: 'off' }, () => {
@@ -411,6 +449,9 @@ Template.trial.onCreated(function () {
 
         const session = this.session.get();
 
+        /** Set initial values for any stored template variables: */
+        this.storage.set(session.settings.session.storage);
+
         /** Prepare local copy of trial 1 data: */
         this.events.set([ _.times(session.settings.inputs.length, () => []) ]);
 
@@ -423,7 +464,7 @@ Template.trial.onCreated(function () {
     };
     this.timedAudio = (audio, element) => {
         const stage = this.stage.get(),
-            trial = this.trial.get() + 1,
+            trial = this.n.get() + 1,
             timers = this.timers[ trial ][ stage ],
             start = `${ element.name }.start`,
             stop = `${ element.name }.stop`;
@@ -448,7 +489,7 @@ Template.trial.onCreated(function () {
 
         const stage = this.stage.get(),
             timer = `${ topic }.${ message.command }`,
-            trial = this.trial.get() + 1;
+            trial = this.n.get() + 1;
 
         this.timers[ trial ][ stage ][ timer ] = Meteor.setTimeout(() => {
             const timeStamp = performance.now();
@@ -464,19 +505,19 @@ Template.trial.onCreated(function () {
         /** clear - Clears all timers
          *  Trials are indexed starting at 0, but the timers are referenced starting at Trial 1,
          *  so clearing timers for "next" actually clears the most recent trial. */
-        'clear': () => this.clearTimers(this.timers, this.trial.get() + 1), //TODO: Customize which timers to clear?
+        'clear': () => this.clearTimers(this.timers, this.n.get() + 1), // TODO: Customize which timers to clear
         'center': (p) => (this.center[ p ]),
         'count': (p) => {
             const d = this.events.get(),
                 // Count can filter other events like iti.end, but requires all events to pass:
-                f = _.filter(d[ this.trial.get() ][ this.stage.get() - 1 ], (e) => this.conditionsMet(e, p));
+                f = _.filter(d[ this.n.get() ][ this.stage.get() - 1 ], (e) => this.conditionsMet(e, p));
 
             return f.length;
         },
         'data': (p) => {
             const d = this.events.get(),
                 // Data filters out individual events that pass a set of conditions
-                f = _.pluck(_.filter(d[ this.trial.get() ][ this.stage.get() - 1 ],
+                f = _.pluck(_.filter(d[ this.n.get() ][ this.stage.get() - 1 ],
                     (e) => this.conditionsMet(e, p)), p.value);
 
             return f[ p.index ];
@@ -492,25 +533,36 @@ Template.trial.onCreated(function () {
         'stage': (d, i) => this.nextStage(d, i),
         'stimuli': (p) => {
             /** Must filter stimuli by data index due to potential correction trial sequence offsets: */
-            const i = Template.instance().data.trial.index,
+            const i = this.trial.get().index,
                 elements = _.filter(this.session.get().settings.stages[ i ][ this.stage.get() - 1 ],
                     (element) => (element.type === 'stimuli'));
 
             return _.property(p.split('.'))(elements);
         },
+        'store': (_d, s, t) => {
+            const storage = this.storage.get();
+
+            /** Correction trials will not modify stored template variables: */
+            if (storage.correction > 0) return;
+
+            const v = (s.type === '+') ? storage[ t ] + s.amount : s.value;
+
+            this.storage.set(update(storage, { [ t ]: { $set: v } }));
+            Meteor.callAsync('updateTrial', this.session.get().trials[ this.n.get() ], `storage.${ t }`, 'set', v);
+        },
         'string': (s) => (s.toString()),
         'style': (d, s, t) => {
-            this.timers[ this.trial.get() + 1 ][ this.stage.get() - 1 ][ `${ t }.style` ] = Meteor.setTimeout(() =>
+            this.timers[ this.n.get() + 1 ][ this.stage.get() - 1 ][ `${ t }.style` ] = Meteor.setTimeout(() =>
                 ($(t).css(s.css)), d);
             this.recordEvent({ timeStamp: performance.now(), type: `${ t }.style`, css: s.css });
         },
         'toggle': (d, s, t) => {
             const type = `${ t }${ (s.set) ? '.start' : '.end'}`,
-                n = this.trial.get() + 1;
+                n = this.n.get() + 1;
 
             this.timers[ n ][ this.stage.get() ][ type ] = Meteor.setTimeout(() => {
                 this.toggles[ t ] = s.set;
-                this.recordEvent({ timeStamp: performance.now(), type: type });
+                this.recordEvent({ timeStamp: performance.now(), type });
 
                 if (this.logging.timers) this.printTimer(n, this.stage.get(), type, 'rebeccapurple',
                     (s.set) ? 'Started' : 'Ended');
@@ -593,7 +645,7 @@ Template.trialElement.helpers({
     timer(delay, duration, type, i) {
         const template = Template.instance().parent(3),
             stage = template.stage.get(),
-            trial = template.trial.get() + 1,
+            trial = template.n.get() + 1,
             name = `${ type }.${ i }`;
 
         if (!_.has(template.timers[ trial ], stage)) template.timers[ trial ][ stage ] = {};
@@ -614,7 +666,7 @@ Template.trialElement.helpers({
         return template.toggles[ name ];
     },
     trial() {
-        return Template.instance().parent(3).trial.get() + 1;
+        return Template.instance().parent(3).n.get() + 1;
     }
 });
 
@@ -658,7 +710,7 @@ Template.trialSVG.helpers({
 
             /** Only proceed with event processing if inputs governing this event type are found.
              *  Check event against each set of conditions, potentially fulfilling criteria for multiple reactions: */
-            _.each(inputs, (_input, _index) => { //TODO Generalize into processing events from inputs feed (i.e., ir sensor)
+            _.each(inputs, (_input, _index) => { // TODO: Generalize into processing events from inputs feed (i.e., ir sensor)
                 let timeStamp = 0;
 
                 if (last.type === 'sensor') {
@@ -702,13 +754,18 @@ Template.trialSVG.onCreated(function () {
 
 Template.trialSVG.onRendered(() => {
     const template = Template.instance().parent(),
+        n = template.n.get(),
         session = template.session.get();
 
-    /** The Trial template should only render on device profiles.
-     *  Thus, only devices should connect to MQTT and listen in on
-     *  their own hardware output. */
-    Meteor.call('mqttConnect', session.device);
-    Meteor.call('updateTrial', session.trials[ 0 ], 'timeOrigin', 'set', performance.timeOrigin);
+    /** Connect to Messaging Client(s):
+     *  The Trial template should only render on device profiles. Thus, only devices should connect to MQTT &
+     *  listen in on their own hardware output. */
+    Meteor.callAsync('mqttConnect', session.device);
+    Meteor.callAsync('updateTrial', session.trials[ n ], 'timeOrigin', 'set', performance.timeOrigin);
+
+    /** Record initial stored values for current trial: */
+    _.each(template.storage.get(), (v, k) => Meteor.callAsync('updateTrial', session.trials[ n ],
+        `storage.${ k }`, 'set', v));
 
     if (template.logging.trials) template.printEvent('darkslategrey', '🆃 Trial SVG rendered ');  
 });

@@ -1,6 +1,7 @@
 import './session.html';
 
 import _ from "underscore";
+import update from 'immutability-helper';
 
 import { calculateTotal } from '/imports/api/client.methods';
 import { ReactiveVar } from 'meteor/reactive-var';
@@ -31,8 +32,27 @@ Template.sessionForm.events({
                     if (session.distribution) session.distribution.size = calculateTotal(session);
                     form.session.set(session);
                     break;
+            }
+        }
+    }
+});
+
+
+Template.trialSpecificationForm.events({
+    'input input'(event, template) {
+        const target = event.target || event.srcElement,
+            value = parseFloat($(`#${ target.form.id }`).form('get value', target.name));
+
+        if (!_.isNaN(value)) {
+            const form = template.parent(3),
+                split = target.name.split('.'),
+                property = split[ 1 ],
+                session = form.session.get();
+
+            switch (property) {
                 case 'correction':
                     switch (split[ 2 ]) {
+                        case 'after':
                         case 'bias':
                         case 'number':
                         case 'offset':
@@ -70,9 +90,14 @@ Template.sessionForm.events({
     }
 });
 
-Template.sessionForm.helpers({
+Template.trialSpecificationForm.helpers({
     base() {
         return calculateTotal(_.defaults({ 'distribution': { 'multiplier': 1 } }, Template.currentData()));
+    },
+    instigate() {
+        const template = Template.instance();
+        if (!template.parent(3).session.get().correction?.after) template.instigate.set(false);
+        return template.instigate.get();
     },
     modify() {
         return Template.instance().modify.get();
@@ -96,20 +121,30 @@ Template.sessionForm.helpers({
     }
 });
 
-Template.sessionForm.onCreated(function () {
+Template.trialSpecificationForm.onCreated(function () {
+    this.instigate = new ReactiveVar((this.data?.correction?.after));
     this.modify = new ReactiveVar(false);
 });
 
-Template.sessionForm.onRendered(() => {
-    const template = Template.instance();
+Template.trialSpecificationForm.onRendered(() => {
+    const template = Template.instance(),
+        form = template.parent(3),
+        toggle = (key) => form.session.set(update(form.session.get(), { correction: { $toggle: [ key ] } })),
+        updateAfter = (value) => form.session.set(update(form.session.get(),
+                { correction: { after: { $set: value } } }));
+    let after = template.data.correction?.after;
 
     template.$('.ui.checkbox:has(input[name="session.correction.abort"])').checkbox({
-        onChange: () => {
-            const form = template.parent(2),
-                session = form.session.get();
-
-            session.correction.abort = !session.correction.abort;
-            form.session.set(session);
+        onChange: () => toggle('abort')
+    });
+    template.$('.ui.checkbox:has(input[name="session.correction.instigate"])').checkbox({
+        onChecked: () => {
+            if (!template.data.correction?.after) updateAfter(after ?? 1);
+            template.instigate.set(true);
+        },
+        onUnchecked: () => {
+            updateAfter(0);
+            template.instigate.set(false);
         }
     });
     template.$('.ui.checkbox:has(input[name="session.distribution.modify"])').checkbox({

@@ -48,7 +48,7 @@ Template.dataMenu.events({
             selected = table.rows('.active').data(),
             ids = _.pluck(selected, '_id'),
             confirmDelete = (selected) => $.toast({
-                message: 'Please confirm - deleted data will be nonrecoverable!',
+                message: 'Please confirm - deleted data will be unrecoverable!',
                 title: `Deleting ${ selected }`,
                 displayTime: 0,
                 class: 'black centered',

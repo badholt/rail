@@ -32,6 +32,14 @@ nav#main-menu a#home:has(.image) {
     background: rgba(255,255,255,.08);
 }
 
+.two-tone .ui.checkbox.toggle input:not(:checked)~label::before {
+    background-color: rgb(255 133 27 / 90%);
+}
+
+.two-tone .ui.checkbox.toggle input:not(:checked)~label:hover::before {
+    background-color: #ff851b;
+}
+
 .ui.accordion .form input {
     text-align: center;
 }
@@ -103,4 +111,17 @@ nav#main-menu a#home:has(.image) {
 
 .italicized {
     font-style: italic;
+}
+
+.underline {
+    text-decoration: underline dotted 2px;
+    text-underline-offset: 3px;
+}
+
+.underline.blue {
+    text-decoration-color: #2185d0;
+}
+
+.underline.orange {
+    text-decoration-color: #ff851b;
 }
