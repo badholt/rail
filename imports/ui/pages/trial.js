@@ -484,8 +484,8 @@ Template.trial.onCreated(function () {
             }, element.delay);
         }
     };
-    this.timedCommand = (device, topic, message, delay) => {
-        if (_.isEmpty(message) || !_.has(message, "command")) return;
+    this.timedCommand = (device, topic, message, delay, context = true) => {
+        if (!message?.command) return;
 
         const stage = this.stage.get(),
             timer = `${ topic }.${ message.command }`,
@@ -496,9 +496,10 @@ Template.trial.onCreated(function () {
 
             if (this.logging.mqtt) this.printTimer(trial, stage, timer, 'orange', '💬 Sent');
 
-            return Meteor.call('mqttSend', device, topic, _.extend(_.omit(message, 'delay'), {
-                    context: { session: id, stage: stage, timeStamp: timeStamp, trial: trial }
-                }), () => this.recordEvent({ timeStamp: timeStamp, type: `${ timer }.fired` }));
+            return Meteor.call('mqttSend', device, topic, (context)
+                ? _.extend(_.omit(message, 'delay'), { context: { session: id, stage, timeStamp, trial } })
+                : _.omit(message, 'delay'),
+            () => this.recordEvent({ timeStamp, type: `${ timer }.fired` }));
         }, delay);
     };
     this.variables = {
@@ -529,6 +530,7 @@ Template.trial.onCreated(function () {
             if (!_.has(responses, t)) responses.push(t);
             this.responses.set(responses);
         },
+        'message': (d, s, t) => this.timedCommand(this.session.get().device, t, s.message, d, s.context),
         'number': (n) => (parseFloat(n)),
         'stage': (d, i) => this.nextStage(d, i),
         'stimuli': (p) => {
