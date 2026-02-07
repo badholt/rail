@@ -6,6 +6,15 @@
             <h2 class="ui inverted header">Current Messaging Client(s)</h2>
             <div id="clients" class="ui cards">{{> clientList}}</div>
         </div>
+    {{else}}
+        <div class="ui basic disabled inverted card">
+            <div class="content">
+                <a class="ui centered inverted icon header">
+                    <i class="unlink icon"></i> No Connected Devices
+                    <span class="sub header">Register a device for networking info</span>
+                </a>
+            </div>
+        </div>
     {{/with}}
 </template>
 
@@ -34,7 +43,7 @@
         {{else}}
             <div class="ui basic disabled inverted card">
                 <div class="content">
-                  <a class="ui centered header">None</a>
+                    <a class="ui centered header">None</a>
                 </div>
             </div>
         {{/each}}

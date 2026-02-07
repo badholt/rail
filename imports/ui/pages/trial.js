@@ -83,7 +83,8 @@ Template.trial.helpers({
                 if (!template.timers[ n ]) {
                     /** Initialize trial timers: */
                     const topic = `sensor/${ this._id }/${ n }/${ stage }`,
-                        orientation = (trial.stages[ 1 ]?.[ 0 ]?.orientation)
+                        // TODO: Generalize for alternate stage conditions
+                        orientation = (trial.stages?.length > 1 && trial.stages[ 1 ]?.[ 0 ]?.orientation)
                             ? (trial.stages[ 1 ][ 0 ].orientation.value > 0) ? 'Ｈ' : 'Ｖ'
                             : '';
 
@@ -712,14 +713,14 @@ Template.trialSVG.helpers({
 
             /** Only proceed with event processing if inputs governing this event type are found.
              *  Check event against each set of conditions, potentially fulfilling criteria for multiple reactions: */
-            _.each(inputs, (_input, _index) => { // TODO: Generalize into processing events from inputs feed (i.e., ir sensor)
+            _.each(inputs, () => { // TODO: Generalize into processing events from inputs feed (i.e., ir sensor)
                 let timeStamp = 0;
 
                 if (last.type === 'sensor') {
                     /** Only entries may trigger a reponse, exits are ignored: */
-                    const entry = (last.request && last.request.ir === 0),
-                    /** Conditions are met if 200ms have elapsed since reward dispense ended: */
-                    prereq = _.some(data, (e) => (e.type === 'reward' && e.request.reward === "off" && (last.timeStamp - e.timeStamp > 200)));
+                    const entry = (last?.request?.ir === 0),
+                        /** Conditions are met if reward dispense has already ended: */
+                        prereq = _.some(data, (e) => (e.type === 'reward' && e.request.reward === "off"));
 
                     /** Save event timestamp if a sensor entry has occurred at least 200ms after reward dispense: */
                     if (entry && prereq) timeStamp = last.timeStamp;
@@ -729,7 +730,7 @@ Template.trialSVG.helpers({
                 if (timeStamp > 0) {
                     /** Create reaction event, collecting all of same event type: */
                     const event = 'ir.entry',
-                    elements = _.filter(data, (e) => (e.type === event));
+                        elements = _.filter(data, (e) => (e.type === event));
 
                     /** Process the reaction event using template's input conditions: */
                     template.parent().processEvent({ index: count, number: (elements.length + 1),

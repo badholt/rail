@@ -1,3 +1,7 @@
+# [ OPLOG ]
+cultofcoders:redis-oplog
+disable-oplog
+
 # [ CORE ]
 meteor-base           # Packages every Meteor app needs to have
 mobile-experience      # Packages for a great mobile UX

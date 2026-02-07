@@ -19,6 +19,7 @@ caching-html-compiler@1.2.0
 callback-hook@1.5.1
 check@1.4.1
 coffeescript@1.0.17
+cultofcoders:redis-oplog@2.3.0
 dburles:collection-helpers@1.1.0
 dburles:mongo-collection-instances@0.3.5
 ddp@1.4.1
@@ -28,6 +29,7 @@ ddp-rate-limiter@1.2.1
 ddp-server@2.7.1
 deps@1.0.12
 diff-sequence@1.1.2
+disable-oplog@1.0.7
 dynamic-import@0.7.3
 ecmascript@0.16.8
 ecmascript-runtime@0.8.1
