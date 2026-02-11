@@ -1,19 +1,9 @@
 import './calibrate.html';
-import '/imports/ui/components/cross';
+import '/imports/ui/components/forms/cross';
 import '/imports/ui/components/dropdown/offset';
 
-import { getContainer, renderCross } from '../components/cross';
+import { renderCross } from '../components/cross';
 import { ReactiveVar } from 'meteor/reactive-var';
-import { Templates } from '../../api/collections';
-
-Template.calibrate.helpers({
-    preview(elements) {
-        if (elements) {
-            renderCross('#cross-preview', elements[ 'cross' ]);
-            return elements[ 'cross' ];
-        }
-    }
-});
 
 Template.calibrate.onCreated(function () {
     this.autorun(() => {
@@ -21,11 +11,9 @@ Template.calibrate.onCreated(function () {
         this.subscribe('users.user', 'cross');
     });
 });
+Template.calibrate.onDestroyed(() => { if (!Meteor.user().status?.active.calibration) FlowRouter.go('/'); });
 
-Template.calibrationView.onDestroyed(function () {
-    const status = Meteor.user().status;
-    if (status && !status.active.calibration) FlowRouter.go('/');
-});
+Template.calibrationView.onRendered(function () { renderCross(this.data); });
 
 Template.audioCalibrationForm.events({
     'input input'(event, template) {
@@ -65,18 +53,18 @@ Template.audioCalibrationModal.onCreated(function () {
 
 Template.audioCalibrationModal.onRendered(function () {
     const device = Template.instance().parent(3),
-    settings = Template.instance().settings;
+        settings = Template.instance().settings;
 
     this.$('[id^=modal-calibrate-]')
         .modal({
             context: '#main-panel',
-            onApprove: function() {
+            onApprove: () => {
                 Meteor.call('updateUser', device.data._id, 'profile.calibration.audio', 'set', settings.get());
             },
-            onShow: function() {
+            onShow: () => {
                 Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', { audio: settings.get() });
             },
-            onHidden: function() {
+            onHidden: () => {
                 Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', false);
                 device.calibrating.set({ profile: device.data.profile, window: '' });
             }
@@ -88,13 +76,13 @@ Template.audioCalibrationModal.onRendered(function () {
 Template.screenCalibrationForm.events({
     'input input'(event, template) {
         const target = event.target || event.srcElement,
-            value = parseFloat($('#' + target.form.id).form('get value', target.name));
+            value = parseFloat($(`#${ target.form.id }`).form('get value', target.name));
 
         if (!_.isNaN(value)) {
             const elements = template.parent().elements.get(),
-            offsets = template.parent().offsets.get(),
-            preview = template.parent().preview.get(),
-            n = 'cross';
+                offsets = template.parent().offsets.get(),
+                preview = template.parent().preview.get(),
+                n = 'cross';
 
             switch (target.name) {
                 case 'span':
@@ -103,7 +91,7 @@ Template.screenCalibrationForm.events({
                     template.parent().preview.set(preview);
                     break;
                 case 'offset-x':
-                case 'offset-y':
+                case 'offset-y': {
                     const name = target.name.split('-');
 
                     offsets[ n ][ name[ 0 ] ][ name[ 1 ] ] = value;
@@ -112,9 +100,10 @@ Template.screenCalibrationForm.events({
                     template.parent().offsets.set(offsets);
                     template.parent().preview.set(preview);
                     break;
+                }
             }
 
-            renderCross('#cross-preview', preview[n]);
+            renderCross(preview[ n ], '#cross-preview');
             Meteor.call('updateUser', template.parent(4).data._id, 'status.active.calibration', 'set', preview);
         }
     }
@@ -122,17 +111,14 @@ Template.screenCalibrationForm.events({
 
 Template.screenCalibrationForm.helpers({ // PREVIEW IS DATA CONTEXT
     offsets(type) { // FILTERS TO OFFSET ONLY
-        const offsets = Template.instance().parent().offsets.get();
-        if (offsets.hasOwnProperty(type)) return offsets[type];
+        const offsets = Template.instance().get('offsets')?.get();
+        if (_.has(offsets, type)) return offsets[ type ];
     }
 });
 
 Template.screenCalibrationModal.helpers({
     preview(type) {
-        return Template.instance().preview.get()[type];
-    },
-    screen() {
-        return Template.instance().screen.get();
+        return Template.instance().preview.get()[ type ];
     }
 });
 
@@ -162,32 +148,26 @@ Template.screenCalibrationModal.onCreated(function () {
     _.each(this.offsets.get(), (o) => {
         if (o.offset) {
             const p = this.preview.get();
-            _.each(o.offset, (v,k) => (p[ 'cross' ][ 'offset' ][ k ] += v));
+            _.each(o.offset, (v,k) => { p.cross.offset[ k ] += v; });
         }
-    });
-
-    this.screen = new ReactiveVar({
-        height: calibration.screen.dimensions.height + "px",
-        width: calibration.screen.dimensions.width + "px"
     });
 });
 
 Template.screenCalibrationModal.onRendered(function () {
     const device = Template.instance().parent(3),
-        elements = Template.instance().elements,
         offsets = Template.instance().offsets,
         preview = Template.instance().preview;
 
     this.$('[id^=modal-calibrate-]')
         .modal({
             context: '#main-panel',
-            onApprove: function() { // TODO To save or not to save span & weight?
-                Meteor.call('updateUser', device.data._id, 'profile.calibration.screen.cross', 'set', offsets.get()[ 'cross' ]);
+            onApprove: () => { // TODO To save or not to save span & weight?
+                Meteor.call('updateUser', device.data._id, 'profile.calibration.screen.cross', 'set', offsets.get().cross);
             },
-            onShow: function() {
+            onShow: () => {
                 Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', preview.get());
             },
-            onHidden: function() {
+            onHidden: () => {
                 Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', false);
                 device.calibrating.set({ profile: device.data.profile, window: '' });
             }
@@ -242,13 +222,13 @@ Template.waterCalibrationModal.onRendered(function () {
     this.$('[id^=modal-calibrate-]')
         .modal({
             context: '#main-panel',
-            onApprove: function() {
+            onApprove: () => {
                 Meteor.call('updateUser', device.data._id, 'profile.calibration.water', 'set', settings.get());
             },
-            onShow: function() {
+            onShow: () => {
                 Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', { water: settings.get() });
             },
-            onHidden: function() {
+            onHidden: () => {
                 Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', false);
                 device.calibrating.set({ profile: device.data.profile, window: '' });
             }

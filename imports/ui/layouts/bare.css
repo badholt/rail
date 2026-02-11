@@ -8,6 +8,7 @@ body, html, #main-panel {
 }
 
 #main-panel.nocturnal {
+    background: var(--black);
     cursor: crosshair;
     /*cursor: none;*/
     overflow: hidden;

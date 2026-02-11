@@ -448,7 +448,20 @@ Template.trial.onCreated(function () {
         /** Toggle template, so that startup runs only once: */
         this.active.set(true);
 
-        const session = this.session.get();
+        const session = this.session.get(),
+            elements = _.unique(_.pluck(_.flatten(session.settings.stages), 'type'));
+
+        /** Add self-referential variables for each element in stages: */
+        _.each(elements, (e) => {
+            if (!_.has(this.variables, e)) this.variables[ e ] = (p) => {
+                /** Must filter stimuli by data index due to potential correction trial sequence offsets: */
+                const i = this.trial.get().index,
+                    elements = _.filter(this.session.get().settings.stages[ i ][ this.stage.get() - 1 ],
+                        (element) => (element.type === e));
+
+                return _.property(p.split('.'))(elements);
+            }
+        });
 
         /** Set initial values for any stored template variables: */
         this.storage.set(session.settings.session.storage);
@@ -516,14 +529,6 @@ Template.trial.onCreated(function () {
 
             return f.length;
         },
-        'data': (p) => {
-            const d = this.events.get(),
-                // Data filters out individual events that pass a set of conditions
-                f = _.pluck(_.filter(d[ this.n.get() ][ this.stage.get() - 1 ],
-                    (e) => this.conditionsMet(e, p)), p.value);
-
-            return f[ p.index ];
-        },
         'event': (p) => (event[ p ]),
         'insert': (_d, _s, t) => {
             const responses = this.responses.get();
@@ -534,14 +539,6 @@ Template.trial.onCreated(function () {
         'message': (d, s, t) => this.timedCommand(this.session.get().device, t, s.message, d, s.context),
         'number': (n) => (parseFloat(n)),
         'stage': (d, i) => this.nextStage(d, i),
-        'stimuli': (p) => {
-            /** Must filter stimuli by data index due to potential correction trial sequence offsets: */
-            const i = this.trial.get().index,
-                elements = _.filter(this.session.get().settings.stages[ i ][ this.stage.get() - 1 ],
-                    (element) => (element.type === 'stimuli'));
-
-            return _.property(p.split('.'))(elements);
-        },
         'store': (_d, s, t) => {
             const storage = this.storage.get();
 

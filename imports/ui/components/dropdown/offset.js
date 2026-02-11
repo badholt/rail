@@ -6,9 +6,8 @@ import './offset.html';
 import { Meteor } from "meteor/meteor";
 import { renderCross } from '../cross';
 import { Template } from 'meteor/templating';
-import { Templates } from '../../../api/collections';
 
-export const decryptId = (cipher, id) => _.find(_.invert(cipher), (value, key) => key === id),
+export const decryptId = (cipher, id) => _.find(_.invert(cipher), (_value, key) => key === id),
     encryptId = (cipher, id) => {
         if (!cipher) return;
 
@@ -22,7 +21,7 @@ export const decryptId = (cipher, id) => _.find(_.invert(cipher), (value, key) =
 
     Template.offsetDropdown.helpers({
         templates() {
-            return Array.from(Template.instance().templates, ([ k,v ]) => ({ key: k, value: v }));
+            return Array.from(Template.instance().templates, ([ key, value ]) => ({ key, value }));
         }
     });
 
@@ -41,7 +40,7 @@ Template.offsetDropdown.onRendered(function () {
     Meteor.call('getTemplates',
         { "stages": { "$elemMatch": { "$elemMatch": { "type": "cross" } } } },
         { 'fields': { '_id': 1, 'name': 1, 'stages': 1 }, 'sort': {'name': 1} },
-        (err, templates) => {
+        (_error, templates) => {
             const offsetElement = (id, type) => {
                 // Update coordinates to match default of selected template
                 const e = updateElement(form.elements.get(), id, type),
@@ -52,7 +51,7 @@ Template.offsetDropdown.onRendered(function () {
                 _.each(o, (t) => {
                     if (t.offset) _.each(t.offset, (v,k) => {
                         //o[ type ][ 'offset' ][ k ] = e[ type ][ 'offset' ][ k ]; // Make inputs reflect template value
-                        p[ type ][ 'offset' ][ k ] = v + e[ type ][ 'offset' ][ k ];
+                        p[ type ].offset[ k ] = v + e[ type ].offset[ k ];
                     });
                 });
 
@@ -61,7 +60,7 @@ Template.offsetDropdown.onRendered(function () {
                 form.preview.set(p);
 
                 // Render the cross at the new coordinates
-                renderCross('#cross-preview', p[ 'cross' ]);
+                renderCross(p.cross, '#cross-preview');
                 Meteor.call('updateUser', device.data._id, 'status.active.calibration', 'set', p);
             },
             updateElement = (elements, id, type) => ((dd.templates.has(id))
@@ -82,9 +81,6 @@ Template.offsetDropdown.onRendered(function () {
             if (dd.templates.size > 0) {
                 // Select first template as default when modal opens
                 const key = dd.templates.keys().next().value;
-
-                // Update cross location to match default template
-                offsetElement(key, 'cross');
 
                 // Set dropdown selection to default template
                 this.$('#offsets').dropdown({

@@ -1,15 +1,11 @@
 <template name="calibrate">
-    {{#with preview currentUser.status.active.calibration}}
+    {{#with currentUser.status.active.calibration.cross}}
         {{> calibrationView}}
     {{/with}}
 </template>
 
-<template name="calibrationView">    
-    <svg id="cross-preview" height="100%" width="100%">
-        <text x="20" y="20" style="fill: #f2711c;">{{screen.width}}</text>
-        <text x="10" y="20" style="fill: #2185d0; writing-mode: tb; text-orientation: sideways; -webkit-text-orientation: sideways;">{{screen.height}}</text>
-        {{> cross}}
-    </svg>
+<template name="calibrationView">
+    {{> crossPreview}}
 </template>
 
 <template name="audioCalibrationForm">
@@ -23,14 +19,14 @@
                 </div>
             </div>
 
-            <div class="field" style="border: 1px solid #f2711c; border-radius: 5px; padding: 10px; margin-top: -10px;">
+            <div class="orange outlined field">
                 <div class="ui right labeled input">
                     <label for="frequency" class="ui blue right pointing mini label">Frequency Offset:</label>
                     <input name="frequency" type="number" value="{{frequency}}" autofocus="autofocus">
                     <span class="ui mini label">Hz</span>
                 </div>
 
-                <i class="ui circular inverted orange link warning icon" style="position: absolute; top: 5px; right: -25px;" title="This will modify the tone wave frequencies specified by any template!"></i>
+                <i class="fixed right ui circular inverted orange link warning icon" title="This will modify the tone wave frequencies specified by any template!"></i>
             </div>
         </div>
     </div>
@@ -52,12 +48,12 @@
 <template name="screenCalibrationForm">
     <form id="calibration-form" class="ui inverted form">
         {{#with offsets 'cross'}}
-            <div style="border: 1px solid #f2711c; border-radius: 5px; padding: 5px 10px; margin-top: -10px; margin-bottom: 10px;">
+            <div class="orange outlined">
                 <label>Offset <span class="ui mini horizontal label">% from center</span></label>
                 <div class="two fields">
                     <div class="field">
                         <div class="ui inverted transparent input">
-                            <div class="ui mini orange right pointing label">
+                            <div class="ui large orange right pointing label">
                                 x
                             </div>
                             <input type="number" name="offset-x" placeholder="0.0"
@@ -66,7 +62,7 @@
                     </div>
                     <div class="field">
                         <div class="ui inverted transparent input">
-                            <div class="ui mini blue right pointing label">
+                            <div class="ui large blue right pointing label">
                                 y
                             </div>
                             <input type="number" name="offset-y" placeholder="0.0"
@@ -74,7 +70,7 @@
                         </div>
                     </div>
 
-                    <i class="ui circular inverted orange link warning icon" style="position: absolute; top: 22px; left: -20px;" title="This will modify the offset already applied by the template!"></i>
+                    <i class="ui circular inverted orange link warning icon" title="This will modify the offset already applied by the template!"></i>
                 </div>
             </div>
         {{/with}}
@@ -106,12 +102,7 @@
         
         <div class="scrolling content">
             {{#with preview 'cross'}}
-                <svg id="cross-preview" style="{{#with screen}}height: {{height}}; width: {{width}};{{/with}}background: #1b1c1d; border-left-color: #2185d0; border-top-color: #f2711c; display: block; margin: 0 auto 1.5em auto;">
-                    <text x="20" y="20" style="fill: #f2711c;">{{screen.width}}</text>
-                    <text x="10" y="20" style="fill: #2185d0; writing-mode: tb; text-orientation: sideways; -webkit-text-orientation: sideways;">{{screen.height}}</text>
-                    {{> cross}}
-                </svg>
-
+                {{> crossPreview}}
                 {{> screenCalibrationForm}}
             {{/with}}
         </div>
@@ -127,24 +118,24 @@
 <template name="waterCalibrationForm">
     <div id="water-calibration-form" class="ui inverted form">
         <div class="two fields">
-            <div class="disabled field" style="border: 1px solid #f2711c; border-radius: 5px; padding: 10px; margin-top: -10px;">
+            <div class="disabled orange outlined field">
                 <div class="ui right labeled input">
                     <label for="amount" class="ui blue right pointing mini label">Amount Offset:</label>
                     <input name="amount" step="0.001" type="number" value="{{amount}}">
                     <span class="ui mini label">mL</span>
                 </div>
 
-                <i class="ui circular inverted orange link warning icon" style="position: absolute; top: 5px; left: -20px;" title="This will modify the initial water reward amount calculated using the water curve!"></i>
+                <i class="fixed left ui circular inverted orange link warning icon" title="This will modify the initial water reward amount calculated using the water curve!"></i>
             </div>
 
-            <div class="field" style="border: 1px solid #f2711c; border-radius: 5px; padding: 10px; margin-top: -10px;">
+            <div class="orange outlined field">
                 <div class="ui right labeled input">
                     <label for="dispense" class="ui blue right pointing mini label">Time Offset:</label>
                     <input name="dispense" min="0" step="0.001" type="number" value="{{dispense}}">
                     <span class="ui mini label">s</span>
                 </div>
 
-                <i class="ui circular inverted orange link warning icon" style="position: absolute; top: 5px; right: -25px;" title="This will modify the dispense time specified by any template!"></i>
+                <i class="fixed right ui circular inverted orange link warning icon" title="This will modify the dispense time specified by any template!"></i>
             </div>
         </div>
         <div class="disabled inline fields">

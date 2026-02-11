@@ -23,6 +23,14 @@ import { ReactiveVar } from 'meteor/reactive-var';
 import { Template } from 'meteor/templating';
 import { Templates } from '../../api/collections';
 
+export const alert = (type, title, message) => $.toast({ class: `centered ${ type }`, title, message,
+        className: { title: 'ui large header' },
+        newestOnTop: true,
+        position: 'bottom attached',
+        showIcon: alertIcons[ type ],
+        showProgress: 'bottom'
+    });
+
 const alertIcons = { error: 'cancel', success: 'check', warning: 'warning' },
     hasTemplate = (id, data) => {
         const templates = Templates.find({$or: [{users: 'any'}, {users: {$elemMatch: {$eq: id}}}]}).fetch();
@@ -39,14 +47,6 @@ const alertIcons = { error: 'cancel', success: 'check', warning: 'warning' },
             return inputs && session && stages;
         });
     };
-
-export const alert = (type, title, message) => $.toast({ class: `centered ${ type }`, title, message,
-        className: { title: 'ui large header' },
-        newestOnTop: true,
-        position: 'bottom attached',
-        showIcon: alertIcons[ type ],
-        showProgress: 'bottom'
-    });
 
 Template.sessionSetup.helpers({
     inputs() {
@@ -86,28 +86,35 @@ Template.sessionSetup.onCreated(function () {
         const form = $('#device-form').form('get values'),
             devices = form.devices.split(','),
             experiment = this.parent().getExperiment()._id,
+            /** Transforms both static values & variables: */
+            calibrate = (v, fn) => (!_.isArray(v) ? !_.has(v, 'depends')
+                ? fn(v) : update(v, { match: { $set: _.mapObject(v.match, fn) } })
+                : _.map(v, fn)),
             elements = (device, el) => {
                 switch (el.type) {
                     case 'audio': {
                         if (!_.has(el.source, 'wave')) return el;
-                        const frequency = el.source.wave.frequency + _.get(device.profile.calibration, [ 'audio', 'frequency' ], 0);
-                        return update(el, { source: { wave: { frequency: { $set: frequency } } } });
+
+                        const c = _.get(device.profile.calibration, [ 'audio', 'frequency' ], 0);
+
+                        return update(el, { source: { wave: {
+                            frequency: { $apply: (o) => calibrate(o, (f) => (f + c)) }
+                        } } });
                     }
                     case 'cross': {
                         const cross = device.profile.calibration.screen.cross;
 
                         return update(el, { offset: {
-                            x: { $apply: (x) => (x + cross.offset.x) },
-                            y: { $apply: (y) => (y + cross.offset.y) }
+                            x: { $apply: (o) => calibrate(o, (x) => (x + cross.offset.x)) },
+                            y: { $apply: (o) => calibrate(o, (y) => (y + cross.offset.y)) }
                         } });
                     }
                     case 'reward': {
                         const commands = _.map(el.commands, (command) => {
                             /** Valve opens in ~0.013 s
                              *  Water rate increases up to 0.19 mL/s */
-                            const water = device.profile.calibration.water;
-
-                            const getDuration = (vol) => (parseFloat(water.slope) * Math.max(0, vol) + parseFloat(water.intercept)),
+                            const water = device.profile.calibration.water,
+                                getDuration = (vol) => (parseFloat(water.slope) * Math.max(0, vol) + parseFloat(water.intercept)),
                                 getTotal = (key) => (parseFloat(command[ key ]) + parseFloat(water[ key ])),
                                 duration = _.has(command, 'amount') ? getDuration(getTotal('amount'))
                                     : _.has(command, 'dispense') ? getTotal('dispense') : 0;
@@ -136,21 +143,21 @@ Template.sessionSetup.onCreated(function () {
                 return alert('warning', 'Device Unprepared', `${device.profile.name} must be fully calibrated.`);
             }
 
-            const inputs_adjusted = _.map(inputs, (stage) => _.map(stage, (input) => (update(input, {
-                correct: { $set: _.map(input.correct, (e) => {
-                    if (e.action === 'insert') {
-                        return update(e, { targets: { $set: _.map(e.targets, (el) => (elements(device, el))) } });
-                    } else if (e.action === '+') {
-                        return _.isBoolean(e?.specifications?.duplicate) ? update(e, { specifications: {
-                            duplicate: { $set: session?.correction.number } } } ) : e;
-                    } else return e;
-                }) } }))));
-
             const stages_adjusted = _.map(stages, (stage) => _.map(stage, (el) => (elements(device, el))));
 
-            if (subjects.length > 0) Meteor.call('generateTrials', inputs_adjusted, session, stages_adjusted,
+            if (subjects.length > 0) Meteor.call('generateTrials', session, stages_adjusted,
                 (error, trials) => {
                     if (error) return alert('error', 'Error', 'Trial generation failed.');
+
+                    const inputs_adjusted = _.map(inputs, (stage) => _.map(stage, (input) => (update(input, {
+                        correct: { $set: _.map(input.correct, (e) => {
+                            if (e.action === 'insert') {
+                                return update(e, { targets: { $set: _.map(e.targets, (el) => (elements(device, el))) } });
+                            } else if (e.action === '+') {
+                                return _.isBoolean(e?.specifications?.duplicate) ? update(e, { specifications: {
+                                    duplicate: { $set: session?.correction.number } } } ) : e;
+                            } else return e;
+                        }) } }))));
 
                     Meteor.call('addSession', deviceId, experiment, inputs_adjusted, session, subjects, trials,
                         (error, session) => {

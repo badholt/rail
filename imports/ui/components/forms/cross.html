@@ -1,17 +1,14 @@
 <template name="crossForm">
-    {{#with element}}
+    {{#with value}}
         <form id="cross-form" class="ui inverted form">
-            {{#if visible}}
-                <svg id="cross-preview"
-                     width="100%">{{> cross preview=true offset=offset span=span weight=weight}}</svg>
-            {{/if}}
+            {{#if visible}}{{> crossPreview}}{{/if}}
 
             <label>Offset <span class="ui mini horizontal label">% from center</span></label>
 
             <div class="two fields">
                 <div class="field">
-                    <div class="ui inverted transparent input">
-                        <div class="ui mini blue right pointing label">
+                    <div class="ui inverted transparent right labeled input">
+                        <div class="ui inverted brown right pointing label">
                             x
                         </div>
                         <input type="number" name="offset-x" placeholder="0.0"
@@ -19,8 +16,8 @@
                     </div>
                 </div>
                 <div class="field">
-                    <div class="ui inverted transparent input">
-                        <div class="ui mini blue right pointing label">
+                    <div class="ui inverted transparent right labeled input">
+                        <div class="ui inverted brown right pointing label">
                             y
                         </div>
                         <input type="number" name="offset-y" placeholder="0.0"
@@ -68,4 +65,15 @@
             </div>
         </form>
     {{/with}}
+</template>
+
+<template name="crossPreview">
+    <svg id="cross-preview" width="100%" style="aspect-ratio: 5 / 3;">
+        {{#with screen}}
+            <text x="20" y="20" class="filled orange">{{width}}px</text>
+            <text x="10" y="20" class="vertical filled blue">{{height}}px</text>
+        {{/with}}
+
+        {{#with preview this}}{{> cross}}{{/with}}
+    </svg>
 </template>
