@@ -17,7 +17,7 @@ export const calculateCenter = (height, width) => ({
         y: Math.floor(height / 2)
     }),
     calculateTotal = (session) => (session.duration)
-        ? Math.round(session.duration / session.iti * (session?.distribution?.multiplier ?? 1))
+        ? Math.round(session.duration / session.iti * (session?.distribution?.multiplier ?? 1.25))
         : session.total,
     calculateWeights = (blacklist, total) => {
         const selected = _.filter(blacklist, (element) => !element.blacklist);
@@ -101,10 +101,11 @@ export const calculateCenter = (height, width) => ({
         // });
 
         /** METHOD 2 - Probability distribution of stages w/ exact global weights: */
-        const weights = _.flatten(_.times(map.size / 2, () => ([
-                    ratio / (map.size / 2),
-                    parseFloat(((1 - ratio) / (map.size / 2)).toFixed(5))
-                ]))),
+        const size = (map.size / 2),
+            // TODO: Multivariate distributions; check weights for each variable combination
+            weights = element.weights ? element.weights[ 0 ] : (ratio // Given 'ratio', assumes binary condition
+                ? _.flatten(_.times(size, () => ([ ratio / size, parseFloat(((1 - ratio) / size).toFixed(5)) ])))
+                : _.flatten(_.times(map.size, () => ([ 1 / map.size ])))), // Equal probability for all outcomes
             portion = (w) => Math.floor(n * w),
             portions = _.map(weights, (w) => portion(w)),
             sum = _.reduce(portions, (memo, p) => memo + p),
@@ -191,9 +192,6 @@ Meteor.methods({
     'generateTrials': (session, stages) => {
         // TODO: Find way to generate "add on" stimuli with session parameters
         let trials = [];
-
-        /** If not specified, set default values for probability distributions: */
-        if (!session.distribution) session.distribution = { multiplier: 1, ratio: 0.5 };
 
         /** Returns an integer representing the estimated number of trials which will occur in the Session.
          *  If the Session duration is given in terms of the total number of ms, the total ms are divided by
