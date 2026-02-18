@@ -26,14 +26,19 @@ const clientClosed = (n) => (`\v\x1b[45;97m Connection Closed, reasonCode: ${ n 
 
 if (Meteor.isServer) Meteor.methods({
     'addExperiment': (fields) => {
-        const template = Templates.findOne(fields.template);
+        const template = Templates.findOne(fields.template), // Verify template exists
+            link = fields.title.replace(/( )|(\W)/g, '-'),
+            matches = Experiments.find({ link: { $regex: `${ link }$` } }).count();
 
         return Experiments.insert({
             investigator: {
                 id: Meteor.userId(),
-                name: { first: fields[ 'investigator-first' ], last: fields[ 'investigator-last' ] }
+                name: {
+                    first: fields[ 'investigator-first' ],
+                    last: fields[ 'investigator-last' ]
+                }
             },
-            link: `/experiments/${fields.title.replace(/( )|(\W)/g, '-')}`,
+            link: matches ? `${ link }-${ matches + 1 }` : link,
             templates: [ template._id ],
             title: fields.title,
             users: [ Meteor.userId() ]

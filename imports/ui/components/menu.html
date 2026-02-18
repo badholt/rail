@@ -1,6 +1,5 @@
 <template name="menu">
-    <nav id="main-menu" class="ui {{#if currentUser.profile.device}}fade pink
-{{else}}black inverted {{/if}}secondary stackable pointing menu">
+    <nav id="main-menu" class="ui {{#if currentUser.profile.device}}fade pink {{else}}black inverted {{/if}}secondary stackable pointing centered fluid wrapping menu">
         {{#if currentUser}}
             {{#unless currentUser.profile.device}}
                 <a id="create" class="{{isActiveRoute 'create'}} ui animated button item" href="/create" tabindex="1">
@@ -11,7 +10,7 @@
                 </a>
 
                 {{#each experiment}}
-                    <a class="{{isActivePath regex=link}} item" href="{{link}}{{tabs _id}}" tabindex="0">
+                    <a class="{{isActivePath regex=(expanded link)}} item" href="{{expanded link}}{{tabs _id}}" tabindex="0">
                         {{title}}
                     </a>
                 {{/each}}
@@ -62,14 +61,14 @@
 </template>
 
 <template name="calibrationWindow">
-    <a class="active item" href="{{link}}" tabindex="0">
+    <a class="active item" tabindex="0">
         <i class="inverted pink tag icon"></i>
         Calibrate {{currentUser.profile.name}}
     </a>
 </template>
 
 <template name="sessionWindow">
-    <a class="active item" href="{{link}}" tabindex="0">
+    <a class="active item" tabindex="0">
         <i class="inverted pink tag icon"></i>
         {{subject}}
     </a>

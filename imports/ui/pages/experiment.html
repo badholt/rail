@@ -1,39 +1,44 @@
 <template name="experiment">
-    {{#each experiment}}
-        {{#if isActivePath regex=link}}
+    {{#with experiment}}
+        {{#if isActivePath regex=(expanded link)}}
             <div class="ui inverted padded stackable grid">
                 <div class="ui two wide column">
                     {{> experimentMenu}}
                 </div>
 
                 <div class="ui twelve wide column">
-                    {{#if isActivePath regex='/run'}}
+                    {{#if isActivePath regex='/run$'}}
                         {{> sessionSetup}}
                     {{/if}}
-                    {{#if isActivePath regex='/data'}}
+                    {{#if isActivePath regex='/data$'}}
                         {{> data}}
                     {{/if}}
-                    {{#if isActivePath regex='/settings'}}
+                    {{#if isActivePath regex='/settings$'}}
                         {{> settingsForm}}
                     {{/if}}
                 </div>
             </div>
         {{/if}}
-    {{/each}}
+    {{/with}}
 </template>
 
 <template name="experimentMenu">
     <div class="ui inverted vertical fluid secondary labeled icon menu">
-        <a id="run" class="{{isActivePath regex='/run'}} item" href="{{link}}/run">
-            <i class="play icon"></i> Run
-        </a>
+        {{#if $exists link}}
+            <a id="run" class="{{isActivePath regex='/run$'}} item"
+               href="/experiments/{{replace link '/experiments/' ''}}/run">
+                <i class="play icon"></i> Run
+            </a>
 
-        <a id="data" class="{{isActivePath regex='/data'}} item" href="{{link}}/data">
-            <i class="bar chart outline icon"></i> Data
-        </a>
+            <a id="data" class="{{isActivePath regex='/data$'}} item"
+               href="/experiments/{{replace link '/experiments/' ''}}/data">
+                <i class="bar chart outline icon"></i> Data
+            </a>
 
-        <a id="settings" class="{{isActivePath regex='/settings'}} item" href="{{link}}/settings">
-            <i class="settings icon"></i> Settings
-        </a>
+            <a id="settings" class="{{isActivePath regex='/settings$'}} item"
+               href="/experiments/{{replace link '/experiments/' ''}}/settings">
+                <i class="settings icon"></i> Settings
+            </a>
+        {{/if}}
     </div>
 </template>

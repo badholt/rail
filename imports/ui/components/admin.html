@@ -50,6 +50,37 @@
     {{/each}}
 </template>
 
+<template name="experimentItem">
+    <div class="{{#if hidden _id}}disabled{{/if}} comment" style="pointer-events: auto;">
+        <a class="avatar">{{> profileAvatar (investigator.id)}}</a>
+
+        <div class="content">
+            <div class="author">
+                <div class="right floated metadata">/{{replace link '/experiments/' ''}}</div>
+                {{title}}
+            </div>
+
+            <div class="actions">
+                <a class="visibility">
+                    {{#unless hidden _id}}
+                        <i class="eye slash icon"></i>Hide
+                    {{else}}
+                        <i class="eye icon"></i>Show
+                    {{/unless}}
+                </a>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template name="experimentList">
+    <div class="ui inverted threaded comments">
+        {{#each authorized experiments}}
+            {{> experimentItem}}
+        {{/each}}
+    </div>
+</template>
+
 <template name="userCard">
     {{#with profile}}
         <div class="ui right floated basic compact segment">
@@ -84,26 +115,15 @@
 
                         <div class="header">{{name}}</div>
 
-                        <div class="meta">
-                          <span class="category"><i class="user icon"></i> {{username}}</span>
-                        </div>
-
                         <div class="description">
                             <div class="ui inverted list">
                               <div class="item">
-                                <div class="ui tiny horizontal teal inverted statistic">
-                                    <div class="value">{{getLength experiments}}</div>
-                                    <div class="label">experiments <i class="teal vial icon"></i></div>
-                                </div>
-                              </div>
-
-                              <div class="item">
-                                <i class="hourglass icon"></i>
+                                <i class="user icon"></i>
                                 <div class="content">
-                                    last login:
+                                    username:
 
                                     <div class="right floated content">
-                                         <span class="ui info text">{{relativeDate status.lastLogin.date false}}</span>
+                                         <span class="ui info text">{{username}}</span>
                                     </div>
                                 </div>
                               </div>
@@ -119,6 +139,28 @@
                                     </div>
                                 </div>
                               </div>
+
+                              <div class="item">
+                                <i class="hourglass icon"></i>
+                                <div class="content">
+                                    last login:
+
+                                    <div class="right floated content">
+                                         <span class="ui info text">{{relativeDate status.lastLogin.date false}}</span>
+                                    </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="ui horizontal divider">
+                                <div class="ui tiny horizontal teal inverted statistic">
+                                    <div class="value">{{getLength experiments}}</div>
+                                    <div class="label">experiments <i class="teal vial icon"></i></div>
+                                </div>
+                            </div>
+
+                            <div class="ui very short inverted scrolling segment">
+                                {{> experimentList}}
                             </div>
                         </div>
                     {{/if}}

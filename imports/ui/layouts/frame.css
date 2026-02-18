@@ -104,6 +104,11 @@ text.vertical {
     background-color: rgb(from var(--white) r g b / 2%);
 }
 
+#main-menu > #create {
+    flex: initial;
+    justify-content: normal;
+}
+
 #cross-preview {
     background: var(--dark);
     background-position: -1px -1px;

@@ -11,7 +11,14 @@ Template.calibrate.onCreated(function () {
         this.subscribe('users.user', 'cross');
     });
 });
-Template.calibrate.onDestroyed(() => { if (!Meteor.user().status?.active.calibration) FlowRouter.go('/'); });
+
+Template.calibrationView.onDestroyed(() => {
+    const calibration = Meteor.user().status?.active?.calibration;
+
+    if (calibration === false) {
+        FlowRouter.go('/');
+    }
+});
 
 Template.calibrationView.onRendered(function () { renderCross(this.data); });
 

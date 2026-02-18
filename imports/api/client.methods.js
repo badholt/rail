@@ -88,22 +88,8 @@ export const calculateCenter = (height, width) => ({
         return trial;
     },
     generateDistribution = (element, map, n, ratio, trial, list) => {
-        /** METHOD 1 - Weighted probabilities for (global) stages generation: */
-        // _.times(n, () => {
-        //     const weights = [0.25 * n, n], // DUMMY VARS
-        //     r = _.random(n),
-        //     rI = Math.floor(_.findIndex(weights, (w) => (r <= w))),
-        //     random = list[rI],
-        //     count = map.get(random);
-
-        //     trial.push(_.defaults(random, element));
-        //     map.set(random, count + 1);
-        // });
-
-        /** METHOD 2 - Probability distribution of stages w/ exact global weights: */
         const size = (map.size / 2),
-            // TODO: Multivariate distributions; check weights for each variable combination
-            weights = element.weights ? element.weights[ 0 ] : (ratio // Given 'ratio', assumes binary condition
+            weights = element.weights ? getWeights(element, list) : (ratio // Given 'ratio', assumes binary condition
                 ? _.flatten(_.times(size, () => ([ ratio / size, parseFloat(((1 - ratio) / size).toFixed(5)) ])))
                 : _.flatten(_.times(map.size, () => ([ 1 / map.size ])))), // Equal probability for all outcomes
             portion = (w) => Math.floor(n * w),
@@ -146,6 +132,18 @@ export const calculateCenter = (height, width) => ({
 
         return visuals;
     },
+    getWeights = (element, list) => _.map(list, (combo) => _.reduce(_.map(element.variables, (variable, v) => {
+        const path = variable.split('.'),
+            values = _.get(element, path); // Get list of potential variable values
+
+        /** Do not use dependent variables in combinatorial calculations: */
+        if (_.has(values, 'depends')) return;
+
+        const match = _.get(combo, path), // Match this outcome's value in values
+            i = _.findIndex(values, (value) => (value === match));
+
+        return element.weights ? element.weights[ v ][ i ] : 1 / list.length; // Grab index of value
+    }), (mem, w) => (w ? mem * w : mem))), // Multiply weights from each combo
     randomLocation = (width, height, locations) => {
         const x = _.random(1, width),
             y = _.random(1, height),
@@ -211,7 +209,7 @@ Meteor.methods({
                 trials[ i ].push([]);
 
                 /** (3) Generates probability distributions for element j relative to specified variables: */
-                trials[ i ][ j ] = generateCombinations(element, n, element.ratio ?? session?.distribution?.ratio,
+                trials[ i ][ j ] = generateCombinations(element, n, session.distribution?.ratio,
                     trials[ i ][ j ]);
             });
         });

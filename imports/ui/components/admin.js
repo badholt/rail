@@ -1,7 +1,7 @@
 import './admin.html';
-
 import './forms/user';
 
+import { Experiments } from '../../api/collections';
 import { getInitials } from './profile';
 import { Meteor } from 'meteor/meteor';
 import { Template } from 'meteor/templating';
@@ -25,21 +25,17 @@ Template.adminPanel.onRendered(function () {
 });
 
 Template.clientList.events({
-    'click .button[id^=connect]'(e, template) {
+    'click .button[id^=connect]'(e) {
         const id = e.target.value;
 
         Meteor.call('updateClient', id, 'connect');
         Meteor.call('getClients');
-
-        const client = _.values(template.data[ 0 ].status.client)[ 0 ];
     },
-    'click .button[id^=disconnect]'(e, template) {
+    'click .button[id^=disconnect]'(e) {
         const id = e.target.value;
 
         Meteor.call('updateClient', id, 'end');
         Meteor.call('getClients');
-
-        const client = _.values(template.data[ 0 ].status.client)[ 0 ];
     }
 });
 
@@ -49,10 +45,32 @@ Template.clientList.helpers({
     }
 });
 
+Template.experimentList.helpers({
+    authorized(experiments) {
+        return Experiments.find({ _id: { $in: experiments } });
+    }
+});
+
+Template.experimentItem.events({
+    'click a.visibility'(_event, template) {
+        const id = template.data._id,
+            user = Meteor.user();
+
+        Meteor.callAsync('updateUser', user._id, 'profile.hidden',
+            !_.contains(user.profile?.hidden, id) ? 'push' : 'pull', id);
+    }
+});
+
+Template.experimentItem.helpers({
+    hidden(id) {
+        return _.contains(Meteor.user().profile?.hidden, id);
+    }
+});
+
 Template.userCard.events({
     'change #upload-file'(event, template) {
         const target = event.target || event.srcElement;
-        template.loadPic(_.first(target.files));console.log("changed file");
+        template.loadPic(_.first(target.files));
     },
     'change #upload-url'(event, template) {
         const target = event.target || event.srcElement,

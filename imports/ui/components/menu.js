@@ -10,22 +10,19 @@ import { Meteor } from 'meteor/meteor';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { Template } from 'meteor/templating';
 
-Template.calibrationWindow.onCreated(function () {
-    if (this.data.cross) FlowRouter.go('/calibrate');
-});
+Template.calibrationWindow.onCreated(() => { if (Template.currentData().cross) FlowRouter.go('/calibrate'); });
 
 Template.menu.events({
-    'click .ui.menu > a.item'(event, template) {
+    'click .ui.menu > a.item'(_event, template) {
         const item = $('.labeled.menu .active.item').get(0);
 
         if (item) {
             const action = item.getAttribute('id'),
-                link = `/experiments/${ FlowRouter.getParam('link') }`,
                 tabs = template.tabs.get(),
-                experiment = Experiments.findOne({ link: link });
+                experiment = Experiments.findOne({ link: { $regex: `${ FlowRouter.getParam('link') }` } });
 
             if (experiment) {
-                tabs[ experiment._id ] = `/${ action }`;
+                tabs[ experiment._id ] = action;
                 template.tabs.set(tabs);
             }
         }
@@ -33,14 +30,17 @@ Template.menu.events({
 });
 
 Template.menu.helpers({
+    expanded(link) {
+        return `/experiments/${ link.replace('/experiments/', '') }/`;
+    },
     experiment() {
-        return Experiments.find();
+        return Experiments.find({ _id: { $nin: Meteor.user().profile?.hidden ?? [] } });
     },
     session() {
         return Sessions.find({ trials: { $size: 1 } });
     },
     tabs(id) {
-        return Template.instance().tabs.get()[ id.toString() ] || '/run';
+        return Template.instance().tabs.get()[ id.toString() ] || 'run';
     }
 });
 
@@ -53,7 +53,6 @@ Template.menu.onCreated(function () {
             this.subscribe('sessions.today', date, user._id);
             this.subscribe('users.user', 'calibration');
             Meteor.call('updateUser', user._id, 'status.active.session', 'set', '');
-            // this.subscribe('users.user', 'session');
         } else {
             this.subscribe('experiments.user', user._id);
             this.tabs = new ReactiveVar({});
