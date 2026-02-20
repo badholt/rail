@@ -21,15 +21,6 @@ audio {
     width: 90px;
 }
 
-nav#main-menu a.item {
-    border-radius: 4px 4px 0 0;
-    margin: 0 1px;
-}
-
-nav#main-menu a#home:has(.image) {
-    padding: 9px 5.5px 9px 9px;
-}
-
 #main-panel:not(.nocturnal) nav#main-menu a.active.item,
 :not(.nocturnal) nav#main-menu a.item:active {
     background: rgb(from var(--white) r g b / 15%);
@@ -37,6 +28,15 @@ nav#main-menu a#home:has(.image) {
 
 #main-panel:not(.nocturnal) nav#main-menu.ui.menu a.item:hover {
     background: rgb(from var(--white) r g b / 8%);
+}
+
+nav#main-menu a.item {
+    border-radius: 4px 4px 0 0;
+    margin: 0 1px;
+}
+
+nav#main-menu a#home:has(.image) {
+    padding: 9px 5.5px 9px 9px;
 }
 
 .one-tone .ui.checkbox.toggle input:checked~label::before {
@@ -68,6 +68,15 @@ text.vertical {
 
 .ui.accordion .form input {
     text-align: center;
+}
+
+.ui.form details .field input {
+    width: calc(100% - 2em);
+}
+
+.ui.form label > span.ui.label {
+    margin-left: 0.3em;
+    vertical-align: text-bottom;
 }
 
 .ui.inverted.transparent input[type="number"] {
@@ -104,11 +113,6 @@ text.vertical {
     background-color: rgb(from var(--white) r g b / 2%);
 }
 
-#main-menu > #create {
-    flex: initial;
-    justify-content: normal;
-}
-
 #cross-preview {
     background: var(--dark);
     background-position: -1px -1px;
@@ -120,6 +124,11 @@ text.vertical {
     border-top-color: var(--orange);
     display: block;
     margin: 0 auto 1.5em auto;
+}
+
+#main-menu > #create {
+    flex: initial;
+    justify-content: normal;
 }
 
 #main-panel:not(.nocturnal),

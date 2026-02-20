@@ -68,22 +68,56 @@
                         <i class="eye icon"></i>Show
                     {{/unless}}
                 </a>
+
+                <a class="edit right floated">
+                    <i class="edit icon"></i>Edit
+                </a>
             </div>
         </div>
     </div>
 </template>
 
 <template name="experimentList">
-    <div class="ui inverted threaded comments">
+    <div id="experiments" class="ui mini inverted threaded comments">
         {{#each authorized experiments}}
             {{> experimentItem}}
         {{/each}}
+    </div>
+
+    {{> experimentModal (editing)}}
+</template>
+
+<template name="experimentModal">
+    <div id="modal-experiment-{{link}}" class="ui compact inverted grey message modal">
+        <i class="close icon"></i>
+
+        <div class="ui inverted grey dividing header">
+            <i class="edit icon"></i>
+
+            <span class="content">
+                Editing "<span class="ui italicized info text">{{title}}</span>"
+            </span>
+        </div>
+
+        <div class="scrolling content">
+            {{> editExperimentForm}}
+        </div>
+
+        <div class="basic centered actions">
+            <div class="ui negative icon button">
+                <i class="trash icon"></i>
+            </div>
+
+            <button class="ui positive left labeled icon button">
+                <i class="save icon"></i> Save All
+            </button>
+        </div>
     </div>
 </template>
 
 <template name="userCard">
     {{#with profile}}
-        <div class="ui right floated basic compact segment">
+        <div class="ui right floated basic compact segment" style="border-radius: 0.3rem;">
             <div class="ui inverted card">
                 {{#if edit}}
                     <input type="file" id="upload-file" class="ui invisible file input" name="file">

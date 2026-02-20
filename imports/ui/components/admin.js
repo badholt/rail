@@ -1,10 +1,24 @@
 import './admin.html';
+import './forms/experiment';
 import './forms/user';
+
+import _ from 'underscore';
 
 import { Experiments } from '../../api/collections';
 import { getInitials } from './profile';
 import { Meteor } from 'meteor/meteor';
 import { Template } from 'meteor/templating';
+
+export const submitExperimentUpdate = (exp) => {
+        const form = $('#experiment-form').form('get values');
+
+        /** Do not update if unchanged: */
+        if (_.isMatch(exp, form)) return;
+
+        Meteor.callAsync('getExperimentLink', form.link).then((link) =>
+            Meteor.callAsync('updateExperiment', exp._id, (exp.link !== form.link)
+                ? _.assign(form, { link }) : form));
+    };
 
 Template.adminPanel.helpers({
   devices() {
@@ -45,13 +59,13 @@ Template.clientList.helpers({
     }
 });
 
-Template.experimentList.helpers({
-    authorized(experiments) {
-        return Experiments.find({ _id: { $in: experiments } });
-    }
-});
-
 Template.experimentItem.events({
+    'click a.edit'(_event, template) {
+        const editing = template.get('editing');
+
+        editing.set(template.data);
+        $('[id^=modal-experiment-]').modal('show');
+    },
     'click a.visibility'(_event, template) {
         const id = template.data._id,
             user = Meteor.user();
@@ -65,6 +79,63 @@ Template.experimentItem.helpers({
     hidden(id) {
         return _.contains(Meteor.user().profile?.hidden, id);
     }
+});
+
+Template.experimentList.helpers({
+    authorized(experiments) {
+        return Experiments.find({ _id: { $in: experiments } });
+    },
+    editing() {
+        return Template.instance().editing.get();
+    }
+});
+
+Template.experimentList.onCreated(function () { this.editing = new ReactiveVar(false); });
+
+Template.experimentModal.onRendered(function () {
+    const editing = this.get('editing'),
+        editExperiment = (editing) => ({
+            allowMultiple: true,
+            closeIcon: true,
+            context: '.ui.right.floated.segment',
+            onApprove: () => submitExperimentUpdate(editing.get()),
+            onDeny: () => {
+                confirmDelete(editing.get());
+                return false; // Prevent nested modals from flashing
+            }
+        }),
+        confirmDelete = (exp) => $.modal({
+            allowMultiple: true,
+            title: `Please Confirm Deletion of "${ exp.title }"`,
+            class: 'ui compact inverted negative message',
+            classActions: 'basic',
+            classContent: 'center aligned',
+            classTitle: 'ui centered inverted red',
+            context: '.ui.right.floated.segment',
+            content: `Once deleted, experiment "${ exp.title }" will be unrecoverable.`,
+            inverted: true,
+            actions: [
+                {
+                    class: 'red',
+                    icon: 'exclamation triangle',
+                    text: 'Delete',
+                    click: () => Meteor.callAsync('removeExperiment', exp._id).then(() => $.toast({
+                        class: 'success centered',
+                        message: `Experiment & All references to "${ exp.title }" have been removed.`,
+                        position: 'bottom attached',
+                        showIcon: 'trash',
+                        title: `Deletion Success`
+                    }))
+                },
+                {
+                    class: 'icon',
+                    icon: 'undo',
+                    click: () => $('[id^=modal-experiment-]').modal('show')
+                }
+            ]
+        }).modal('show');
+
+    this.$('[id^=modal-experiment-]').modal(editExperiment(editing));
 });
 
 Template.userCard.events({
@@ -119,7 +190,7 @@ Template.userCard.onCreated(function () {
 
             return this.previewPic(url);
         })
-        .catch(error => console.log(error)));
+        .catch(error => console.error(error)));
     this.loadPic = (img) => {
         const fileReader = new FileReader();
 

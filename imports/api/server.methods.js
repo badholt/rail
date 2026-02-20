@@ -25,24 +25,25 @@ const clientClosed = (n) => (`\v\x1b[45;97m Connection Closed, reasonCode: ${ n 
     };
 
 if (Meteor.isServer) Meteor.methods({
-    'addExperiment': (fields) => {
-        const template = Templates.findOne(fields.template), // Verify template exists
-            link = fields.title.replace(/( )|(\W)/g, '-'),
-            matches = Experiments.find({ link: { $regex: `${ link }$` } }).count();
+    'addExperiment': async (fields) => {
+        try {
+            const template = Templates.findOne(fields.template), // Verify template exists
+                link = await Meteor.callAsync('getExperimentLink', _.isEmpty(fields.link) ? fields.title : fields.link);
 
-        return Experiments.insert({
-            investigator: {
-                id: Meteor.userId(),
-                name: {
-                    first: fields[ 'investigator-first' ],
-                    last: fields[ 'investigator-last' ]
-                }
-            },
-            link: matches ? `${ link }-${ matches + 1 }` : link,
-            templates: [ template._id ],
-            title: fields.title,
-            users: [ Meteor.userId() ]
-        });
+            return Experiments.insert({
+                investigator: {
+                    id: Meteor.userId(),
+                    name: {
+                        first: fields[ 'investigator-first' ],
+                        last: fields[ 'investigator-last' ]
+                    }
+                },
+                link,
+                templates: [ template._id ],
+                title: fields.title,
+                users: [ Meteor.userId() ]
+            });
+        } catch (error) { console.error(error); }
     },
     'addSession': (device, experiment, inputs, session, subjects, trials) => Sessions.insert({
         date: new Date(),
@@ -110,6 +111,12 @@ if (Meteor.isServer) Meteor.methods({
             $set: { [ `status.client.${ key }` ]: client }
         });
     }),
+    'getExperimentLink': async (str) => {
+        const link = str.replace(/( )|(\W)/g, '-'),
+            matches = Experiments.find({ link: { $regex: `${ link }$` } }).count();
+
+        return matches ? `${ link }-${ matches + 1 }` : link;
+    },
     'getTemplates': (ids, params) => Templates.find(ids, params).fetch(),
     'mqttConnect': (id, options) => {
         /** If client already exists, reconnect: */
@@ -255,10 +262,17 @@ if (Meteor.isServer) Meteor.methods({
             });
         }
     },
-    'removeTemplate': (id) => Templates.remove({ _id: id }, (error, _result) => {
-        if (!error) Experiments.update({}, { $pull: { templates: id } }, { multi: true });
+    'removeExperiment': async (_id) => Experiments.remove({ _id }, (error) => {
+        if (error) return console.error(error);
+
+        /** Remove all links to & known associations w/ experiment: */
+        Meteor.users.update({}, { $pull: { 'profile.experiments': _id } }, { multi: true });
+        Subjects.update({}, { $pull: { experiments: _id } });
     }),
-    'removeSession': (id) => Sessions.remove({ _id: id }),
+    'removeTemplate': (_id) => Templates.remove({ _id }, (error) => {
+        if (!error) Experiments.update({}, { $pull: { templates: _id } }, { multi: true });
+    }),
+    'removeSession': (_id) => Sessions.remove({ _id }),
     'removeTrials': (ids) => Trials.remove({ _id: { $in: ids } }),
     'removeUser': (username, id) => Meteor.users.update({ 'profile.username': username }, {
         $pull: { 'profile.experiments': id }
@@ -284,8 +298,8 @@ if (Meteor.isServer) Meteor.methods({
 
         Experiments.update(experiment._id, { $set: { users: ids } });
 
-        const added = Meteor.users.find({_id: {$in: add } }, { fields: { 'profile.name': 1 } }).fetch(),
-            removed = Meteor.users.find({_id: {$in: remove } }, { fields: { 'profile.name': 1 } }).fetch();
+        const added = Meteor.users.find({ _id: { $in: add } }, { fields: { 'profile.name': 1 } }).fetch(),
+            removed = Meteor.users.find({ _id: { $in: remove } }, { fields: { 'profile.name': 1 } }).fetch();
 
         return {
             added: _.map(added, (u) => (u.profile.name)),
@@ -308,7 +322,14 @@ if (Meteor.isServer) Meteor.methods({
             }
         }
     },
-    'updateProfile': (id, fields) => Meteor.users.update({ _id: id }, {
+    'updateExperiment': (_id, fields) => Experiments.update({ _id }, {
+        $currentDate: { lastModified: true },
+        $set: {
+            link: fields.link,
+            title: fields.title
+        }
+    }),
+    'updateProfile': (_id, fields) => Meteor.users.update({ _id }, {
         $currentDate: { lastModified: true },
         $set: _.object(_.map(fields, (v, k) => ([ `profile.${ k }`, v ])))
     }),
@@ -319,25 +340,24 @@ if (Meteor.isServer) Meteor.methods({
             Sessions.update(session, { $currentDate: { lastModified: true }, $set: { [ key ]: value } });
         }
     },
-    'updateSubject': (id, fields) => Subjects.update({ _id: id },
-        {
-            $currentDate: { lastModified: true },
-            $set: {
-                birthday: moment().subtract(fields.age, fields.unit).toDate(),
-                description: fields.description,
-                experiments: fields.experiments,
-                identifier: fields.identifier,
-                name: fields.name,
-                protocol: fields.protocol,
-                sex: fields.sex,
-                strain: fields.strain,
-                tags: fields.tags
-            }
-        }, { multi: true }),
-    'updateTrial': (id, key, operation, value) => Trials.update({ _id: id }, {
+    'updateSubject': (_id, fields) => Subjects.update({ _id }, {
+        $currentDate: { lastModified: true },
+        $set: {
+            birthday: moment().subtract(fields.age, fields.unit).toDate(),
+            description: fields.description,
+            experiments: fields.experiments,
+            identifier: fields.identifier,
+            name: fields.name,
+            protocol: fields.protocol,
+            sex: fields.sex,
+            strain: fields.strain,
+            tags: fields.tags
+        }
+    }, { multi: true }),
+    'updateTrial': (_id, key, operation, value) => Trials.update({ _id }, {
         $currentDate: { lastModified: true }, [`$${ operation }`]: { [ key ]: value }
-    }, {multi: true}),
-    'updateUser': (id, key, operation, value) => Meteor.users.update({ _id: id }, {
+    }, { multi: true }),
+    'updateUser': (_id, key, operation, value) => Meteor.users.update({ _id }, {
         $currentDate: { lastModified: true }, [ `$${ operation }` ]: { [ key ]: value }
     })
 });

@@ -1,0 +1,60 @@
+<template name="createExperimentForm">
+    <form id="experiment-form" class="ui inverted form container">
+        <h4 class="ui dividing inverted header">Experiment</h4>
+
+        <div class="field">
+            <label for="title">Title</label>
+            <input type="text" name="title" placeholder="Experiment Title">
+        </div>
+
+        <div class="field">
+            <label>Template</label>
+            {{> templateDropdown}}
+        </div>
+
+        <details>
+            <summary class="ui small inverted header">Advanced</summary>
+            <div class="field" title="Unique identifier used in URLs">
+                <label for="link">
+                    Link
+                    {{#if link}}
+                        <span class="ui mini horizontal label">
+                            default: <span class="detail">/{{link}}</span>
+                        </span>
+                    {{/if}}
+                </label>
+                <input type="text" name="link" placeholder="Unique identifier">
+            </div>
+        </details>
+
+        <h4 class="ui dividing inverted header">Investigator</h4>
+
+        <div class="equal width fields">
+            <div class="field">
+                <label>First Name</label>
+                <input type="text" name="investigator-first" placeholder="First Name">
+            </div>
+
+            <div class="field">
+                <label>Last Name</label>
+                <input type="text" name="investigator-last" placeholder="Last Name">
+            </div>
+        </div>
+
+        <button class="ui black fluid button" type="submit">Create Experiment</button>
+    </form>
+</template>
+
+<template name="editExperimentForm">
+    <form id="experiment-form" class="ui inverted form container">
+        <div class="field">
+            <label for="title">Title</label>
+            <input type="text" name="title" placeholder="Experiment Title" value="{{title}}">
+        </div>
+
+        <div class="field" title="Unique identifier used in URLs">
+            <label for="link">Link</label>
+            <input type="text" name="link" placeholder="Unique identifier" value="{{link}}">
+        </div>
+    </form>
+</template>

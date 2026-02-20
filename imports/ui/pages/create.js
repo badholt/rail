@@ -5,8 +5,8 @@
  *  Handles creation of new experiments
  * * * * * * * */
 import './create.html';
-
 import '/imports/ui/components/dropdown/template';
+import '/imports/ui/components/forms/experiment';
 
 import { Experiments } from '/imports/api/collections';
 import { FlowRouter } from 'meteor/kadira:flow-router';
