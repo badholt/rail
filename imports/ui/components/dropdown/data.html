@@ -5,20 +5,12 @@
         <span class="text">Select Template</span>
 
         <div class="menu">
-            <div class="item" data-value="mqtt">Network (MQTT)</div>
-            <div class="item" data-value="optogenetics">Optogenetics</div>
-            <div class="item" data-value="responses">Responses</div>
-            <div class="item" data-value="sensor">Sensor - IR</div>
-            <div class="item" data-value="settings">Settings</div>
-            <div class="item" data-value="shaping1">Shaping 1</div>
-            <div class="item" data-value="shaping2">Shaping 2</div>
-            <div class="item" data-value="shaping4">Shaping 4</div>
-            <div class="item" data-value="shaping4v">Shaping 4 (Vertical)</div>
-            <div class="item" data-value="shaping6">Shaping 6</div>
-            <div class="item" data-value="shaping6v">Shaping 6 (Vertical)</div>
-            <div class="item" data-value="shaping8v">Shaping 8 (Vertical)</div>
-            <div class="item" data-value="indices">Trials Repeated</div>
-            <div class="item" data-value="reward">Water Rewarded</div>
+            {{#each templates}}
+                <div class="item" data-value="{{id}}">
+                    <div class="ui {{group}} empty circular label"></div>
+                    {{name}}
+                </div>
+            {{/each}}
         </div>
     </div>
 </template>

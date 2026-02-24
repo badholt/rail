@@ -73,7 +73,7 @@ Template.dataMenu.events({
                     const session = Sessions.findOne(id);
 
                     /** Along w/ the session, delete all trials: */
-                    if (session.trials) return Meteor.call('removeTrials', session.trials, (error, n) => {
+                    if (session.trials) return Meteor.call('removeTrials', session.trials, (error) => {
                         if (error) return alert('error', 'Deletion Failure', 'Trials could not be deleted.');
                         removeSession(id, session.trials.length);
                     });
@@ -183,8 +183,8 @@ Template.dataMenu.events({
                             if (headers) content.push(`${ headers.join('\t') }\n`);
                         },
                         getClickType = (e, region) =>
-                            (isCross(e, region, 'y')
-                                ? isCross(e, region, 'x') ? 'mm'
+                            (isMiddle(e, region, 'y')
+                                ? isMiddle(e, region, 'x') ? 'mm'
                                 : (isLess(e, region, 'x') ? 'lm' : 'rm')
                             : isLess(e, region, 'y')
                                 ? (isLess(e, region, 'x') ? 'lt' : 'rt')
@@ -220,8 +220,20 @@ Template.dataMenu.events({
                                 let axis, property = {};
 
                                 if (c.comparison === '<') {
-                                    _.each(c.objects, (o) => (o.name === 'number') ? property.min = o.property : axis = getAxis(o.property));
-                                    _.each(c.subjects, (s) => (s.name === 'number') ? property.max = s.property : axis = getAxis(s.property));
+                                    _.each(c.objects, (o) => {
+                                        if (o.name === 'number') {
+                                            property.min = o.property;
+                                        } else {
+                                            axis = getAxis(o.property);
+                                        }
+                                    });
+                                    _.each(c.subjects, (s) => {
+                                        if (s.name === 'number') {
+                                            property.max = s.property;
+                                        } else {
+                                            axis = getAxis(s.property);
+                                        }
+                                    });
                                 }
 
                                 if (axis) region[ axis ] = _.extend(region[ axis ] || {}, property);
@@ -233,8 +245,8 @@ Template.dataMenu.events({
 
                             return region;
                         }),
-                        region = _.first(getRegions(rules)), // TODO: Generalize for multirule paradigms
-                        isCross = (coordinate, region, axis) =>
+                        region = _.find(getRegions(rules), (r) => _.some(r, (a) => (a.min < a.max))), // TODO: Generalize for multiaxis paradigms
+                        isMiddle = (coordinate, region, axis) =>
                             (coordinate[ `client${ axis.toUpperCase() }` ] > region[ axis ].min
                             && coordinate[ `client${ axis.toUpperCase() }` ] < region[ axis ].max),
                         isLess = (coordinate, region, axis) => (coordinate[ `client${ axis.toUpperCase() }` ] < region[ axis ].max);
@@ -517,6 +529,46 @@ Template.dataMenu.events({
                             });
 
                             break;
+                        case 'shaping2b':
+                            axis = 'y'; // Analyze w/ vertical mask parameters
+                            headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Trial Start', 'Initial Poke', 'Position (Poke)', 'IR Entry' ];
+                            events = [ [ 'cross.start', 'click', 'request.ir.0' ] ];
+                            content = defaultContent(session);
+
+                            _.each(session.trials, (id, n) => {
+                                const trial = Trials.findOne(id),
+                                    click = _.find(trial.data[ 0 ], (e) => (e.type === 'click')),
+                                    cross = _.find(trial.stages[ 0 ], (e) => (e.type === 'cross'));
+
+                                /** Skip trial if it does not include a fixation cross: */
+                                if (!cross) return;
+
+                                const posClick = click ? !isMiddle(click, region, axis) ? isLess(click, region, axis)
+                                        ? 'T' : 'B' : 'M' : '-',
+                                    posCross = cross.offset.y !== 0.5 ? cross.offset.y < 0.5 ? 'T' : 'B' : 'M';
+
+                                if (n === 0) addOrigin(trial, headers);
+
+                                content.push(`${ trial.number }\t`);
+                                content.push(`${ posCross }\t`);
+                                content.push(`${ click ? posClick === posCross ? '0' : '1' : '2' }\t`);
+
+                                _.each(trial.data, (stage, i) => {
+                                    const groups = getGroups(stage, i),
+                                        ir = getIR(groups, 'shaping2');
+
+                                    _.each(groups[ 'trial.start' ], (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
+
+                                    content.push(`${ click ? getTime(click.timeStamp, trial.timeOrigin) : '-' }\t`);
+                                    content.push(`${ posClick }\t`);
+
+                                    if (ir) _.each(ir, (e) => (content.push(`${ getTime(e.timeStamp, trial.timeOrigin) }\t`)));
+                                });
+
+                                content.push('\n');
+                            });
+
+                            break;
                         case 'shaping4':
                             axis = 'x'; // Analyze w/ horizontal mask parameters
                             headers = [ 'Trial No', 'Trial Type', 'Outcome', 'Trial Start', 'Stimulus Start', 'Response',
@@ -532,8 +584,8 @@ Template.dataMenu.events({
                                 if (n === 0) addOrigin(trial, headers);
 
                                 if (data2 && data2.length > 0) {
-                                    const clicks = _.filter(data2, (e) => (e.type === 'click' && !isCross(e, region, axis))),
-                                        cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region, axis)));
+                                    const clicks = _.filter(data2, (e) => (e.type === 'click' && !isMiddle(e, region, axis))),
+                                        cross = _.filter(data2, (e) => (e.type === 'click' && isMiddle(e, region, axis)));
 
                                     content.push(`${ trial.number }\t`);
                                     correct = addCorrect(clicks, region, trial.stages[ 1 ][ 0 ], axis);
@@ -570,8 +622,8 @@ Template.dataMenu.events({
                                 if (n === 0) addOrigin(trial, headers);
 
                                 if (data2 && data2.length > 0) {
-                                    const clicks = _.filter(data2, (e) => (e.type === 'click' && !isCross(e, region, axis))),
-                                        cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region, axis)));
+                                    const clicks = _.filter(data2, (e) => (e.type === 'click' && !isMiddle(e, region, axis))),
+                                        cross = _.filter(data2, (e) => (e.type === 'click' && isMiddle(e, region, axis)));
 
                                     content.push(`${ trial.number }\t`);
                                     correct = addCorrect(clicks, region, trial.stages[ 1 ][ 0 ], axis);
@@ -608,8 +660,8 @@ Template.dataMenu.events({
                                 if (n === 0) addOrigin(trial, headers);
 
                                 if (data2 && data2.length > 0) {
-                                    const clicks = _.filter(data2, (e) => (e.type === 'click' && !isCross(e, region, axis))),
-                                        cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region, axis)));
+                                    const clicks = _.filter(data2, (e) => (e.type === 'click' && !isMiddle(e, region, axis))),
+                                        cross = _.filter(data2, (e) => (e.type === 'click' && isMiddle(e, region, axis)));
 
                                     content.push(`${ trial.number }\t`);
                                     content.push(`${ trial.bias }\t`);
@@ -646,8 +698,8 @@ Template.dataMenu.events({
                                 if (n === 0) addOrigin(trial, headers);
 
                                 if (data2 && data2.length > 0) {
-                                    const clicks = _.filter(data2, (e) => (e.type === 'click' && !isCross(e, region, axis))),
-                                        cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region, axis))),
+                                    const clicks = _.filter(data2, (e) => (e.type === 'click' && !isMiddle(e, region, axis))),
+                                        cross = _.filter(data2, (e) => (e.type === 'click' && isMiddle(e, region, axis))),
                                         target = _.find(trial.stages[ 1 ], (e) => (e.number === 1)),
                                         flanker = _.find(trial.stages[ 1 ], (e) => (e.number === 2)),
                                         grid = _.get(flanker, [ 'grid', 'x' ], '-'),
@@ -693,8 +745,8 @@ Template.dataMenu.events({
                                 if (n === 0) addOrigin(trial, headers);
 
                                 if (data2 && data2.length > 0) {
-                                    const clicks = _.filter(data2, (e) => (e.type === 'click' && !isCross(e, region, axis))),
-                                        cross = _.filter(data2, (e) => (e.type === 'click' && isCross(e, region, axis)));
+                                    const clicks = _.filter(data2, (e) => (e.type === 'click' && !isMiddle(e, region, axis))),
+                                        cross = _.filter(data2, (e) => (e.type === 'click' && isMiddle(e, region, axis)));
 
                                     content.push(`${ trial.number }\t`);
                                     correct = addCorrect(clicks, region, trial.stages[ 1 ][ 1 ], axis);
