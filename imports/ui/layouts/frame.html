@@ -2,5 +2,6 @@
     <div id="main-panel" class="{{#if currentUser.profile.device}}nocturnal{{/if}} frame">
         {{#if currentUser}}{{> menu}}{{/if}}
         {{> Template.dynamic template=main}}
+        {{#if currentUser.profile.device}}{{> audioContext}}{{/if}}
     </div>
 </template>

@@ -10,11 +10,11 @@
 
 <template name="trialElements">
     {{#each element}}
-        {{> trialElement e=this i=@index pre=''}}
+        {{> trialElement e=this i=@index}}
     {{/each}}
 
     {{#each responses}}
-        {{> trialElement e=this i=@index pre='re'}}
+        {{> trialElement e=this i=@index}}
     {{/each}}
 </template>
 
@@ -31,7 +31,7 @@
 <template name="trialElement">
     {{#with e}}
         {{#if $eq type 'audio'}}
-            {{audio stage trial ../i ../pre}}
+            {{audio stage trial}}
         {{/if}}
         {{#if $eq type 'cross'}}
             {{#if timer delay duration type ../i}}

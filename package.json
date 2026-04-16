@@ -28,7 +28,7 @@
     "nanotimer": "^0.3.15",
     "npm": "^10.2.5",
     "resolve": "^1.20.0",
-    "tone": "^13.4.9",
+    "tone": "^14.7.33",
     "underscore": "^1.9.1",
     "utf-8-validate": "^6.0.3"
   },

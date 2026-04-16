@@ -99,6 +99,18 @@
                 </div>
             </div>
 
+            {{#if correction.abort}}
+                <div class="field">
+                    <label for="session-correction-abort">
+                        Abort <span class="ui mini horizontal label"><em>x</em> Correct Trials</span>
+                    </label>
+
+                    <input type="number" name="session.correction.abort" id="session-correction-abort"
+                           min="0" placeholder="#" value="{{correction.abort}}"
+                           title="Correction trial sequences end after a set number of correct answers for a stimulus">
+                </div>
+            {{/if}}
+
             <div class="two-tone field">
                 <label for="session-correction-instigate">Instigation Strategy</label>
 

@@ -52,6 +52,7 @@ Template.trialSpecificationForm.events({
             switch (property) {
                 case 'correction':
                     switch (split[ 2 ]) {
+                        case 'abort':
                         case 'after':
                         case 'bias':
                         case 'number':
@@ -96,7 +97,7 @@ Template.trialSpecificationForm.helpers({
     },
     instigate() {
         const template = Template.instance();
-        if (!template.parent(3).session.get().correction?.after) template.instigate.set(false);
+        if (!template.get('session').get().correction?.after) template.instigate.set(false);
         return template.instigate.get();
     },
     modify() {
@@ -128,22 +129,25 @@ Template.trialSpecificationForm.onCreated(function () {
 
 Template.trialSpecificationForm.onRendered(() => {
     const template = Template.instance(),
+        abort = template.data.correction?.abort,
+        after = template.data.correction?.after,
         form = template.parent(3),
-        toggle = (key) => form.session.set(update(form.session.get(), { correction: { $toggle: [ key ] } })),
-        updateAfter = (value) => form.session.set(update(form.session.get(),
-                { correction: { after: { $set: value } } }));
-    let after = template.data.correction?.after;
+        updateForm = (key, value) => form.session.set(update(form.session.get(),
+            { correction: { [ key ]: { $set: value } } }));
 
     template.$('.ui.checkbox:has(input[name="session.correction.abort"])').checkbox({
-        onChange: () => toggle('abort')
+        onChecked: () => {
+            if (!abort) updateForm('abort', abort ?? 1);
+        },
+        onUnchecked: () => updateForm('abort', false)
     });
     template.$('.ui.checkbox:has(input[name="session.correction.instigate"])').checkbox({
         onChecked: () => {
-            if (!template.data.correction?.after) updateAfter(after ?? 1);
+            if (!after) updateForm('after', after ?? 1);
             template.instigate.set(true);
         },
         onUnchecked: () => {
-            updateAfter(0);
+            updateForm('after', 0);
             template.instigate.set(false);
         }
     });

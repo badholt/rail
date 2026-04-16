@@ -155,7 +155,7 @@ Template.sessionSetup.onCreated(function () {
                                 return update(e, { targets: { $set: _.map(e.targets, (el) => (elements(device, el))) } });
                             } else if (e.action === '+') {
                                 return _.isBoolean(e?.specifications?.duplicate) ? update(e, { specifications: {
-                                    duplicate: { $set: session?.correction.number } } } ) : e;
+                                    duplicate: { $set: session?.correction?.number } } } ) : e;
                             } else return e;
                         }) } }))));
 

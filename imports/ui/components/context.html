@@ -1,0 +1,13 @@
+<template name="audioContext">
+    {{#if suspended}}
+        <div class="ui active page dimmer">
+            <div class="ui massive inverted violet double indeterminate text loader">
+                <h4 class="ui violet inverted sub header">
+                    <i class="small music icon"></i> Audio Context
+                </h4>
+
+                Waiting for user input... <i class="hand pointer icon"></i>
+            </div>
+        </div>
+    {{/if}}
+</template>
