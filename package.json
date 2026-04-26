@@ -2,6 +2,7 @@
   "name": "rail",
   "private": true,
   "scripts": {
+    "prepare": "git config --local core.hooksPath .githooks",
     "start": "meteor --settings ./private/settings.json"
   },
   "dependencies": {

@@ -72,8 +72,8 @@ export const collectClickEvent = (e) => JSON.parse(JSON.stringify(
             /** Delays onset of first trial: */
             template.timers.session.onset = Meteor.setTimeout(() => {
                 template.n.set(0);
-                template.recordEvent({ timeStamp: performance.now(), type: 'session.start' });
 
+                template.recordEvent({ timeStamp: performance.now(), type: 'session.start' });
                 if (template.logging.session) template.printEvent('brown', '🆂 Session started ');
             }, settings.session.delay);
 
@@ -132,10 +132,10 @@ Template.trial.helpers({
         const template = Template.instance(),
             session = template.session.get();
 
-        if (session) {
-            if (!template.active.get()) (session.trials.length === 1) ? template.startup() : FlowRouter.go('/');
-            return session;
-        }
+        if (!session) return;
+
+        if (!template.active.get()) (session.trials.length === 1) ? template.startup() : FlowRouter.go('/');
+        return session;
     },
     stage() {
         return Template.instance().stage.get();
@@ -184,15 +184,18 @@ Template.trial.onCreated(function () {
     this.trial = new ReactiveVar({});
     this.toggles = {};
 
-    this.clearTimers = (trial, delay = 0, omit = [], only = []) => {
+    this.clearTimer = (value, key) => {
+        Meteor.clearTimeout(value);
+        if (this.logging.timers) this.printEvent('firebrick', `❌ Cleared Timer ${ value } (${ key }) `);
+    };
+    this.clearTimers = (trial, delay = 0, omit = [], only = [], stage = false) => {
         const n = parseInt(trial, 10),
             i = _.filter(this.timers[ n ], (_, k) => k.startsWith('clear.')).length + 1,
-            clearTimer = (timer, type) => {
+            clearSelected = (timer, type) => {
                 const ignore = [ `clear.${ i }`, 'audio', 'lights', 'reward' ].concat(omit);
 
                 if (!_.some(ignore, (j) => type.includes(j))) {
-                    Meteor.clearTimeout(timer);
-                    if (this.logging.timers) this.printEvent('firebrick', `❌ Cleared Timer ${ timer } (${ type }) `);
+                    this.clearTimer(timer, type);
                 } else {
                     if (this.logging.timers) this.printEvent('seagreen', `✔ Kept Timer ${ timer } (${ type }) `);
                 }
@@ -203,49 +206,58 @@ Template.trial.onCreated(function () {
                 /** Clear timers via specified method: */
                 if (only.length > 0) {
                     /** Clear ONLY specified timers & ignore remaining: */
-                    _.each(only, (type) => _.find(this.timers[ t ], (value, key) => {
-                        const inTrial = key.includes(type),
-                            inStage = _.find(value, (_, k) => (k.includes(type)));
+                    _.each(only, (type) => {
+                        /** Clear specific stage if specified: */
+                        if (stage) return getStageTimer(type, this.timers[ t ][ stage ]);
 
-                        if (inTrial || inStage) {
-                            Meteor.clearTimeout(value);
-                            if (this.logging.timers) this.printEvent('firebrick', `❌ Cleared Timer ${ value } (${ key }) `);
-                        }
+                        /** Otherwise, clear all stages until match is found: */
+                        _.find(this.timers[ t ], (id, key) => {
+                            const inTrial = key.includes(type);
 
-                        return inTrial || inStage;
-                    }));
+                            /** Search stages if not found in trial timers: */
+                            if (!inTrial) return getStageTimer(type, id);
+    
+                            this.clearTimer(id, key);
+                            return inTrial;
+                        });
+                    });
                 } else {
                     /** Ignore specified OMIT timers & clear remaining: */
-                    _.each(this.timers[ t ], (stage) => _.each(stage, clearTimer));
+                    _.each(this.timers[ t ], (stage) => _.each(stage, clearSelected));
                 } // TODO: Combine omit & only w/ array overlap
-            };
+            },
+            getStageTimer = (type, stage) => _.find(stage, (id, key) => {
+                const match = key.includes(type);
+                if (match) this.clearTimer(id, key);
+                return match;
+            });
 
         if (!n || !i) return;
 
         /** Clear timers indexed by both trial number, n, & event name: */
         if (omit.length > 0 || only.length > 0) {
-            this.timers[ n ][ `clear.${ i }` ] = Meteor.setTimeout(() => _.each(_.range(n, n - 2, -1), clearTrialTimers),
-            delay);
+            this.timers[ n ][ `clear.${ i }` ] = Meteor.setTimeout(() =>
+                _.each(_.range(n, n - 2, -1), clearTrialTimers), delay);
         } else {
-            if (n) _.each(_.range(n, n - 2, -1), (t) => {
+            /** Legacy timer clearing for backwards compatibility: */
+            _.each(_.range(n, n - 2, -1), (t) => {
                 /** Clear ITI timers first, ASAP: */
                 if (this.timers[ t ]) {
-                    const id = this.timers[ t ][ `trial.${ t }.iti` ];
+                    const iti = `trial.${ t }.iti`,
+                        id = this.timers[ t ][ iti ];
 
-                    Meteor.clearTimeout(id);
-                    if (this.logging.timers) this.printEvent('firebrick', `❌ Cleared Timer ${ id } (trial.${ t }.iti) `);
+                    this.clearTimer(id, iti);
                 }
 
                 return _.each(this.timers[ t ], (stage) => _.each(stage, (timer, label) => {
-                        const whitelist = 'audio' || 'lights' || 'reward';
+                    const whitelist = 'audio' || 'lights' || 'reward';
 
-                        if (!label.includes(whitelist)) {
-                            Meteor.clearTimeout(timer);
-                            if (this.logging.timers) this.printEvent('firebrick', `❌ Cleared Timer ${ timer } (${ label }) `);
-                        } else {
-                            if (this.logging.timers) this.printEvent('seagreen', `✔ Kept Timer ${ timer } (${ label }) `);
-                        }
-                    }));
+                    if (!label.includes(whitelist)) {
+                        this.clearTimer(timer, label);
+                    } else {
+                        if (this.logging.timers) this.printEvent('seagreen', `✔ Kept Timer ${ timer } (${ label }) `);
+                    }
+                }));
             });
         }
     };
@@ -263,12 +275,8 @@ Template.trial.onCreated(function () {
             });
     }));
     this.nextStage = (delay, increment) => {
-        const settings = this.session.get().settings,
-            stage = this.stage.get() + increment,
+        const stage = this.stage.get() + increment,
             trial = this.i.get() + 1; // Follows index instead of trial number to allow for duplicates
-
-        /** Verify that stage exists in current trial: */
-        if (stage > settings.stages[ trial ].length) return; // TODO: In cases of variable trial paradigms, checks on number of stages in trial
 
         /** Initialize trial timers if not already present: */
         this.trialTimers(trial, stage);
@@ -290,14 +298,15 @@ Template.trial.onCreated(function () {
             next = this.n.get() + increment,
             session = this.session.get();
 
-        if (!this.timers[ next ]) this.timers[ next ] = {};
-        if (!this.timers[ next ][ stage ]) this.timers[ next ][ stage ] = {};
+        /** Initialize trial timers if not already present: */
+        this.trialTimers(next, stage);
+
         // TODO: Manage multiple next.trial timers (Verify always set timer / removal of if-else's else doesn't mess things up)
         // A next trial timer will now always override any previous next trial timers after clearing them
         if (this.timers[ next ][ stage ][ 'next.trial' ]) {
             const previous = this.timers[ next ][ stage ][ 'next.trial' ];
 
-            Meteor.clearTimeout(previous);
+            this.clearTimer(previous, 'next.trial');
             this.timers[ next ][ stage ][ 'next.trial' ] = null;
         }
 
@@ -506,10 +515,7 @@ Template.trial.onCreated(function () {
         /** Clear aborted session's timers: */
         this.clearTimers(n + 1);
 
-        _.each(this.timers.session, (timer, label) => {
-            Meteor.clearTimeout(timer);
-            if (this.logging.timers) this.printEvent('firebrick', `❌ Cleared Timer ${ timer } (${ label }) `);
-        });
+        _.each(this.timers.session, this.clearTimer);
 
         /** Record shutdown: */
         this.recordEvent({ timeStamp: performance.now(), type: `trial.${ n }.end` });
@@ -577,7 +583,7 @@ Template.trial.onCreated(function () {
         /** Set up audio: */
         const onstop = () => {
                 this.recordEvent(_.extend(element, { timeStamp: performance.now(), type: 'audio.stop' }));
-                if (this.logging?.audio) this.printTimer(trial, stage, stop, 'steelblue', '🔊 Stopped');
+                if (this.logging?.audio) this.printTimer(trial, stage, stop, 'steelblue', '🔈 Stopped');
             },
             audio = getAudioDestination(element, onstop); // TODO: Move to template level to use this, remove onstop variable?
 
@@ -587,7 +593,8 @@ Template.trial.onCreated(function () {
                 timers[ element.name ] = audio.start(t);
 
                 this.recordEvent(_.extend(element, { timeStamp: performance.now(), type: 'audio.start' }));
-                if (this.logging?.audio) this.printTimer(trial, stage, start, 'steelblue', '🔊 Started');
+                if (this.logging?.audio) this.printTimer(trial, stage, start, 'steelblue',
+                    `${ (!element.mute) ? '🔊' : '🔇' } Started`);
             }, `+${ element.delay / 1000 }`);
 
             timers[ stop ] = Tone.Transport.schedule((t) => audio.stop(t), `+${ (element.delay + element.duration) / 1000 }`);
@@ -663,7 +670,7 @@ Template.trial.onCreated(function () {
         /** clear - Clears all timers
          *  Trials are indexed starting at 0, but the timers are referenced starting at Trial 1,
          *  so clearing timers for "next" actually clears the most recent trial. */
-        'clear': (d, s, _t) => this.clearTimers(this.n.get() + 1, d, s.omit, s.only),
+        'clear': (d, s, _t) => this.clearTimers(this.n.get() + 1, d, s.omit, s.only, s.stage),
         'center': (p) => (this.center[ p ]),
         'count': (p) => {
             const d = this.events.get(),
@@ -704,10 +711,13 @@ Template.trial.onCreated(function () {
                 n = this.n.get() + 1,
                 stage = this.stage.get();
 
+            /** Overwrite duration timer(s) of toggled element if allowed in settings: */
+            if (this.timers[ n ][ stage ][ type ] && !s.keep) this.clearTimer(this.timers[ n ][ stage ][ type ], type);
+
             this.timers[ n ][ stage ][ type ] = Meteor.setTimeout(() => {
                 this.toggles[ t ] = s.set;
-                this.recordEvent({ timeStamp: performance.now(), type });
 
+                this.recordEvent({ timeStamp: performance.now(), type });
                 if (this.logging.timers) this.printTimer(n, stage, type, 'rebeccapurple',
                     (s.set) ? 'Started' : 'Ended');
             }, d);
@@ -767,27 +777,32 @@ Template.trialElement.helpers({
         }
     },
     stage() {
-        return Template.instance().parent(3).stage.get();
+        return Template.instance().get('stage').get();
     },
     timer(delay, duration, type, i) {
         const template = Template.instance().parent(3),
             stage = template.stage.get(),
             trial = template.n.get() + 1,
-            name = `${ type }.${ i }`;
+            name = `${ type }.${ i }`,
+            setTimer = (action, t, desc, val) => {
+                if (template.timers[ trial ][ stage ][ `${ name }.${ action }` ]) return;
 
-        if (!_.has(template.timers[ trial ], stage)) template.timers[ trial ][ stage ] = {};
+                template.timers[ trial ][ stage ][ `${ name }.${ action }` ] = Meteor.setTimeout(() => {
+                    template.toggles[ name ] = val;
+
+                    template.recordEvent({ timeStamp: performance.now(), type: `${ type }.${ action }` });
+                    if (template.logging.timers) template.printTimer(trial, stage, `${ name }.${ action }`,
+                        'rebeccapurple', desc);
+                }, t);
+            };
+
+        /** Initialize stage timers if nonexistent: */
+        if (!template.timers[ trial ][ stage ]) template.timers[ trial ][ stage ] = {};
+
+        /** Set start & end timers for element's specified duration: */
         if (!template.timers[ trial ][ stage ][ `${ name }.start` ]) {
-            template.timers[ trial ][ stage ][ `${ name }.start` ] = Meteor.setTimeout(() => {
-                template.toggles[ name ] = true;
-                template.recordEvent({ timeStamp: performance.now(), type: `${ type }.start` });
-                if (template.logging.timers) template.printTimer(trial, stage, `${ name }.start`, 'rebeccapurple', 'Started');
-            }, delay);
-
-            template.timers[ trial ][ stage ][ `${ name }.end` ] = Meteor.setTimeout(() => {
-                template.toggles[ name ] = false;
-                template.recordEvent({ timeStamp: performance.now(), type: `${ name }.end` });
-                if (template.logging.timers) template.printTimer(trial, stage, `${ name }.end`, 'rebeccapurple', 'Ended');
-            }, delay + duration);
+            setTimer('start', delay, 'Started', true);
+            setTimer('end', delay + duration, 'Ended', false);
         }
 
         return template.toggles[ name ];
