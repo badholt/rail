@@ -285,6 +285,8 @@ Template.trial.onCreated(function () {
         this.timers[ trial ][ stage ][ `stage.${ stage }.start` ] = Meteor.setTimeout(() => {
             /** Update hardware inputs to current stage: */
             this.updateContext(trial, stage);
+            /** Clear data from previous stage's inputs: */
+            this.responses.set([]);
             /** Update trial to current stage: */
             this.stage.set(stage);
 
@@ -502,6 +504,13 @@ Template.trial.onCreated(function () {
         /** Save to database for long-term storage: */
         storeEvent(n, stage);
     };
+    this.recordTimer = (type, action, desc, n = false, log = 'timers', timeStamp = performance.now()) => {
+        const colors = { mqtt: 'orange', timers: 'rebeccapurple' };
+
+        this.recordEvent({ timeStamp, type: `${ action ? `${ type }.${ action }` : type }` });
+        if (this.logging[ log ]) this.printTimer(this.n.get() + 1, this.stage.get(),
+            _.isNumber(n) && n >= 0 ? `${ type }.${ n }.${ action }` : type, colors[ log ], desc);
+    };
     this.shutdown = (type = 'end') => {
         const session = this.session.get(),
             n = this.n.get();
@@ -575,10 +584,7 @@ Template.trial.onCreated(function () {
             stop = `${ element.name }.stop`;
 
         /** Do not schedule multiple instances of same audio unless allowed: */
-        if (timers[ start ]) {
-            
-            if (!element.multi) return; // TODO: Handle multi behavior / iterations of same audio (ex: allow increment pattern, etc.)
-        }
+        if (timers[ start ] && !element.multi) return; // TODO: Handle multi behavior / iterations of same audio (ex: allow increment pattern, etc.)
 
         /** Set up audio: */
         const onstop = () => {
@@ -600,24 +606,25 @@ Template.trial.onCreated(function () {
             timers[ stop ] = Tone.Transport.schedule((t) => audio.stop(t), `+${ (element.delay + element.duration) / 1000 }`);
         });
     };
-    this.timedCommand = (device, topic, message, delay, context = true) => {
-        if (!message?.command) return;
+    this.timedCommand = (device, topic, msg, delay, context = true) => {
+        if (!msg?.command) return;
 
         const id = this.session.get()._id,
             stage = this.stage.get(),
-            timer = `${ topic }.${ message.command }`,
+            timer = `${ topic }.${ msg.command }`,
             trial = this.n.get() + 1;
 
-        this.timers[ trial ][ stage ][ timer ] = Meteor.setTimeout(() => {
-            const timeStamp = performance.now();
-
-            if (this.logging.mqtt) this.printTimer(trial, stage, timer, 'orange', '💬 Sent');
-
-            return Meteor.call('mqttSend', device, topic, (context)
-                ? _.extend(_.omit(message, 'delay'), { context: { session: id, stage, timeStamp, trial } })
-                : _.omit(message, 'delay'),
-            () => this.recordEvent({ timeStamp, type: `${ timer }.fired` }));
-        }, delay);
+        this.timers[ trial ][ stage ][ timer ] = Meteor.setTimeout(() =>
+            Meteor.call('mqttSend', device, topic, (context)
+                ? _.extend(_.omit(msg, 'delay'), { context: {
+                        session: id,
+                        stage,
+                        timeStamp: performance.now(),
+                        trial 
+                    } })
+                : _.omit(msg, 'delay'),
+                () => this.recordTimer(timer, 'fired', '🎯 Fired', false, 'mqtt')), delay);
+        this.recordTimer(timer, 'sent', '💬 Sent', false, 'mqtt');
     };
     this.trialTimers = (n, stage = 1) => {
         /** Sets Trial-level timers: */
@@ -716,10 +723,7 @@ Template.trial.onCreated(function () {
 
             this.timers[ n ][ stage ][ type ] = Meteor.setTimeout(() => {
                 this.toggles[ t ] = s.set;
-
-                this.recordEvent({ timeStamp: performance.now(), type });
-                if (this.logging.timers) this.printTimer(n, stage, type, 'rebeccapurple',
-                    (s.set) ? 'Started' : 'Ended');
+                this.recordTimer(type, false, (s.set) ? 'Started' : 'Ended');
             }, d);
         },
         'trial': (d, i, n) => this.nextTrial(d, i, n),
@@ -753,28 +757,20 @@ Template.trialElement.helpers({
     center() {
         return Template.instance().get('center');
     },
-    command(stage, trial, _i) {
-        if (stage && trial) {
-            const template = Template.instance().parent(3),
-                session = template.session.get(),
-                timers = template.timers[ trial ]?.[ stage ];
+    command(stage, trial) {
+        if (!stage || !trial) return;
 
-            if (timers) _.each(this.commands, async (command) => {
-                if (_.isEmpty(command) || !_.has(command, "command")) return;
+        const template = Template.instance().parent(3),
+            session = template.session.get(),
+            timers = template.timers[ trial ]?.[ stage ];
 
-                const event = `${ this.type }.${ command.command }`;
+        if (timers) _.each(this.commands, async (c) => {
+            if (_.isEmpty(c) || !_.has(c, "command")) return;
 
-                if (!timers[ event ]) try {
-                    const delay = command.delay + this.delay;
-
-                    await template.timedCommand(session.device, this.type, command, delay);
-                    template.recordEvent({
-                        timeStamp: performance.now(),
-                        type: `${ this.type }.${ command.command }.sent`
-                    });
-                } catch (error) { console.log(error); }
-            });
-        }
+            if (!timers[ `${ this.type }.${ c.command }` ]) try {
+                await template.timedCommand(session.device, this.type, c, (c.delay ?? 0) + (this.delay ?? 0));
+            } catch (error) { console.log(error); }
+        });
     },
     stage() {
         return Template.instance().get('stage').get();
@@ -789,10 +785,7 @@ Template.trialElement.helpers({
 
                 template.timers[ trial ][ stage ][ `${ name }.${ action }` ] = Meteor.setTimeout(() => {
                     template.toggles[ name ] = val;
-
-                    template.recordEvent({ timeStamp: performance.now(), type: `${ type }.${ action }` });
-                    if (template.logging.timers) template.printTimer(trial, stage, `${ name }.${ action }`,
-                        'rebeccapurple', desc);
+                    template.recordTimer(type, action, desc, i);
                 }, t);
             };
 
@@ -883,6 +876,9 @@ Template.trialSVG.helpers({
             counts[ stage - 1 ] = count + 1;
             template.count.set(counts);
         }
+    },
+    stage() {
+        return Template.instance().get('stage').get();
     }
 });
 

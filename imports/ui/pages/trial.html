@@ -3,7 +3,7 @@
 
     {{#with session}}
         {{#with data settings stage trials}}
-            {{> trialSVG inputs=../settings.inputs stage=stage trial=this}}
+            {{> trialSVG inputs=../settings.inputs trial=this}}
         {{/with}}
     {{/with}}
 </template>
@@ -44,7 +44,7 @@
             {{/if}}
         {{/if}}
         {{#if $in type 'board' 'lights' 'reward'}}
-            {{command stage trial ../i}}
+            {{command stage trial}}
         {{/if}}
     {{/with}}
 </template>
