@@ -1,12 +1,23 @@
 /**
  * api/server/publications.js
  *
- * Description:
- *  Defines publication tiers, which determine what data is exposed within data collections
- * * * * * * * */
+ * Purpose:
+ *  - Defines Meteor publications which control client data access boundaries
+ *
+ * Notes:
+ *  - Server-side only
+ *  - Used to restrict reactive data flow to subscribed clients
+ * */
 
 import { Meteor } from 'meteor/meteor';
-import { Experiments, Sessions, Subjects, Templates, Trials } from '/imports/api/collections';
+import { Clients, Experiments, Sessions, Subjects, Templates, Trials } from '/imports/api/collections';
+
+/**
+ * Clients Collection
+ *
+ * Returns:
+ *  (1) all clients */
+Meteor.publish('clients', () => Clients.find());
 
 /**
  * Experiments Collection
@@ -88,6 +99,6 @@ Meteor.publish('trials.session', (id) => Trials.find({ session: id }, { sort: { 
  *  (1) user profile(s) and status(es) within requested parameters TODO: Reduce security gap */
 Meteor.publish('users', (params) => Meteor.users.find(params, { fields: { lastModified: 1, profile: 1, status: 1 } }));
 Meteor.publish('users.user', (field) => { 
-    const key = 'status.active.' + field;
+    const key = `status.active.${ field }`;
     return Meteor.users.find(Meteor.userId(), { fields: { [ key ]: 1 } });
  });

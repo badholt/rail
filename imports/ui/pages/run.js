@@ -1,5 +1,19 @@
-import './run.html';
+/**
+ * imports/ui/pages/run.js
+ *
+ * Purpose:
+ *  - Displays the session builder UI
+ *  - Creates sessions from templates
+ *  - Applies device-specific calibration adjustments
+ *  - Generates trials & queues sessions on devices
+ *
+ * Notes:
+ *  - Pregenerates probability distributions for trial variables
+ *  - Session definitions are transformed at creation time to account for
+ *    device calibration (audio, screen, reward delivery, etc.)
+ * */
 
+import './run.html';
 import '/imports/ui/components/blacklist';
 import '/imports/ui/components/cross';
 import '/imports/ui/components/stimulus';
@@ -15,13 +29,12 @@ import '/imports/ui/components/forms/stimuli';
 import '/imports/ui/components/forms/session';
 import '/imports/ui/components/forms/template';
 
-import _ from 'underscore';
 import update from 'immutability-helper';
-
 import { Meteor } from 'meteor/meteor';
 import { ReactiveVar } from 'meteor/reactive-var';
 import { Template } from 'meteor/templating';
-import { Templates } from '../../api/collections';
+import _ from 'underscore';
+import { Templates } from '/imports/api/collections';
 
 export const alert = (type, title, message) => $.toast({ class: `centered ${ type }`, title, message,
         className: { title: 'ui large header' },
@@ -41,8 +54,9 @@ const alertIcons = { error: 'cancel', success: 'check', warning: 'warning' },
                 inputs = _.isEqual(a.inputs, b.inputs),
                 session = _.isEqual(a.session, b.session),
                 stages = _.isEqual(
-                    _.map(a.stages, (stage) => _.map(stage, (element) => _.omit(element, 'index'))),
-                    _.map(a.stages, (stage) => _.map(stage, (element) => _.omit(element, 'index'))));
+                        _.map(a.stages, (stage) => _.map(stage, (element) => _.omit(element, 'index'))),
+                        _.map(b.stages, (stage) => _.map(stage, (element) => _.omit(element, 'index')))
+                    );
 
             return inputs && session && stages;
         });
@@ -146,8 +160,8 @@ Template.sessionSetup.onCreated(function () {
             const stages_adjusted = _.map(stages, (stage) => _.map(stage, (el) => (elements(device, el))));
 
             if (subjects.length > 0) Meteor.call('generateTrials', session, stages_adjusted,
-                (error, trials) => {
-                    if (error) return alert('error', 'Error', 'Trial generation failed.');
+                (err, trials) => {
+                    if (err) return alert('error', 'Error', 'Trial generation failed.');
 
                     const inputs_adjusted = _.map(inputs, (stage) => _.map(stage, (input) => (update(input, {
                         correct: { $set: _.map(input.correct, (e) => {
@@ -160,12 +174,9 @@ Template.sessionSetup.onCreated(function () {
                         }) } }))));
 
                     Meteor.call('addSession', deviceId, experiment, inputs_adjusted, session, subjects, trials,
-                        (error, session) => {
-                            if (error) return alert('error', 'Error', 'Session creation failed.');
-
-                            Meteor.call('addTrial', session, 0, 1, Date.now(), false, () => {
-                                alert('success', 'Success', `Session added to ${ device.profile.name }'s queue.`);
-                            });
+                        (err) => {
+                            if (err) return alert('error', 'Error', 'Session creation failed.');
+                            alert('success', 'Success', `Session added to ${ device.profile.name }'s queue.`);
                         });
                 });
         });
@@ -178,18 +189,12 @@ Template.sessionTemplate.events({
         const template = Template.instance().parent(),
             stages = template.stages.get();
 
-        stages.push([]);
-        template.stages.set(stages);
+        /** Meteor reactivity prefers replacement over mutation: */
+        template.stages.set([ ...stages, [] ]);
     },
     'click #save'(_event, template) {
         const exists = hasTemplate(Meteor.userId(), _.omit(template.data, '_id'));
-
-        if (!exists) {
-            /** Open modal: */
-            $('#template-modal').modal('show');
-        } else {
-            console.log('Already saved!');
-        }
+        if (!exists) $('#template-modal').modal('show');
     },
     'click button[type="submit"]'() {
         const template = Template.instance().parent();
@@ -242,7 +247,9 @@ Template.sessionTemplate.onRendered(function () {
 });
 
 Template.stageItem.events({
-    'click .stage'(_event, template) { Template.instance().parent(2).page.set(template.data.index - 1); }
+    'click .stage'(_event, template) {
+        Template.instance().get('page').set(template.data.index - 1);
+    }
 });
 
 Template.stagePage.helpers({

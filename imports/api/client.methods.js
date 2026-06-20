@@ -1,16 +1,16 @@
 /**
  * api/client.methods.js
  *
- * Description:
- *  Defines client-side methods for secure access to the database and methods for general use throughout the application
+ * Purpose:
+ *  - Client-side utility functions & Meteor method wrappers for session logic
  *
- * Imports:
- *  UnderscoreJS - extends JavaScript language capabilities
- *  Immutability Helper - enables modification of retrieved data without modifying the original source */
-import _ from 'underscore';
-import update from 'immutability-helper';
+ * Notes:
+ *  - Some methods are invoked server-side via Meteor.methods
+ * */
 
+import update from 'immutability-helper';
 import { Meteor } from 'meteor/meteor';
+import _ from 'underscore';
 
 export const calculateCenter = (height, width) => ({
         x: Math.floor(width / 2),

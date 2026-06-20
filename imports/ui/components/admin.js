@@ -1,13 +1,21 @@
+/**
+ * imports/ui/components/admin.js
+ *
+ * Purpose:
+ *  - Admin dashboard for managing clients, experiments, & user state
+ *  - Displays MQTT client status & controls lifecycle actions
+ * */
+
 import './admin.html';
 import './forms/experiment';
 import './forms/user';
 
-import _ from 'underscore';
-
-import { Experiments } from '../../api/collections';
-import { getInitials } from './profile';
 import { Meteor } from 'meteor/meteor';
 import { Template } from 'meteor/templating';
+import _ from 'underscore';
+import { Clients, Experiments } from '/imports/api/collections';
+import { createClient, mqttSend } from '/imports/services/mqtt';
+import { getInitials } from './profile';
 
 export const submitExperimentUpdate = (exp) => {
         const form = $('#experiment-form').form('get values');
@@ -20,42 +28,105 @@ export const submitExperimentUpdate = (exp) => {
                 ? _.assign(form, { link }) : form));
     };
 
+const CLIENT_STATUS_CONFIG = {
+    busy: {
+        actions: 'loading notched',
+        color: 'yellow',
+        icon: 'random',
+        message: 'In progress: ',
+        tooltip: 'Started task ',
+
+        params: (context) => `${ context.task }`
+    },
+    degraded: {
+        actions: '',
+        color: 'olive',
+        icon: 'battery quarter'
+    },
+    draining: {
+        actions: 'loading notched',
+        color: 'green',
+        icon: 'tasks',
+        message: 'Finishing remaining tasks...',
+        tooltip: 'Clearing task queue since '
+    },
+    error: {
+        actions: 'warning',
+        color: 'red',
+        icon: 'code',
+        message: 'Error: ',
+        tooltip: 'Crashed ',
+
+        params: (context) => `${ context.error }`
+    },
+    idle: {
+        actions: '',
+        color: 'green',
+        icon: ''
+    },
+    maintenance: {
+        actions: 'loading notched',
+        color: 'grey',
+        icon: 'tools',
+        message: 'In progress: ',
+        tooltip: 'Performing maintenance since ',
+
+        params: (context) => `${ context.task }`
+    },
+    offline: {
+        actions: '',
+        color: 'red',
+        icon: ''
+    },
+    paused: {
+        actions: 'pause',
+        color: 'grey',
+        icon: ''
+    },
+    suspended: {
+        actions: 'pause',
+        color: 'orange',
+        icon: ''
+    }
+};
+
 Template.adminPanel.helpers({
-  devices() {
-    return Meteor.users.find(
-        { 'profile.device': { $type: 'string' }, 'status.client': { $ne: {} } },
-        { fields: { 'profile.name': 1, 'status.client': 1 } }
-    ).fetch();
-  }
+    clients() {
+        return Clients.find();
+    }
 });
 
 Template.adminPanel.onRendered(function () {
+    this.autorun(() => { this.subscribe('clients'); });
     this.autorun(() => {
-        if (!Meteor.user()?.device) {
-            this.subscribe('users', { 'profile.device': { $type: 'string' }, 'status.client': { $ne: {} } });
-            Meteor.call('getClients');
-        }
+        const user = Meteor.user();
+        if (!user?.device) this.subscribe('users', { 'profile.device': { $type: 'string' } });
     });
 });
 
 Template.clientList.events({
     'click .button[id^=connect]'(e) {
         const id = e.target.value;
-
-        Meteor.call('updateClient', id, 'connect');
-        Meteor.call('getClients');
+        createClient(id);
     },
     'click .button[id^=disconnect]'(e) {
         const id = e.target.value;
-
-        Meteor.call('updateClient', id, 'end');
-        Meteor.call('getClients');
+        mqttSend(`hub/${ id }/command`, { command: 'disconnect' });
     }
 });
 
 Template.clientList.helpers({
-    clients(devices) {
-        return _.values(devices);
+    'clientStatus'(state, props) {
+        const config = CLIENT_STATUS_CONFIG[ state ] || {},
+            classes = _.map((props || '').split(","), p => typeof config[ p ] === 'function'
+                ? config[ p ](this)
+                : config[ p ] || '');
+
+        return `${ classes.join(' ') } `;
+    },
+    'disabled'(state) {
+        const disabled = [ 'busy', 'draining', 'error', 'maintenance' ];
+        return disabled.includes(state);
     }
 });
 
@@ -195,14 +266,14 @@ Template.userCard.onCreated(function () {
         const fileReader = new FileReader();
 
         fileReader.onloadend = (event) => {
-          if (event.target.result) this.previewPic(event.target.result);
+            if (event.target.result) this.previewPic(event.target.result);
         };
 
         fileReader.readAsDataURL(img);
     };
     this.previewPic = (img) => {
-          this.picture.set(img);
-          $('#user-form').form('set value', 'picture', img);
+        this.picture.set(img);
+        $('#user-form').form('set value', 'picture', img);
     };
 });
 

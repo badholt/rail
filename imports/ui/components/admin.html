@@ -1,7 +1,7 @@
 <template name="adminPanel">
     {{#with currentUser}}{{> userCard}}{{/with}}
 
-    {{#with devices}}
+    {{#with clients}}
         <div class="ui basic compact segment">
             <h2 class="ui inverted header">Current Messaging Client(s)</h2>
             <div id="clients" class="ui cards">{{> clientList}}</div>
@@ -20,33 +20,58 @@
 
 <template name="clientList">
     {{#each this}}
-        {{#each clients status.client}}
-            <div class="ui inverted card">
-                <div class="content">
-                    <div class="ui inverted {{#if connected}}green{{else}}red{{/if}} header">
-                        <i class="right floated inverted {{#if connected}}{{#if disconnecting}}red loading notched {{else}}green {{/if}}{{else}}{{#if disconnected}}{{#if reconnecting}}green loading notched {{else}}red {{/if}}{{else}}red {{/if}}{{/if}}circle icon"></i>
+        <div class="ui inverted card">
+            <div class="content">
+                {{#let c=(clientStatus state 'color') i=(clientStatus state 'color,icon') dt=(relativeDate updatedAt false)}}
+                    <div class="ui inverted {{c}} header">
+                        <i class="right floated inverted {{clientStatus state 'actions,color'}}circle icon"
+                           title="{{_id}} is {{#if $eq state 'maintenance'}}undergoing {{/if}}{{state}}"></i>
 
-                        {{../profile.name}}
+                        {{_id}}
                     </div>
 
-                    <div class="meta">({{options.clientId}})</div>
-
-                    <div class="description">
+                    <div class="meta">
                         <div class="ui fluid inverted mini buttons">
-                            <button id="connect-{{options.clientId}}" class="ui button" type="button" value="{{options.clientId}}">Connect</button>
-                            <div class="or"></div>
-                            <button id="disconnect-{{options.clientId}}" class="ui grey button" type="button" value="{{options.clientId}}">Disconnect</button>
+                            {{#unless disabled state}}
+                                <button id="connect-{{_id}}" class="ui button" type="button" value="{{_id}}">Connect</button>
+                                <div class="or"></div>
+                                <button id="disconnect-{{_id}}" class="ui grey button" type="button" value="{{_id}}">Disconnect</button>
+                            {{else}}
+                                {{#let tt=(clientStatus state 'tooltip') m=(clientStatus state 'message') p=(clientStatus state 'params')}}
+                                    <button class="ui basic inverted {{c}} icon button" type="button" data-inverted
+                                            data-variation="mini {{c}}" data-tooltip="{{tt}}{{dt}}">
+                                        <i class="{{i}} icon"></i> <em><span class="ui inverted {{c}} text">{{m}}</span>&nbsp;&nbsp;{{p}}</em>
+                                    </button>
+                                {{/let}}
+                            {{/unless}}
                         </div>
                     </div>
-                </div>
+
+                    <div class="description">
+                        <div class="ui very relaxed mini inverted list">
+                            <div class="item">
+                                <i class="hourglass icon"></i>
+                                <div class="content">
+                                    last seen: <em><span class="right floated">{{relativeDate lastSeen false}}</span></em>
+                                </div>
+                            </div>
+
+                            {{#if issues}}
+                                <div class="item">
+                                    <div class="ui left floated inverted {{c}} header">Issues:</div>
+
+                                    <div class="ui basic mini horizontal inverted labels">
+                                        {{#each issues}}
+                                            <a class="ui olive label"><i class="bug icon"></i> {{type}}: <em>{{desc}}</em></a>
+                                        {{/each}}
+                                    </div>
+                                </div>
+                            {{/if}}
+                        </div>
+                    </div>
+                {{/let}}
             </div>
-        {{else}}
-            <div class="ui basic disabled inverted card">
-                <div class="content">
-                    <a class="ui centered header">None</a>
-                </div>
-            </div>
-        {{/each}}
+        </div>
     {{/each}}
 </template>
 

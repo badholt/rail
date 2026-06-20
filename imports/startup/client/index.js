@@ -4,5 +4,6 @@ import '/imports/api/helpers';
 import '/imports/api/server.methods';
 
 import '/imports/startup/accounts.templates';
+import '/imports/startup/client/mqtt';
 import '/imports/startup/client/routes';
 import '/imports/startup/tables';

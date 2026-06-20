@@ -1,8 +1,6 @@
 <template name="trial">
-    {{abort}}
-
     {{#with session}}
-        {{#with data settings stage trials}}
+        {{#with data settings stage}}
             {{> trialSVG inputs=../settings.inputs trial=this}}
         {{/with}}
     {{/with}}

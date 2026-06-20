@@ -1,13 +1,19 @@
 /**
  * api/collections.js
  *
- * Description:
- *  Creates data collections for database organization
- * * * * * * * */
-import {Mongo} from 'meteor/mongo';
+ * Purpose:
+ *  - Defines & exports MongoDB collections used across the application.
+ *
+ * Notes:
+ *  - Shared client/server collections (Meteor minimongo sync)
+ *  - No runtime initialization logic 
+ * */
 
-export const Experiments = new Mongo.Collection('experiments');
-export const Sessions = new Mongo.Collection('sessions');
-export const Subjects = new Mongo.Collection('subjects');
-export const Templates = new Mongo.Collection('templates');
-export const Trials = new Mongo.Collection('trials');
+import { Mongo } from 'meteor/mongo';
+
+export const Clients = new Mongo.Collection('clients'),
+    Experiments = new Mongo.Collection('experiments'),
+    Sessions = new Mongo.Collection('sessions'),
+    Subjects = new Mongo.Collection('subjects'),
+    Templates = new Mongo.Collection('templates'),
+    Trials = new Mongo.Collection('trials');

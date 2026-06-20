@@ -14,152 +14,154 @@
     <div class="ui grey card">
         {{#if status.message}}{{>deviceCardMessage (status.message)}}{{/if}}
 
-        {{#with status.active.session}}
-            {{> deviceActivity}}
-        {{/with}}
+        {{#let session=(hasSession status.active.session)}}
+            {{#with session}}
+                {{> deviceActivity}}
+            {{/with}}
 
-        {{> deviceQueue}}
+            {{> deviceQueue}}
 
-        <div class="content">
-            <i class="{{color status}} large right floated circle icon"></i>
+            <div class="content">
+                <i class="{{color status}} large right floated circle icon"></i>
 
-            <a href="http://{{profile.address}}:8081" target="_blank">
-                <i class="large black link right floated video icon"></i>
-            </a>
+                <a href="http://{{profile.address}}:8081" target="_blank">
+                    <i class="large black link right floated video icon"></i>
+                </a>
 
-            <a href="http://{{profile.address}}:8082" target="_blank">
-                <i class="large black link right floated sliders icon"></i>
-            </a>
+                <a href="http://{{profile.address}}:8082" target="_blank">
+                    <i class="large black link right floated sliders icon"></i>
+                </a>
 
-            <a id="toggle-lights"><i class="{{#if lights}}orange{{else}}black{{/if}} large link right floated lightbulb icon"></i></a>
-            <a id="toggle-reward"><i class="{{#if reward}}orange{{else}}black{{/if}} large link right floated trophy icon"></i></a>
-            <a id="toggle-ir"><i class="{{#if ir}}orange{{else}}black{{/if}} large link right floated sun icon"></i></a>
+                <a id="toggle-lights"><i class="{{#if lights}}orange{{else}}black{{/if}} large link right floated lightbulb icon"></i></a>
+                <a id="toggle-reward"><i class="{{#if reward}}orange{{else}}black{{/if}} large link right floated trophy icon"></i></a>
+                <a id="toggle-ir"><i class="{{#if ir}}orange{{else}}black{{/if}} large link right floated sun icon"></i></a>
 
-            <h1 class="editable header" title="name">
-                {{> editField name='name' placeholder=profile.name value=profile.name}}
-            </h1>
+                <h1 class="editable header" title="name">
+                    {{> editField name='name' placeholder=profile.name value=profile.name}}
+                </h1>
 
-            <div class="description">
-                {{#unless status.active.session}}
-                    {{#with profile.calibration.audio}}
-                        <a id="calibrate-audio-{{../profile.username}}" class="ui grey mini icon message">
-                            <i class="link volume up icon"></i>
+                <div class="description">
+                    {{#unless session}}
+                        {{#with profile.calibration.audio}}
+                            <a id="calibrate-audio-{{../profile.username}}" class="ui grey mini icon message">
+                                <i class="link volume up icon"></i>
 
-                            <div class="content">                      
-                                <div class="ui inverted list">
-                                    <div class="item" value="+">
-                                        <b>Tone frequency</b> offset by <span style="color: #2185d0;">{{frequency}}</span>
+                                <div class="content">                      
+                                    <div class="ui inverted list">
+                                        <div class="item" value="+">
+                                            <b>Tone frequency</b> offset by <span style="color: #2185d0;">{{frequency}}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </a>
-                    {{else}}
-                        <div class="ui inverted segment">
-                            <a id="calibrate-audio-{{../profile.username}}">
-                                <h5 class="ui inverted image header">
-                                    <i class="volume up icon"></i>
-                                    <span class="content">
-                                        No audio configured
-                                    </span>
-                                </h5>
                             </a>
-                        </div>
-                    {{/with}}
+                        {{else}}
+                            <div class="ui inverted segment">
+                                <a id="calibrate-audio-{{../profile.username}}">
+                                    <h5 class="ui inverted image header">
+                                        <i class="volume up icon"></i>
+                                        <span class="content">
+                                            No audio configured
+                                        </span>
+                                    </h5>
+                                </a>
+                            </div>
+                        {{/with}}
 
-                    {{#with profile.calibration.screen.cross}}
-                        <a id="calibrate-screen-{{../profile.username}}" class="ui black mini icon message">
-                            <i class="link expand icon"></i>
+                        {{#with profile.calibration.screen.cross}}
+                            <a id="calibrate-screen-{{../profile.username}}" class="ui black mini icon message">
+                                <i class="link expand icon"></i>
 
-                            <div class="content">                      
-                                <div class="ui inverted list">
-                                    <div class="item" value="+">
-                                        <b>cross</b> offset by {<span style="color: #f2711c;">{{offset.x}}</span>, <span style="color: #2185d0;">{{offset.y}}</span>}
+                                <div class="content">                      
+                                    <div class="ui inverted list">
+                                        <div class="item" value="+">
+                                            <b>cross</b> offset by {<span style="color: #f2711c;">{{offset.x}}</span>, <span style="color: #2185d0;">{{offset.y}}</span>}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </a>
-                    {{else}}
-                        <div class="ui inverted segment">
-                            <a id="calibrate-screen-{{../profile.username}}">
-                                <h5 class="ui inverted image header">
-                                    <i class="expand icon"></i>
-                                    <span class="content">
-                                        No screen configured
-                                    </span>
-                                </h5>
                             </a>
-                        </div>
-                    {{/with}}
+                        {{else}}
+                            <div class="ui inverted segment">
+                                <a id="calibrate-screen-{{../profile.username}}">
+                                    <h5 class="ui inverted image header">
+                                        <i class="expand icon"></i>
+                                        <span class="content">
+                                            No screen configured
+                                        </span>
+                                    </h5>
+                                </a>
+                            </div>
+                        {{/with}}
 
-                    {{#with profile.calibration.water}}
-                        <a id="calibrate-water-{{../profile.username}}" class="ui blue mini icon message">
-                            <i class="link tint icon"></i>
+                        {{#with profile.calibration.water}}
+                            <a id="calibrate-water-{{../profile.username}}" class="ui blue mini icon message">
+                                <i class="link tint icon"></i>
 
-                            <div class="content">
-                                <div class="ui list">
-                                    <div class="item" value="+"><b>Dispense amount</b> offset by <span style="color: #f2711c;">{{amount}}</span> mL</div>
-                                    <div class="item" value="+"><b>Dispense time</b> offset by <span style="color: #f2711c;">{{dispense}}</span> s</div>
+                                <div class="content">
+                                    <div class="ui list">
+                                        <div class="item" value="+"><b>Dispense amount</b> offset by <span style="color: #f2711c;">{{amount}}</span> mL</div>
+                                        <div class="item" value="+"><b>Dispense time</b> offset by <span style="color: #f2711c;">{{dispense}}</span> s</div>
+                                    </div>
                                 </div>
-                            </div>
-                        </a>
-                    {{else}}
-                        <div class="ui inverted segment">
-                            <a id="calibrate-water-{{../profile.username}}">
-                                <h5 class="ui inverted image header">
-                                    <i class="tint icon"></i>
-                                    <span class="content">
-                                        No water reward configured
-                                    </span>
-                                </h5>
                             </a>
+                        {{else}}
+                            <div class="ui inverted segment">
+                                <a id="calibrate-water-{{../profile.username}}">
+                                    <h5 class="ui inverted image header">
+                                        <i class="tint icon"></i>
+                                        <span class="content">
+                                            No water reward configured
+                                        </span>
+                                    </h5>
+                                </a>
+                            </div>
+                        {{/with}}
+
+                        {{#with calibrating}}
+                            {{> Template.dynamic template=window}}
+                        {{/with}}
+                    {{else}}
+                        <div class="ui disabled inverted segment">
+                            <h5 class="ui image header">
+                                <i class="volume up icon"></i>
+                                <span class="content">
+                                    Audio calibration disabled
+                                </span>
+                            </h5>
                         </div>
-                    {{/with}}
 
-                    {{#with calibrating}}
-                        {{> Template.dynamic template=window}}
-                    {{/with}}
-                {{else}}
-                    <div class="ui disabled inverted segment">
-                        <h5 class="ui image header">
-                            <i class="volume up icon"></i>
-                            <span class="content">
-                                Audio calibration disabled
-                            </span>
-                        </h5>
-                    </div>
+                        <div class="ui disabled inverted segment">
+                            <h5 class="ui image header">
+                                <i class="expand icon"></i>
+                                <span class="content">
+                                    Screen calibration disabled
+                                </span>
+                            </h5>
+                        </div>
 
-                    <div class="ui disabled inverted segment">
-                        <h5 class="ui image header">
-                            <i class="expand icon"></i>
-                            <span class="content">
-                                Screen calibration disabled
-                            </span>
-                        </h5>
-                    </div>
-
-                    <div class="ui disabled inverted segment">
-                        <h5 class="ui image header">
-                            <i class="tint icon"></i>
-                            <span class="content">
-                                Water calibration disabled
-                            </span>
-                        </h5>
-                    </div>
-                {{/unless}}
+                        <div class="ui disabled inverted segment">
+                            <h5 class="ui image header">
+                                <i class="tint icon"></i>
+                                <span class="content">
+                                    Water calibration disabled
+                                </span>
+                            </h5>
+                        </div>
+                    {{/unless}}
+                </div>
             </div>
-        </div>
 
-        <div class="extra content">
-                <span class="editable left floated" title="address">
-                    <i class="globe icon"></i>
-                    {{> editField name='address' placeholder=profile.address value=profile.address}}
+            <div class="extra content">
+                    <span class="editable left floated" title="address">
+                        <i class="globe icon"></i>
+                        {{> editField name='address' placeholder=profile.address value=profile.address}}
+                    </span>
+
+                <span class="right floated">
+                        <i class="clock icon"></i>
+                    {{relativeDate status.lastLogin.date false}}
                 </span>
-
-            <span class="right floated">
-                    <i class="clock icon"></i>
-                {{relativeDate status.lastLogin.date false}}
-            </span>
-        </div>
+            </div>
+        {{/let}}
     </div>
 </template>
 
@@ -232,9 +234,9 @@
                 <i class="corner check icon"></i>
             </i>
 			{{#unless $eq sender 'sensor'}}
-				{{sender}} (pin {{pins}}) turned {{#if status}}on{{else}}off{{/if}} as requested.
+				{{sender}} {{#if $eq sender 'lights'}}( pin {{pins}} ) {{/if}}turned {{#if status}}on{{else}}off{{/if}} as requested.
 			{{else}}
-				{{sender}} (pin {{pin}}) is {{request.ir}}
+				{{sender}} ( pin {{pin}} ) is {{request.ir}}
 			{{/unless}}
         </div>
     </div>
